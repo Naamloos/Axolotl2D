@@ -8,7 +8,7 @@ namespace Axolotl2D.Example
 {
     internal class MyGame : Axolotl
     {
-        public MyGame() : base("My first game", 800, 500)
+        public MyGame() : base("My first game", 800, 500, true)
         {
 
         }
