@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Silk.NET.Core" Version="2.16.0" />
+    <PackageReference Include="Silk.NET.GLFW" Version="2.16.0" />
+    <PackageReference Include="Silk.NET.Input.Common" Version="2.16.0" />
+    <PackageReference Include="Silk.NET.Input.Glfw" Version="2.16.0" />
+    <PackageReference Include="Silk.NET.OpenGL" Version="2.16.0" />
+    <PackageReference Include="Silk.NET.OpenGL.Extensions.ImGui" Version="2.16.0" />
+    <PackageReference Include="Silk.NET.Windowing.Common" Version="2.16.0" />
+    <PackageReference Include="Silk.NET.Windowing.Glfw" Version="2.16.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="glfw3.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="glfw3.lib">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="glfw3dll.lib">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="glfw3_mt.lib">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
