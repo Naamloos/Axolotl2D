@@ -8,7 +8,13 @@ namespace Axolotl2D.Example
 {
     internal class MyGame : Axolotl
     {
-        public MyGame() : base("My first game", 800, 500, true)
+        #if DEBUG
+            const bool DEBUGGING = true;
+        #else
+            const bool DEBUGGING = false;
+        #endif
+
+        public MyGame() : base("My first game", 800, 500, DEBUGGING)
         {
 
         }
