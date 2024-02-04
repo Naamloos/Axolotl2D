@@ -6,15 +6,9 @@ using System.Threading.Tasks;
 
 namespace Axolotl2D.Example
 {
-    internal class MyGame : Axolotl
+    internal class Game : BaseGame
     {
-        #if DEBUG
-            const bool DEBUGGING = true;
-        #else
-            const bool DEBUGGING = false;
-        #endif
-
-        public MyGame() : base("My first game", 800, 500, DEBUGGING)
+        public Game() : base("My first game", 800, 500)
         {
 
         }
