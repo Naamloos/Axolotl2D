@@ -18,7 +18,7 @@ namespace Axolotl2D.Example
 
         private SimpleQuad? quad;
 
-        public ExampleGame() : base(800, 650, AxolotlColor.RamptoerismeBlue)
+        public ExampleGame() : base(800, 650, clearColor: AxolotlColor.RamptoerismeBlue, maxDrawRate: 240, maxUpdateRate: 240)
         {
             Title = "Axolotl2D Example";
         }

@@ -28,7 +28,7 @@ namespace Axolotl2D
 
         private uint shaderProgram;
 
-        public Game(int width, int height, AxolotlColor? clearColor = null)
+        public Game(int width, int height, AxolotlColor? clearColor = null, int maxDrawRate = 120, int maxUpdateRate = 120)
         {
             _width = width;
             _height = height;
@@ -39,9 +39,9 @@ namespace Axolotl2D
             options.Size = new Vector2D<int>(_width, _height);
             options.WindowClass = "axl2d";
             options.WindowBorder = WindowBorder.Resizable;
-            options.FramesPerSecond = 240;
+            options.FramesPerSecond = maxDrawRate;
             options.VSync = false;
-            options.UpdatesPerSecond = 240;
+            options.UpdatesPerSecond = maxUpdateRate;
 
             _window = Window.Create(options);
 
