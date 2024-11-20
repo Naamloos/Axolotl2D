@@ -39,9 +39,9 @@ namespace Axolotl2D
             options.Size = new Vector2D<int>(_width, _height);
             options.WindowClass = "axl2d";
             options.WindowBorder = WindowBorder.Resizable;
-            options.FramesPerSecond = 120;
+            options.FramesPerSecond = 240;
             options.VSync = false;
-            options.UpdatesPerSecond = 120;
+            options.UpdatesPerSecond = 240;
 
             _window = Window.Create(options);
 
@@ -58,12 +58,6 @@ namespace Axolotl2D
         /// <param name="frameDelta"></param>
         public abstract void OnUpdate(double frameDelta);
 
-        /// <summary>
-        /// 60 times a second, gets called after OnUpdate.
-        /// </summary>
-        /// <param name="frameDelta"></param>
-        public abstract void OnFixedUpdate(double frameDelta);
-
         private DateTimeOffset? lastFixedUpdate;
         private void _onUpdate(double frameDelta)
         {
@@ -71,12 +65,6 @@ namespace Axolotl2D
                 return;
 
             OnUpdate(frameDelta);
-
-            if(lastFixedUpdate is null || (DateTimeOffset.Now - lastFixedUpdate.Value).TotalSeconds >= 1.0 / 60.0)
-            {
-                OnFixedUpdate(frameDelta);
-                lastFixedUpdate = DateTimeOffset.Now;
-            }
         }
 
         /// <summary>
@@ -161,6 +149,8 @@ namespace Axolotl2D
             OnDraw(delta, _currentFramerate);
 
             _window.Title = $"{Title} | FPS: {Math.Round(_currentFramerate)}";
+
+            _window.WindowBorder = WindowBorder.Fixed;
         }
 
         /// <summary>

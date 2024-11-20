@@ -10,10 +10,15 @@ namespace Axolotl2D.Example
 {
     internal class ExampleGame : Game
     {
-        private const int QUAD_COUNT = 5;
+        private const int QUAD_COUNT = 9;
+        private const int MOVE_SPEED = 15;
+
+        private float currentXPos = 0;
+        private bool goesRight = true;
+
         private SimpleQuad? quad;
 
-        public ExampleGame() : base(800, 800, AxolotlColor.RamptoerismeBlue)
+        public ExampleGame() : base(800, 650, AxolotlColor.RamptoerismeBlue)
         {
             Title = "Axolotl2D Example";
         }
@@ -27,7 +32,7 @@ namespace Axolotl2D.Example
 
             for (int i = 0; i < QUAD_COUNT; i++)
             {
-                quad.SetRect(x, i * 75, 50, 50);
+                quad.SetRect(currentXPos, i * 75, 50, 50);
                 quad.Draw();
             }
         }
@@ -45,23 +50,15 @@ namespace Axolotl2D.Example
 
         public override void OnUpdate(double frameDelta)
         {
-            
-        }
+            float maxX = GetWidth() - 50;
+            float deltaPosition = MOVE_SPEED * ((float)frameDelta * 60);
+            currentXPos += goesRight ? deltaPosition : -deltaPosition;
 
-        int x = 0;
-        bool goesRight = true;
-        const int SPEED = 15;
-
-        public override void OnFixedUpdate(double frameDelta)
-        {
-            int maxX = GetWidth() - 50;
-            x += goesRight? SPEED : -SPEED;
-
-            if (x > maxX)
+            if (currentXPos > maxX)
             {
                 goesRight = false;
             }
-            else if (x < 0)
+            else if (currentXPos < 0)
             {
                 goesRight = true;
             }
