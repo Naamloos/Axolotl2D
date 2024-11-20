@@ -10,8 +10,8 @@ namespace Axolotl2D.Example
 {
     internal class ExampleGame : Game
     {
-        private SimpleQuad? _quad;
-        private SimpleQuad? _quad2;
+        private const int QUAD_COUNT = 5;
+        private SimpleQuad? quad;
 
         public ExampleGame() : base(800, 800, AxolotlColor.RamptoerismeBlue)
         {
@@ -20,17 +20,22 @@ namespace Axolotl2D.Example
 
         public override void OnDraw(double frameDelta, double frameRate)
         {
-            _quad!.Draw();
-            _quad2!.Draw();
+            if(quad == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < QUAD_COUNT; i++)
+            {
+                quad.SetRect(x, i * 75, 50, 50);
+                quad.Draw();
+            }
         }
 
         public override void OnLoad()
         {
             Console.WriteLine("Loaded");
-            _quad = new SimpleQuad(this);
-            _quad2 = new SimpleQuad(this);
-            _quad.SetRect(50, 50, 100, 100);
-            _quad2.SetRect(200, 200, 100, 100);
+            quad = new SimpleQuad(this);
         }
 
         public override void OnResize()
@@ -40,9 +45,26 @@ namespace Axolotl2D.Example
 
         public override void OnUpdate(double frameDelta)
         {
-            // SetRect takes window size into account.
-            _quad!.SetRect(50, 50, 100, 100);
-            _quad2!.SetRect(200, 200, 100, 100);
+            
+        }
+
+        int x = 0;
+        bool goesRight = true;
+        const int SPEED = 15;
+
+        public override void OnFixedUpdate(double frameDelta)
+        {
+            int maxX = GetWidth() - 50;
+            x += goesRight? SPEED : -SPEED;
+
+            if (x > maxX)
+            {
+                goesRight = false;
+            }
+            else if (x < 0)
+            {
+                goesRight = true;
+            }
         }
     }
 }

@@ -92,15 +92,21 @@ namespace Axolotl2D.Drawable
             var viewportWidth = _game.GetWidth();
             var viewportHeight = _game.GetHeight();
 
-            // in order top right, bottom right, bottom left, top left
-            // render origin should be top left
-            _vertices =
-            [
-                x / viewportWidth * 2 - 1, 1 - y / viewportHeight * 2, 0,
-                (x + width) / viewportWidth * 2 - 1, 1 - y / viewportHeight * 2, 0,
-                (x + width) / viewportWidth * 2 - 1, 1 - (y + height) / viewportHeight * 2, 0,
-                x / viewportWidth * 2 - 1, 1 - (y + height) / viewportHeight * 2, 0
-            ];
+            _vertices[0] = x / viewportWidth * 2 - 1;
+            _vertices[1] = 1 - y / viewportHeight * 2;
+            _vertices[2] = 0;
+
+            _vertices[3] = (x + width) / viewportWidth * 2 - 1;
+            _vertices[4] = 1 - y / viewportHeight * 2;
+            _vertices[5] = 0;
+
+            _vertices[6] = (x + width) / viewportWidth * 2 - 1;
+            _vertices[7] = 1 - (y + height) / viewportHeight * 2;
+            _vertices[8] = 0;
+
+            _vertices[9] = x / viewportWidth * 2 - 1;
+            _vertices[10] = 1 - (y + height) / viewportHeight * 2;
+            _vertices[11] = 0;
         }
     }
 }

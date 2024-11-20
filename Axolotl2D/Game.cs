@@ -52,20 +52,44 @@ namespace Axolotl2D
             _window.Update += _onUpdate;
         }
 
+        /// <summary>
+        /// Gets called every update frame.
+        /// </summary>
+        /// <param name="frameDelta"></param>
         public abstract void OnUpdate(double frameDelta);
+
+        /// <summary>
+        /// 60 times a second, gets called after OnUpdate.
+        /// </summary>
+        /// <param name="frameDelta"></param>
+        public abstract void OnFixedUpdate(double frameDelta);
+
+        private DateTimeOffset? lastFixedUpdate;
         private void _onUpdate(double frameDelta)
         {
             if (OpenGL is null)
                 return;
 
             OnUpdate(frameDelta);
+
+            if(lastFixedUpdate is null || (DateTimeOffset.Now - lastFixedUpdate.Value).TotalSeconds >= 1.0 / 60.0)
+            {
+                OnFixedUpdate(frameDelta);
+                lastFixedUpdate = DateTimeOffset.Now;
+            }
         }
 
+        /// <summary>
+        /// Starts the game loop.
+        /// </summary>
         public void Start()
         {
             _window.Run();
         }
 
+        /// <summary>
+        /// Gets called when the game expects to load resources.
+        /// </summary>
         public abstract void OnLoad();
         private void _onLoad()
         {
@@ -101,6 +125,9 @@ namespace Axolotl2D
             OnLoad();
         }
 
+        /// <summary>
+        /// Gets called when the window resizes.
+        /// </summary>
         public abstract void OnResize();
         private void _onResize(Vector2D<int> size)
         {
@@ -115,6 +142,11 @@ namespace Axolotl2D
             OnResize();
         }
 
+        /// <summary>
+        /// Gets called every frame.
+        /// </summary>
+        /// <param name="frameDelta"></param>
+        /// <param name="frameRate"></param>
         public abstract void OnDraw(double frameDelta, double frameRate);
         private void _onDraw(double delta)
         {
@@ -131,6 +163,9 @@ namespace Axolotl2D
             _window.Title = $"{Title} | FPS: {Math.Round(_currentFramerate)}";
         }
 
+        /// <summary>
+        /// Clears the screen. Do not call this when ClearOnDraw is set to true. It's called automatically.
+        /// </summary>
         public void Clear()
         {
             if (OpenGL is null)
@@ -141,10 +176,12 @@ namespace Axolotl2D
 
         internal GL GetOpenGLContext() => OpenGL ?? throw new EngineUninitializedException("Tried accessing the game's GL context without the engine being initialized!", this);
         internal uint GetShaderProgram() => shaderProgram;
-        internal int GetWidth() => _width;
-        internal int GetHeight() => _height;
+        public int GetWidth() => _width;
+        public int GetHeight() => _height;
 
-
+        /// <summary>
+        /// Disposes the game.
+        /// </summary>
         public void Dispose()
         {
             _window.Dispose();
