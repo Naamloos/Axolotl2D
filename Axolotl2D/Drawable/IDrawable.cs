@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace Axolotl2D.Drawable
 {
-    public interface ISprite
+    public interface IDrawable
     {
+        public void Draw();
     }
 }
