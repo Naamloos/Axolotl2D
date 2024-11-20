@@ -5,6 +5,7 @@ using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using Silk.NET.OpenGL.Extensions.ImGui;
 using Silk.NET.Windowing;
+using System.Xml.Linq;
 
 namespace Axolotl2D
 {
@@ -25,6 +26,8 @@ namespace Axolotl2D
         private AxolotlColor _clearColor;
         private AxolotlShader? BasicVertex;
         private AxolotlShader? BasicFragment;
+
+        internal int _loadedSprites = 0;
 
         private uint shaderProgram;
 
@@ -58,7 +61,6 @@ namespace Axolotl2D
         /// <param name="frameDelta"></param>
         public abstract void OnUpdate(double frameDelta);
 
-        private DateTimeOffset? lastFixedUpdate;
         private void _onUpdate(double frameDelta)
         {
             if (OpenGL is null)
@@ -110,6 +112,9 @@ namespace Axolotl2D
             BasicVertex.DetachFromProgram();
             BasicFragment.DetachFromProgram();
 
+            OpenGL.Enable(EnableCap.Blend);
+            OpenGL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+
             OnLoad();
         }
 
@@ -143,7 +148,9 @@ namespace Axolotl2D
 
             _currentFramerate = 1.0f / delta;
 
-            if(ClearOnDraw)
+            OpenGL.UseProgram(GetShaderProgram());
+
+            if (ClearOnDraw)
                 Clear();
 
             OnDraw(delta, _currentFramerate);

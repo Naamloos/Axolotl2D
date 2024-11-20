@@ -10,10 +10,12 @@
 
   <ItemGroup>
     <None Remove="Resources\Sprites\mochicat.png" />
+    <None Remove="Resources\Sprites\rei.png" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\Sprites\mochicat.png" />
+    <EmbeddedResource Include="Resources\Sprites\rei.png" />
   </ItemGroup>
 
   <ItemGroup>

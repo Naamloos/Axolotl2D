@@ -16,7 +16,8 @@ namespace Axolotl2D.Example
         private float currentXPos = 0;
         private bool goesRight = true;
 
-        private SimpleQuad? quad;
+        private Sprite? sprite;
+        private Sprite? sprite2;
 
         public ExampleGame() : base(800, 650, clearColor: AxolotlColor.RamptoerismeBlue, maxDrawRate: 240, maxUpdateRate: 240)
         {
@@ -25,22 +26,19 @@ namespace Axolotl2D.Example
 
         public override void OnDraw(double frameDelta, double frameRate)
         {
-            if(quad == null)
-            {
-                return;
-            }
-
             for (int i = 0; i < QUAD_COUNT; i++)
             {
-                quad.SetRect(currentXPos, i * 75, 50, 50);
-                quad.Draw();
+                var thisSprite = i % 2 == 0 ? sprite : sprite2;
+                thisSprite!.SetRect(currentXPos, i * 75, 50, 50);
+                thisSprite.Draw();
             }
         }
 
         public override void OnLoad()
         {
             Console.WriteLine("Loaded");
-            quad = new SimpleQuad(this);
+            sprite = new Sprite(this, this.GetType().Assembly.GetManifestResourceStream("Axolotl2D.Example.Resources.Sprites.mochicat.png")!);
+            sprite2 = new Sprite(this, this.GetType().Assembly.GetManifestResourceStream("Axolotl2D.Example.Resources.Sprites.rei.png")!);
         }
 
         public override void OnResize()
