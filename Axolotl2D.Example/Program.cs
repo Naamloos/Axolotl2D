@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Axolotl2D;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Axolotl2D.Example
 {
@@ -11,6 +12,7 @@ namespace Axolotl2D.Example
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.AddGame<ExampleGame>();
+                    services.AddLogging();
                 })
                 .Build();
 

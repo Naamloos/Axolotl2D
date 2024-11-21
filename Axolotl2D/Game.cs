@@ -80,7 +80,9 @@ namespace Axolotl2D
 
         internal uint _shaderProgram;
 
-        public Game(int maxDrawRate = 120, int maxUpdateRate = 120)
+        internal IServiceProvider _services;
+
+        public Game(IServiceProvider services, int maxDrawRate = 120, int maxUpdateRate = 120) // TODO make configurable at runtime
         {
             _width = 500;
             _height = 500;

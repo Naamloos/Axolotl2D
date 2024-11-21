@@ -168,5 +168,13 @@ namespace Axolotl2D.Drawable
             _vertices[16] = 1 - (Y + Height) / viewportHeight * 2;
             _vertices[17] = 0;
         }
+
+        public static Sprite FromManifestResource(Game game, string resourceName, Type? assemblyType = null)
+        {
+            if (assemblyType == null)
+                return new Sprite(game, game.GetType().Assembly.GetManifestResourceStream(resourceName)!);
+            else
+                return new Sprite(game, assemblyType.Assembly.GetManifestResourceStream(resourceName)!);
+        }
     }
 }
