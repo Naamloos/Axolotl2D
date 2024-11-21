@@ -22,10 +22,7 @@ namespace Axolotl2D.Drawable
 
         private uint _texture;
 
-        private GLEnum _textureIndex;
-
         private GL _gl;
-
         private Game _game;
 
         public unsafe Sprite(Game game, Stream imageFile)
@@ -83,6 +80,7 @@ namespace Axolotl2D.Drawable
             _gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, 0);
 
             _texture = _gl.GenTexture();
+            _gl.BindTexture(TextureTarget.Texture2D, _texture);
 
             ImageResult img = ImageResult.FromStream(imageFile, ColorComponents.RedGreenBlueAlpha);
 
@@ -99,13 +97,8 @@ namespace Axolotl2D.Drawable
             int location = _gl.GetUniformLocation(_game.GetShaderProgram(), "uTexture");
             _gl.Uniform1(location, 0);
 
-            _textureIndex = (GLEnum)(((int)GLEnum.Texture0) + _game._loadedSprites);
-            _game._loadedSprites++;
-
-            _gl.ActiveTexture(_textureIndex);
-            _gl.BindTexture(TextureTarget.Texture2D, _texture);
-
             _gl.BindTexture(TextureTarget.Texture2D, 0);
+            _game._loadedSprites++;
         }
 
         public unsafe void Draw()
@@ -119,7 +112,7 @@ namespace Axolotl2D.Drawable
             _gl.BindBuffer(BufferTargetARB.ArrayBuffer, 0);
 
             _gl.BindVertexArray(_vao);
-            _gl.ActiveTexture(_textureIndex);
+            _gl.BindTexture(TextureTarget.Texture2D, _texture);
             _gl.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, (void*)0);
             _gl.BindVertexArray(0);
         }
@@ -130,18 +123,18 @@ namespace Axolotl2D.Drawable
             var viewportHeight = _game.GetHeight();
 
             _vertices[0] = x / viewportWidth * 2 - 1;
-            _vertices[1] = 1 - y / viewportHeight * 2;
+            _vertices[1] = 1 - (y + height) / viewportHeight * 2;
             _vertices[2] = 0;
 
-            _vertices[5] = (x + width) / viewportWidth * 2 - 1;
+            _vertices[5] = x / viewportWidth * 2 - 1;
             _vertices[6] = 1 - y / viewportHeight * 2;
             _vertices[7] = 0;
 
             _vertices[10] = (x + width) / viewportWidth * 2 - 1;
-            _vertices[11] = 1 - (y + height) / viewportHeight * 2;
+            _vertices[11] = 1 - y / viewportHeight * 2;
             _vertices[12] = 0;
 
-            _vertices[15] = x / viewportWidth * 2 - 1;
+            _vertices[15] = (x + width) / viewportWidth * 2 - 1;
             _vertices[16] = 1 - (y + height) / viewportHeight * 2;
             _vertices[17] = 0;
         }

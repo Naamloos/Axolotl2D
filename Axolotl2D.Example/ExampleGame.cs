@@ -1,5 +1,6 @@
 ﻿using Axolotl2D.Drawable;
 using Axolotl2D.Entities;
+using Silk.NET.Input;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +12,7 @@ namespace Axolotl2D.Example
     internal class ExampleGame : Game
     {
         private const int QUAD_COUNT = 9;
-        private const int MOVE_SPEED = 15;
+        private const int MOVE_SPEED = 5;
 
         private float currentXPos = 0;
         private bool goesRight = true;
@@ -60,6 +61,21 @@ namespace Axolotl2D.Example
             {
                 goesRight = true;
             }
+        }
+
+        public override void OnMouseMove(float x, float y)
+        {
+            Console.WriteLine($"Mouse moved to {x}, {y}");
+        }
+
+        public override void OnMouseDown(MouseButton button)
+        {
+            Console.WriteLine($"Mouse down: {button}");
+        }
+
+        public override void OnMouseUp(MouseButton button)
+        {
+            Console.WriteLine($"Mouse up: {button}");
         }
     }
 }

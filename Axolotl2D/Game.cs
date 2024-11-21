@@ -5,6 +5,7 @@ using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using Silk.NET.OpenGL.Extensions.ImGui;
 using Silk.NET.Windowing;
+using System.Numerics;
 using System.Xml.Linq;
 
 namespace Axolotl2D
@@ -22,6 +23,8 @@ namespace Axolotl2D
         private readonly IWindow _window;
         private int _width;
         private int _height;
+
+        private IInputContext _input;
 
         private AxolotlColor _clearColor;
         private AxolotlShader? BasicVertex;
@@ -59,12 +62,20 @@ namespace Axolotl2D
         /// Gets called every update frame.
         /// </summary>
         /// <param name="frameDelta"></param>
-        public abstract void OnUpdate(double frameDelta);
+        public virtual void OnUpdate(double frameDelta) { }
 
+        private int _gcCounter = 0;
         private void _onUpdate(double frameDelta)
         {
             if (OpenGL is null)
                 return;
+
+            _gcCounter++;
+            if (_gcCounter >= 2400)
+            {
+                GC.Collect();
+                _gcCounter = 0;
+            }
 
             OnUpdate(frameDelta);
         }
@@ -80,7 +91,7 @@ namespace Axolotl2D
         /// <summary>
         /// Gets called when the game expects to load resources.
         /// </summary>
-        public abstract void OnLoad();
+        public virtual void OnLoad() { }
         private void _onLoad()
         {
             // Prepare OpenGL context on load.
@@ -115,13 +126,39 @@ namespace Axolotl2D
             OpenGL.Enable(EnableCap.Blend);
             OpenGL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
+            _input = _window.CreateInput();
+            _input.Mice[0].MouseMove += mouseMove;
+            _input.Mice[0].MouseDown += mouseDown;
+            _input.Mice[0].MouseUp += mouseUp;
+
             OnLoad();
+        }
+
+        public virtual void OnMouseUp(MouseButton button) { }
+
+        private void mouseUp(IMouse mouse, MouseButton button)
+        {
+            OnMouseUp(button);
+        }
+
+        public virtual void OnMouseDown(MouseButton button) { }
+
+        private void mouseDown(IMouse mouse, MouseButton button)
+        {
+            OnMouseDown(button);
+        }
+
+        public virtual void OnMouseMove(float x, float y) { }
+
+        private void mouseMove(IMouse mouse, Vector2 position)
+        {
+            OnMouseMove(position.X, position.Y);
         }
 
         /// <summary>
         /// Gets called when the window resizes.
         /// </summary>
-        public abstract void OnResize();
+        public virtual void OnResize() { }
         private void _onResize(Vector2D<int> size)
         {
             if (OpenGL is null)
@@ -140,13 +177,13 @@ namespace Axolotl2D
         /// </summary>
         /// <param name="frameDelta"></param>
         /// <param name="frameRate"></param>
-        public abstract void OnDraw(double frameDelta, double frameRate);
+        public virtual void OnDraw(double frameDelta, double frameRate) { }
         private void _onDraw(double delta)
         {
             if(OpenGL is null)
                 return;
 
-            _currentFramerate = 1.0f / delta;
+            _currentFramerate = Math.Ceiling(1.0f / delta);
 
             OpenGL.UseProgram(GetShaderProgram());
 
