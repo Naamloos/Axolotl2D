@@ -104,9 +104,6 @@ namespace Axolotl2D
             _window.Update += _onUpdate;
         }
 
-        // this should just work because we can't get a Game class without an initialized window
-        public Mouse GetMouse() => new Mouse(this);
-
         internal void start()
         {
             _window.Run();

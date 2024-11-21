@@ -12,6 +12,8 @@ namespace Axolotl2D.Example
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.AddGame<ExampleGame>();
+                    services.UseMouse();
+
                     services.AddLogging();
                 })
                 .Build();

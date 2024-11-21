@@ -10,32 +10,108 @@ namespace Axolotl2D.Input
 {
     public class Mouse : IDisposable
     {
-        public int X { get; private set; }
-        public int Y { get; private set; }
-        public int ScrollX { get; private set; }
-        public int ScrollY { get; private set; }
-
-        public MouseKeyState LeftButton { get; private set; } = MouseKeyState.Unheld;
-        public MouseKeyState RightButton { get; private set; } = MouseKeyState.Unheld;
-        public MouseKeyState MiddleButton { get; private set; } = MouseKeyState.Unheld;
-
-        private MouseKeyState _previousLeftButton { get; set; } = MouseKeyState.Unheld;
-        private MouseKeyState _previousRightButton { get; set; } = MouseKeyState.Unheld;
-        private MouseKeyState _previousMiddleButton { get; set; } = MouseKeyState.Unheld;
-
-        private Game _game;
-        private IMouse _mouse;
-
-        internal Mouse(Game game)
+        public int X
         {
-            _game = game;
-            
-            _mouse = _game._input!.Mice[0];
-            _mouse.MouseUp += mouseUp;
-            _mouse.MouseDown += mouseDown;
-            _mouse.MouseMove += mouseMove;
+            get
+            {
+                tryInitialize();
+                return _x;
+            }
+            private set => _x = value;
+        }
+        public int Y
+        {
+            get
+            {
+                tryInitialize();
+                return _y;
+            }
+            private set => _y = value;
+        }
+        public int ScrollX
+        {
+            get
+            {
+                tryInitialize();
+                return _scrollX;
+            }
+            private set => _scrollX = value;
+        }
+        public int ScrollY
+        {
+            get
+            {
+                tryInitialize();
+                return _scrollY;
+            }
+            private set => _scrollY = value;
+        }
 
-            _game.OnUpdate += gameUpdate;
+        public MouseKeyState LeftButton
+        {
+            get
+            {
+                tryInitialize();
+                return _leftButton;
+            }
+            private set => _leftButton = value;
+        }
+        public MouseKeyState RightButton
+        {
+            get
+            {
+                tryInitialize();
+                return _rightButton;
+            }
+            private set => _rightButton = value;
+        }
+        public MouseKeyState MiddleButton
+        {
+            get
+            {
+                tryInitialize();
+                return _middleButton;
+            }
+            private set => _middleButton = value;
+        }
+
+        private int _x;
+        private int _y;
+        private int _scrollX;
+        private int _scrollY;
+        private MouseKeyState _leftButton = MouseKeyState.Unheld;
+        private MouseKeyState _rightButton = MouseKeyState.Unheld;
+        private MouseKeyState _middleButton = MouseKeyState.Unheld;
+
+        private MouseKeyState _previousLeftButton = MouseKeyState.Unheld;
+        private MouseKeyState _previousRightButton = MouseKeyState.Unheld;
+        private MouseKeyState _previousMiddleButton = MouseKeyState.Unheld;
+
+        private IServiceProvider _services;
+        private Game? _game;
+        private IMouse? _mouse;
+
+        public Mouse(IServiceProvider services)
+        {
+            _services = services;
+        }
+
+        private void tryInitialize()
+        {
+            if (_mouse is null)
+            {
+                var game = _services.GetService(typeof(Game));
+                if (game is null)
+                    return;
+
+                _game = game as Game;
+
+                _mouse = _game!._input!.Mice[0];
+                _mouse.MouseUp += mouseUp;
+                _mouse.MouseDown += mouseDown;
+                _mouse.MouseMove += mouseMove;
+                _game.OnUpdate += gameUpdate;
+            }
         }
 
         private void gameUpdate(double frameDelta)
@@ -111,10 +187,15 @@ namespace Axolotl2D.Input
 
         public void Dispose()
         {
-            _mouse.MouseUp -= mouseUp;
-            _mouse.MouseDown -= mouseDown;
-            _mouse.MouseMove -= mouseMove;
-            _game.OnUpdate -= gameUpdate;
+            if (_mouse is not null)
+            {
+                _mouse.MouseUp -= mouseUp;
+                _mouse.MouseDown -= mouseDown;
+                _mouse.MouseMove -= mouseMove;
+            }
+
+            if(_game is not null)
+                _game.OnUpdate -= gameUpdate;
         }
 
         ~Mouse()

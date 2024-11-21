@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Axolotl2D.Input;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +14,11 @@ namespace Axolotl2D
         {
             services.AddSingleton<Game, T>();
             services.AddHostedService<GameHost>();
+        }
+
+        public static void UseMouse(this IServiceCollection services)
+        {
+            services.AddSingleton<Mouse>();
         }
     }
 }

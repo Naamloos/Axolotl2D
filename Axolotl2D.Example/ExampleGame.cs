@@ -27,7 +27,7 @@ namespace Axolotl2D.Example
 
         private ILogger<ExampleGame> _logger;
 
-        public ExampleGame(IServiceProvider services, ILogger<ExampleGame> logger) 
+        public ExampleGame(IServiceProvider services, Mouse mouse, ILogger<ExampleGame> logger) 
             : base(services, maxDrawRate: 240, maxUpdateRate: 240) // We want to pass the service provider to the game engine so it can utilize it.
         {
             // Set a title for the window
@@ -41,6 +41,7 @@ namespace Axolotl2D.Example
             OnResize += Resize;
 
             this._logger = logger;
+            this._mouse = mouse;
         }
 
         public void Draw(double frameDelta, double frameRate)
@@ -56,7 +57,6 @@ namespace Axolotl2D.Example
         {
             _sprite1 = Sprite.FromManifestResource(this, "Axolotl2D.Example.Resources.Sprites.mochicat.png");
             _sprite2 = Sprite.FromManifestResource(this, "Axolotl2D.Example.Resources.Sprites.rei.png");
-            _mouse = GetMouse();
 
             _logger.LogInformation("Loaded Game");
         }
