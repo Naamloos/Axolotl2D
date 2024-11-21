@@ -87,30 +87,26 @@ namespace Axolotl2D.Input
         private MouseKeyState _previousRightButton = MouseKeyState.Unheld;
         private MouseKeyState _previousMiddleButton = MouseKeyState.Unheld;
 
-        private IServiceProvider _services;
-        private Game? _game;
+        private ILazyLoader<Game> _game;
         private IMouse? _mouse;
 
-        public Mouse(IServiceProvider services)
+        public Mouse(ILazyLoader<Game> game)
         {
-            _services = services;
+            _game = game;
         }
 
         private void tryInitialize()
         {
             if (_mouse is null)
             {
-                var game = _services.GetService(typeof(Game));
-                if (game is null)
+                if (!_game.IsLoaded)
                     return;
 
-                _game = game as Game;
-
-                _mouse = _game!._input!.Mice[0];
+                _mouse = _game.Value._input!.Mice[0];
                 _mouse.MouseUp += mouseUp;
                 _mouse.MouseDown += mouseDown;
                 _mouse.MouseMove += mouseMove;
-                _game.OnUpdate += gameUpdate;
+                _game.Value.OnUpdate += gameUpdate;
             }
         }
 
@@ -194,8 +190,8 @@ namespace Axolotl2D.Input
                 _mouse.MouseMove -= mouseMove;
             }
 
-            if(_game is not null)
-                _game.OnUpdate -= gameUpdate;
+            if(_game.IsLoaded)
+                _game.Value.OnUpdate -= gameUpdate;
         }
 
         ~Mouse()

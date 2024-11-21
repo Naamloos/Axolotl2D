@@ -84,6 +84,8 @@ namespace Axolotl2D
 
         public Game(IServiceProvider services, int maxDrawRate = 120, int maxUpdateRate = 120) // TODO make configurable at runtime
         {
+            _services = services;
+
             _width = 500;
             _height = 500;
 
