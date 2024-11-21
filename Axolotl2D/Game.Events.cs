@@ -1,10 +1,4 @@
-﻿using Silk.NET.Maths;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Numerics;
 
 namespace Axolotl2D
 {
@@ -13,7 +7,7 @@ namespace Axolotl2D
         public delegate void DrawDelegate(double frameDelta, double frameRate);
         public delegate void UpdateDelegate(double frameDelta);
         public delegate void LoadDelegate();
-        public delegate void ResizeDelegate(Vector2D<int> size);
+        public delegate void ResizeDelegate(Vector2 size);
 
         public event DrawDelegate? OnDraw;
         public event UpdateDelegate? OnUpdate;

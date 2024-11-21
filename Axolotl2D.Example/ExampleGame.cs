@@ -2,13 +2,7 @@
 using Axolotl2D.Entities;
 using Axolotl2D.Input;
 using Microsoft.Extensions.Logging;
-using Silk.NET.Input;
-using Silk.NET.Maths;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Numerics;
 
 namespace Axolotl2D.Example
 {
@@ -61,7 +55,7 @@ namespace Axolotl2D.Example
             _logger.LogInformation("Loaded Game");
         }
 
-        public void Resize(Vector2D<int> size)
+        public void Resize(Vector2 size)
         {
         }
 

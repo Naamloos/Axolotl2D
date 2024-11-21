@@ -184,7 +184,7 @@ namespace Axolotl2D
             _width = size.X;
             _height = size.Y;
 
-            this.OnResize?.Invoke(size);
+            this.OnResize?.Invoke(new Vector2(size.X, size.Y));
         }
 
         private void _onDraw(double frameDelta)
