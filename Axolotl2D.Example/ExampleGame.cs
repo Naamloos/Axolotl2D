@@ -84,6 +84,11 @@ namespace Axolotl2D.Example
                 _logger.LogInformation("Mouse Click");
             if (_mouse!.LeftButton == MouseKeyState.Release)
                 _logger.LogInformation("Mouse Released");
+
+            if (_mouse.LeftButton == MouseKeyState.Held)
+                ClearColor = Color.Red;
+            else
+                ClearColor = Color.FromHTML("#0088FF");
         }
 
         public override void Cleanup()

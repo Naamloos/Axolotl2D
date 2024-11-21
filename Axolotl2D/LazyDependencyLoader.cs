@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Axolotl2D
 {
-    public class LazyLoader<T> : ILazyLoader<T>
+    public class LazyDependencyLoader<T> : ILazyDependencyLoader<T>
     {
         public bool IsLoaded 
         { 
@@ -30,13 +30,13 @@ namespace Axolotl2D
         private IServiceProvider _services;
         private T? _value;
 
-        public LazyLoader(IServiceProvider services)
+        public LazyDependencyLoader(IServiceProvider services)
         {
             _services = services;
         }
     }
 
-    public interface ILazyLoader<T>
+    public interface ILazyDependencyLoader<T>
     {
         public bool IsLoaded { get; }
         public T Value { get; }

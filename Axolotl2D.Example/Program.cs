@@ -13,7 +13,6 @@ namespace Axolotl2D.Example
                 {
                     services.AddGame<ExampleGame>();
                     services.UseMouse();
-
                     services.AddLogging();
                 })
                 .Build();

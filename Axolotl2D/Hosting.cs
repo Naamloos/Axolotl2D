@@ -13,7 +13,7 @@ namespace Axolotl2D
         public static void AddGame<T>(this IServiceCollection services) where T : Game
         {
             services.AddSingleton<Game, T>();
-            services.AddTransient(typeof(ILazyLoader<>), typeof(LazyLoader<>));
+            services.AddTransient(typeof(ILazyDependencyLoader<>), typeof(LazyDependencyLoader<>));
             services.AddHostedService<GameHost>();
         }
 

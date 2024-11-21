@@ -87,10 +87,10 @@ namespace Axolotl2D.Input
         private MouseKeyState _previousRightButton = MouseKeyState.Unheld;
         private MouseKeyState _previousMiddleButton = MouseKeyState.Unheld;
 
-        private ILazyLoader<Game> _game;
+        private ILazyDependencyLoader<Game> _game;
         private IMouse? _mouse;
 
-        public Mouse(ILazyLoader<Game> game)
+        public Mouse(ILazyDependencyLoader<Game> game)
         {
             _game = game;
         }
