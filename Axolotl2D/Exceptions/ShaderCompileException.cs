@@ -9,9 +9,9 @@ namespace Axolotl2D.Exceptions
 {
     public class ShaderCompileException : Exception
     {
-        public AxolotlShader Shader { get; }
+        public Shader Shader { get; }
 
-        internal ShaderCompileException(string reason, AxolotlShader shader) : base(reason)
+        internal ShaderCompileException(string reason, Shader shader) : base(reason)
         {
             Shader = shader;
         }

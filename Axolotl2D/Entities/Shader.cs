@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Axolotl2D.Entities
 {
-    public class AxolotlShader
+    public class Shader
     {
         private string _source;
         private GL _gl;
@@ -17,10 +17,10 @@ namespace Axolotl2D.Entities
         private ShaderType _shaderType;
         private Game _game;
 
-        public AxolotlShader(string shaderSource, ShaderType shaderType, Game game)
+        public Shader(string shaderSource, ShaderType shaderType, Game game)
         {
             _source = shaderSource;
-            _gl = game.GetOpenGLContext();
+            _gl = game._openGL!;
             _shaderType = shaderType;
             _game = game;
         }
@@ -43,34 +43,34 @@ namespace Axolotl2D.Entities
         {
             if (!compiled)
                 throw new ShaderNotCompiledException("Tried attaching a shader to a program while it was not compiled yet!", this);
-            _gl.AttachShader(_game.GetShaderProgram(), _shaderPointer);
+            _gl.AttachShader(_game._shaderProgram, _shaderPointer);
         }
 
         public void DetachFromProgram()
         {
             if (!compiled)
                 throw new ShaderNotCompiledException("Tried detaching a shader from a program while it was not compiled yet!", this);
-            _gl.DetachShader(_game.GetShaderProgram(), _shaderPointer);
+            _gl.DetachShader(_game._shaderProgram, _shaderPointer);
             _gl.DeleteShader(_shaderPointer);
             compiled = false;
         }
 
         public uint GetPointer() => compiled? _shaderPointer : throw new ShaderNotCompiledException("Tried accessing the shader pointer to a shader that was not compiled yet!", this);
 
-        public static AxolotlShader CreateBasicFragment(Game game)
+        public static Shader CreateBasicFragment(Game game)
         {
             // load from embedded resources as text
-            using var shader = typeof(AxolotlShader).Assembly.GetManifestResourceStream("Axolotl2D.Shaders.BasicFragment.glsl");
+            using var shader = typeof(Shader).Assembly.GetManifestResourceStream("Axolotl2D.Shaders.BasicFragment.glsl");
             using var reader = new StreamReader(shader!);
-            return new AxolotlShader(reader.ReadToEnd(), ShaderType.FragmentShader, game);
+            return new Shader(reader.ReadToEnd(), ShaderType.FragmentShader, game);
         }
 
-        public static AxolotlShader CreateBasicVertex(Game game)
+        public static Shader CreateBasicVertex(Game game)
         {
             // load from embedded resources as text
-            using var shader = typeof(AxolotlShader).Assembly.GetManifestResourceStream("Axolotl2D.Shaders.BasicVertex.glsl");
+            using var shader = typeof(Shader).Assembly.GetManifestResourceStream("Axolotl2D.Shaders.BasicVertex.glsl");
             using var reader = new StreamReader(shader!);
-            return new AxolotlShader(reader.ReadToEnd(), ShaderType.VertexShader, game);
+            return new Shader(reader.ReadToEnd(), ShaderType.VertexShader, game);
         }
     }
 }

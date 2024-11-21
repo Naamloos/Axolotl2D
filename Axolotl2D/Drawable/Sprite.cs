@@ -1,6 +1,4 @@
 ﻿using Silk.NET.OpenGL;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +11,15 @@ namespace Axolotl2D.Drawable
 {
     public class Sprite : IDrawable
     {
+        public float X { get; private set; }
+        public float Y { get; private set; }
+        public float Width { get; private set; }
+        public float Height { get; private set; }
+
+        private int viewportWidth = 0;
+        private int viewportHeight = 0;
+
+
         private float[] _vertices;
         private uint[] _indices;
 
@@ -29,7 +36,7 @@ namespace Axolotl2D.Drawable
         {
             _game = game;
 
-            _gl = _game.GetOpenGLContext();
+            _gl = _game._openGL!;
 
             // Create a VAO.
             _vao = _gl.GenVertexArray();
@@ -89,16 +96,24 @@ namespace Axolotl2D.Drawable
                 _gl.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba, (uint)img.Width,
                     (uint)img.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, ptr);
 
+#pragma warning disable CS9193 // Argument should be a variable because it is passed to a 'ref readonly' parameter
             _gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapS, (int)TextureWrapMode.Repeat);
             _gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapT, (int)TextureWrapMode.Repeat);
             _gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMinFilter, (int)TextureMinFilter.Nearest);
             _gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMagFilter, (int)TextureMagFilter.Nearest);
+#pragma warning restore CS9193 // Argument should be a variable because it is passed to a 'ref readonly' parameter
 
-            int location = _gl.GetUniformLocation(_game.GetShaderProgram(), "uTexture");
+            int location = _gl.GetUniformLocation(_game._shaderProgram, "uTexture");
             _gl.Uniform1(location, 0);
 
             _gl.BindTexture(TextureTarget.Texture2D, 0);
-            _game._loadedSprites++;
+            _game.LoadedSprites++;
+        }
+
+        public void Draw(float x, float y, float width, float height)
+        {
+            SetRect(x, y, width, height);
+            Draw();
         }
 
         public unsafe void Draw()
@@ -119,23 +134,38 @@ namespace Axolotl2D.Drawable
 
         public void SetRect(float x, float y, float width, float height)
         {
-            var viewportWidth = _game.GetWidth();
-            var viewportHeight = _game.GetHeight();
+            var viewportWidth = _game.WindowWidth;
+            var viewportHeight = _game.WindowHeight;
 
-            _vertices[0] = x / viewportWidth * 2 - 1;
-            _vertices[1] = 1 - (y + height) / viewportHeight * 2;
+            // check if any values changed
+            if (x == X &&
+                y == Y &&
+                width == Width &&
+                height == Height &&
+                viewportWidth == this.viewportWidth &&
+                viewportHeight == this.viewportHeight) { return; }
+
+            this.X = x;
+            this.Y = y;
+            this.Width = width;
+            this.Height = height;
+            this.viewportWidth = viewportWidth;
+            this.viewportHeight = viewportHeight;
+
+            _vertices[0] = X / viewportWidth * 2 - 1;
+            _vertices[1] = 1 - (Y + height) / viewportHeight * 2;
             _vertices[2] = 0;
 
-            _vertices[5] = x / viewportWidth * 2 - 1;
-            _vertices[6] = 1 - y / viewportHeight * 2;
+            _vertices[5] = X / viewportWidth * 2 - 1;
+            _vertices[6] = 1 - Y / viewportHeight * 2;
             _vertices[7] = 0;
 
-            _vertices[10] = (x + width) / viewportWidth * 2 - 1;
-            _vertices[11] = 1 - y / viewportHeight * 2;
+            _vertices[10] = (X + Width) / viewportWidth * 2 - 1;
+            _vertices[11] = 1 - Y / viewportHeight * 2;
             _vertices[12] = 0;
 
-            _vertices[15] = (x + width) / viewportWidth * 2 - 1;
-            _vertices[16] = 1 - (y + height) / viewportHeight * 2;
+            _vertices[15] = (X + Width) / viewportWidth * 2 - 1;
+            _vertices[16] = 1 - (Y + Height) / viewportHeight * 2;
             _vertices[17] = 0;
         }
     }

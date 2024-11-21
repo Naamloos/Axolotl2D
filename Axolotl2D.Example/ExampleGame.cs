@@ -1,6 +1,8 @@
 ﻿using Axolotl2D.Drawable;
 using Axolotl2D.Entities;
+using Axolotl2D.Input;
 using Silk.NET.Input;
+using Silk.NET.Maths;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Axolotl2D.Example
 {
-    internal class ExampleGame : Game
+    public class ExampleGame : Game
     {
         private const int QUAD_COUNT = 9;
         private const int MOVE_SPEED = 5;
@@ -20,36 +22,45 @@ namespace Axolotl2D.Example
         private Sprite? sprite;
         private Sprite? sprite2;
 
-        public ExampleGame() : base(800, 650, clearColor: AxolotlColor.RamptoerismeBlue, maxDrawRate: 240, maxUpdateRate: 240)
+        private Mouse? mouse;
+
+        public ExampleGame() : base(maxDrawRate: 240, maxUpdateRate: 240)
         {
+            // Set a title for the window
             Title = "Axolotl2D Example";
+
+            // Subscribe to game events
+            OnLoad += Load;
+            OnUpdate += Update;
+            OnDraw += Draw;
+            OnResize += Resize;
         }
 
-        public override void OnDraw(double frameDelta, double frameRate)
+        public void Draw(double frameDelta, double frameRate)
         {
             for (int i = 0; i < QUAD_COUNT; i++)
             {
                 var thisSprite = i % 2 == 0 ? sprite : sprite2;
-                thisSprite!.SetRect(currentXPos, i * 75, 50, 50);
-                thisSprite.Draw();
+                thisSprite!.Draw(currentXPos, i * 75, 50, 50);
             }
         }
 
-        public override void OnLoad()
+        public void Load()
         {
             Console.WriteLine("Loaded");
             sprite = new Sprite(this, this.GetType().Assembly.GetManifestResourceStream("Axolotl2D.Example.Resources.Sprites.mochicat.png")!);
             sprite2 = new Sprite(this, this.GetType().Assembly.GetManifestResourceStream("Axolotl2D.Example.Resources.Sprites.rei.png")!);
+            mouse = GetMouse();
         }
 
-        public override void OnResize()
+        public void Resize(Vector2D<int> size)
         {
             Console.WriteLine("Resized");
         }
 
-        public override void OnUpdate(double frameDelta)
+        public void Update(double frameDelta)
         {
-            float maxX = GetWidth() - 50;
+            float maxX = WindowWidth - 50;
             float deltaPosition = MOVE_SPEED * ((float)frameDelta * 60);
             currentXPos += goesRight ? deltaPosition : -deltaPosition;
 
@@ -61,21 +72,20 @@ namespace Axolotl2D.Example
             {
                 goesRight = true;
             }
+
+            if(mouse!.LeftButton == MouseKeyState.Click)
+                Console.WriteLine($"click!");
+            if(mouse!.LeftButton == MouseKeyState.Release)
+                Console.WriteLine($"release!");
         }
 
-        public override void OnMouseMove(float x, float y)
+        public override void Cleanup()
         {
-            Console.WriteLine($"Mouse moved to {x}, {y}");
-        }
-
-        public override void OnMouseDown(MouseButton button)
-        {
-            Console.WriteLine($"Mouse down: {button}");
-        }
-
-        public override void OnMouseUp(MouseButton button)
-        {
-            Console.WriteLine($"Mouse up: {button}");
+            // unhook events
+            OnLoad -= Load;
+            OnUpdate -= Update;
+            OnDraw -= Draw;
+            OnResize -= Resize;
         }
     }
 }

@@ -9,8 +9,8 @@ namespace Axolotl2D.Exceptions
 {
     public class ShaderNotCompiledException : Exception
     {
-        public AxolotlShader Shader { get; }
-        public ShaderNotCompiledException(string message, AxolotlShader shader) : base(message)
+        public Shader Shader { get; }
+        public ShaderNotCompiledException(string message, Shader shader) : base(message)
         {
             Shader = shader;
         }

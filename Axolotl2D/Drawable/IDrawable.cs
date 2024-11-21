@@ -9,5 +9,7 @@ namespace Axolotl2D.Drawable
     public interface IDrawable
     {
         public void Draw();
+
+        public void Draw(float x, float y, float width, float height);
     }
 }

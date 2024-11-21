@@ -1,45 +1,89 @@
 ﻿using Axolotl2D.Entities;
 using Axolotl2D.Exceptions;
+using Axolotl2D.Input;
+using Microsoft.Extensions.Hosting;
 using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
-using Silk.NET.OpenGL.Extensions.ImGui;
 using Silk.NET.Windowing;
 using System.Numerics;
-using System.Xml.Linq;
 
 namespace Axolotl2D
 {
-    public abstract class Game : IDisposable
+    public abstract partial class Game : IDisposable
     {
-        public bool ClearOnDraw { get; set; } = true;
+        /// <summary>
+        /// Represents the window title for the game.
+        /// </summary>
         public string Title { get; set; } = "";
 
-        public double CurrentFramerate => _currentFramerate;
-        private double _currentFramerate = 0;
-
-        private GL? OpenGL;
-
-        private readonly IWindow _window;
+        /// <summary>
+        /// Represents the window width for the game.
+        /// </summary>
+        public int WindowWidth
+        {
+            get => _width;
+            set
+            {
+                _width = value;
+                _window.Size = new Vector2D<int>(_width, _height);
+            }
+        }
         private int _width;
+
+        /// <summary>
+        /// Represents the window height for the game.
+        /// </summary>
+        public int WindowHeight
+        {
+            get => _height;
+            set
+            {
+                _height = value;
+                _window.Size = new Vector2D<int>(_width, _height);
+            }
+        }
         private int _height;
 
-        private IInputContext _input;
+        /// <summary>
+        /// Represents the current framerate of the game.
+        /// </summary>
+        public double CurrentFramerate { get; private set; }
 
-        private AxolotlColor _clearColor;
-        private AxolotlShader? BasicVertex;
-        private AxolotlShader? BasicFragment;
+        /// <summary>
+        /// Represents the number of loaded sprites in the game.
+        /// </summary>
+        public int LoadedSprites { get; internal set; }
 
-        internal int _loadedSprites = 0;
-
-        private uint shaderProgram;
-
-        public Game(int width, int height, AxolotlColor? clearColor = null, int maxDrawRate = 120, int maxUpdateRate = 120)
+        /// <summary>
+        /// Represents the clear color of the game.
+        /// </summary>
+        public Color ClearColor
         {
-            _width = width;
-            _height = height;
+            get => _clearColor;
+            set
+            {
+                _clearColor = value;
+                if (_openGL is not null)
+                    _openGL.ClearColor(_clearColor.R, _clearColor.G, _clearColor.B, _clearColor.A);
+            }
+        }
 
-            _clearColor = clearColor ?? AxolotlColor.FromRGB(0.4f, 0.6f, 1.0f);
+        private Color _clearColor = Color.Cyan;
+
+        internal GL? _openGL;
+        internal readonly IWindow _window;
+        internal IInputContext? _input;
+
+        private Entities.Shader? _basicVertexShader;
+        private Entities.Shader? _basicFragmentShader;
+
+        internal uint _shaderProgram;
+
+        public Game(int maxDrawRate = 120, int maxUpdateRate = 120)
+        {
+            _width = 500;
+            _height = 500;
 
             var options = WindowOptions.Default;
             options.Size = new Vector2D<int>(_width, _height);
@@ -58,16 +102,23 @@ namespace Axolotl2D
             _window.Update += _onUpdate;
         }
 
-        /// <summary>
-        /// Gets called every update frame.
-        /// </summary>
-        /// <param name="frameDelta"></param>
-        public virtual void OnUpdate(double frameDelta) { }
+        // this should just work because we can't get a Game class without an initialized window
+        public Mouse GetMouse() => new Mouse(this);
+
+        internal void start()
+        {
+            _window.Run();
+        }
+
+        internal void stop()
+        {
+            _window.Close();
+        }
 
         private int _gcCounter = 0;
         private void _onUpdate(double frameDelta)
         {
-            if (OpenGL is null)
+            if (_openGL is null)
                 return;
 
             _gcCounter++;
@@ -77,147 +128,88 @@ namespace Axolotl2D
                 _gcCounter = 0;
             }
 
-            OnUpdate(frameDelta);
-        }
-
-        /// <summary>
-        /// Starts the game loop.
-        /// </summary>
-        public void Start()
-        {
-            _window.Run();
+            OnUpdate?.Invoke(frameDelta);
         }
 
         /// <summary>
         /// Gets called when the game expects to load resources.
         /// </summary>
-        public virtual void OnLoad() { }
         private void _onLoad()
         {
             // Prepare OpenGL context on load.
-            OpenGL = _window.CreateOpenGL();
+            _openGL = _window.CreateOpenGL();
 
-            OpenGL.ClearColor(_clearColor.R, _clearColor.G, _clearColor.B, _clearColor.A);
+            _openGL.ClearColor(ClearColor.R, ClearColor.G, ClearColor.B, ClearColor.A);
 
             // Load basic shaders
-            BasicVertex = AxolotlShader.CreateBasicVertex(this);
-            BasicFragment = AxolotlShader.CreateBasicFragment(this);
+            _basicVertexShader = Entities.Shader.CreateBasicVertex(this);
+            _basicFragmentShader = Entities.Shader.CreateBasicFragment(this);
 
             // Compile basic shaders
-            BasicVertex.Compile();
-            BasicFragment.Compile();
+            _basicVertexShader.Compile();
+            _basicFragmentShader.Compile();
 
             // Create shader program
-            shaderProgram = OpenGL.CreateProgram();
+            _shaderProgram = _openGL.CreateProgram();
 
             // Attach basic shaders to program
-            BasicVertex.AttachToProgram();
-            BasicFragment.AttachToProgram();
+            _basicVertexShader.AttachToProgram();
+            _basicFragmentShader.AttachToProgram();
 
-            OpenGL.LinkProgram(shaderProgram);
+            _openGL.LinkProgram(_shaderProgram);
 
-            OpenGL.GetProgram(shaderProgram, ProgramPropertyARB.LinkStatus, out int lStatus);
+            _openGL.GetProgram(_shaderProgram, ProgramPropertyARB.LinkStatus, out int lStatus);
             if (lStatus != (int)GLEnum.True)
-                throw new Exception("Program failed to link: " + OpenGL.GetProgramInfoLog(shaderProgram));
+                throw new Exception("Program failed to link: " + _openGL.GetProgramInfoLog(_shaderProgram));
 
-            BasicVertex.DetachFromProgram();
-            BasicFragment.DetachFromProgram();
+            _basicVertexShader.DetachFromProgram();
+            _basicFragmentShader.DetachFromProgram();
 
-            OpenGL.Enable(EnableCap.Blend);
-            OpenGL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            _openGL.Enable(EnableCap.Blend);
+            _openGL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
             _input = _window.CreateInput();
-            _input.Mice[0].MouseMove += mouseMove;
-            _input.Mice[0].MouseDown += mouseDown;
-            _input.Mice[0].MouseUp += mouseUp;
 
-            OnLoad();
+            OnLoad?.Invoke();
         }
 
-        public virtual void OnMouseUp(MouseButton button) { }
-
-        private void mouseUp(IMouse mouse, MouseButton button)
-        {
-            OnMouseUp(button);
-        }
-
-        public virtual void OnMouseDown(MouseButton button) { }
-
-        private void mouseDown(IMouse mouse, MouseButton button)
-        {
-            OnMouseDown(button);
-        }
-
-        public virtual void OnMouseMove(float x, float y) { }
-
-        private void mouseMove(IMouse mouse, Vector2 position)
-        {
-            OnMouseMove(position.X, position.Y);
-        }
-
-        /// <summary>
-        /// Gets called when the window resizes.
-        /// </summary>
-        public virtual void OnResize() { }
         private void _onResize(Vector2D<int> size)
         {
-            if (OpenGL is null)
+            if (_openGL is null)
                 return;
 
             // Handle resizes in GL context when window resizes.
-            OpenGL.Viewport(size);
+            _openGL.Viewport(size);
             _width = size.X;
             _height = size.Y;
 
-            OnResize();
+            this.OnResize?.Invoke(size);
         }
 
-        /// <summary>
-        /// Gets called every frame.
-        /// </summary>
-        /// <param name="frameDelta"></param>
-        /// <param name="frameRate"></param>
-        public virtual void OnDraw(double frameDelta, double frameRate) { }
-        private void _onDraw(double delta)
+        private void _onDraw(double frameDelta)
         {
-            if(OpenGL is null)
+            if(_openGL is null)
                 return;
 
-            _currentFramerate = Math.Ceiling(1.0f / delta);
+            CurrentFramerate = Math.Ceiling(1.0f / frameDelta);
 
-            OpenGL.UseProgram(GetShaderProgram());
+            _openGL.UseProgram(_shaderProgram);
 
-            if (ClearOnDraw)
-                Clear();
+            _openGL.Clear(ClearBufferMask.ColorBufferBit);
 
-            OnDraw(delta, _currentFramerate);
+            OnDraw?.Invoke(frameDelta, CurrentFramerate);
 
-            _window.Title = $"{Title} | FPS: {Math.Round(_currentFramerate)}";
-
-            _window.WindowBorder = WindowBorder.Fixed;
+            _window.Title = $"{Title} | FPS: {Math.Round(CurrentFramerate)}";
         }
 
-        /// <summary>
-        /// Clears the screen. Do not call this when ClearOnDraw is set to true. It's called automatically.
-        /// </summary>
-        public void Clear()
-        {
-            if (OpenGL is null)
-                return;
-
-            OpenGL.Clear(ClearBufferMask.ColorBufferBit);
-        }
-
-        internal GL GetOpenGLContext() => OpenGL ?? throw new EngineUninitializedException("Tried accessing the game's GL context without the engine being initialized!", this);
-        internal uint GetShaderProgram() => shaderProgram;
-        public int GetWidth() => _width;
-        public int GetHeight() => _height;
+        public abstract void Cleanup();
 
         /// <summary>
         /// Disposes the game.
         /// </summary>
         public void Dispose()
         {
+            Cleanup();
             _window.Dispose();
         }
 

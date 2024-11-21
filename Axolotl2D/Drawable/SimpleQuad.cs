@@ -25,7 +25,7 @@ namespace Axolotl2D.Drawable
         {
             _game = baseGame;
 
-            _gl = _game.GetOpenGLContext();
+            _gl = _game._openGL!;
 
             // Create a VAO.
             _vao = _gl.GenVertexArray();
@@ -82,15 +82,15 @@ namespace Axolotl2D.Drawable
             _gl.BindBuffer(BufferTargetARB.ArrayBuffer, 0);
 
             _gl.BindVertexArray(_vao);
-            _gl.UseProgram(_game.GetShaderProgram());
+            _gl.UseProgram(_game._shaderProgram);
             _gl.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, (void*) 0);
             _gl.BindVertexArray(0);
         }
 
         public void SetRect(float x, float y, float width, float height)
         {
-            var viewportWidth = _game.GetWidth();
-            var viewportHeight = _game.GetHeight();
+            var viewportWidth = _game.WindowWidth;
+            var viewportHeight = _game.WindowHeight;
 
             _vertices[0] = x / viewportWidth * 2 - 1;
             _vertices[1] = 1 - y / viewportHeight * 2;
