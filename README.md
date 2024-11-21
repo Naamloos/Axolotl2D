@@ -13,20 +13,22 @@ using Axolotl2D.Input;
 
 public class MyGame : Game
 {
-    private Sprite? _sprite;
+    // Our services
     private Mouse? _mouse;
-
     private ILogger<ExampleGame> _logger;
 
-    // You are required to pass the IServiceProvider servise as a 
+    // Our resources / drawables
+    private Sprite? _sprite;
+
+    // You are required to pass the IServiceProvider service as a 
     // dependency to the base Game class.
     // Other things like the Mouse, or the ILogger<MyGame> are free to 
-    // inject as needed.
+    // inject as needed, if they're defined in your services.
+
     // You are also able to set the max framerate and max update rate 
     // through the base constructor.
     // These will later be changeable at runtime, but for the time being 
-    // these can only be updated
-    // as your game gets constructed.
+    // these can only be updated as your game gets constructed.
     public ExampleGame(IServiceProvider services, Mouse mouse, 
     ILogger<MyGame> logger) 
         : base(services, maxDrawRate: 240, maxUpdateRate: 240)
@@ -35,6 +37,7 @@ public class MyGame : Game
         Title = "Axolotl2D Game";
         // Set a clear color
         ClearColor = Color.FromHTML("#0088FF");
+        // These can be changed at any time in your game loop.
 
         // Axolotl2D uses events for it's game loop. You'll want to hook 
         // these manually as you see fit.
@@ -43,7 +46,7 @@ public class MyGame : Game
         OnDraw += Draw;
         OnResize += Resize;
 
-        // Assigning properties from dependencies as needed
+        // Assigning properties from dependencies as needed.
         this._logger = logger;
         this._mouse = mouse;
     }
@@ -125,4 +128,4 @@ internal class Program
     }
 }
 ```
-
+As of right now, the engine is very barebones. More to come in the near future!
