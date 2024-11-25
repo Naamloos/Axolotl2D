@@ -10,104 +10,30 @@ namespace Axolotl2D.Input
 {
     public class Mouse : IDisposable
     {
-        public int X
-        {
-            get
-            {
-                tryInitialize();
-                return _x;
-            }
-            private set => _x = value;
-        }
-        public int Y
-        {
-            get
-            {
-                tryInitialize();
-                return _y;
-            }
-            private set => _y = value;
-        }
-        public int ScrollX
-        {
-            get
-            {
-                tryInitialize();
-                return _scrollX;
-            }
-            private set => _scrollX = value;
-        }
-        public int ScrollY
-        {
-            get
-            {
-                tryInitialize();
-                return _scrollY;
-            }
-            private set => _scrollY = value;
-        }
+        public int X { get; private set; }
+        public int Y { get; private set; }
+        public int ScrollX { get; private set; }
+        public int ScrollY { get; private set; }
 
-        public MouseKeyState LeftButton
-        {
-            get
-            {
-                tryInitialize();
-                return _leftButton;
-            }
-            private set => _leftButton = value;
-        }
-        public MouseKeyState RightButton
-        {
-            get
-            {
-                tryInitialize();
-                return _rightButton;
-            }
-            private set => _rightButton = value;
-        }
-        public MouseKeyState MiddleButton
-        {
-            get
-            {
-                tryInitialize();
-                return _middleButton;
-            }
-            private set => _middleButton = value;
-        }
-
-        private int _x;
-        private int _y;
-        private int _scrollX;
-        private int _scrollY;
-        private MouseKeyState _leftButton = MouseKeyState.Unheld;
-        private MouseKeyState _rightButton = MouseKeyState.Unheld;
-        private MouseKeyState _middleButton = MouseKeyState.Unheld;
+        public MouseKeyState LeftButton { get; private set; }
+        public MouseKeyState RightButton { get; private set; }
+        public MouseKeyState MiddleButton { get; private set; }
 
         private MouseKeyState _previousLeftButton = MouseKeyState.Unheld;
         private MouseKeyState _previousRightButton = MouseKeyState.Unheld;
         private MouseKeyState _previousMiddleButton = MouseKeyState.Unheld;
 
-        private ILazyDependencyLoader<Game> _game;
+        private Game _game;
         private IMouse? _mouse;
 
-        public Mouse(ILazyDependencyLoader<Game> game)
+        public Mouse(Game game)
         {
             _game = game;
-        }
-
-        private void tryInitialize()
-        {
-            if (_mouse is null)
-            {
-                if (!_game.IsLoaded)
-                    return;
-
-                _mouse = _game.Value._input!.Mice[0];
-                _mouse.MouseUp += mouseUp;
-                _mouse.MouseDown += mouseDown;
-                _mouse.MouseMove += mouseMove;
-                _game.Value.OnUpdate += gameUpdate;
-            }
+            _mouse = game._input?.Mice[0]!;
+            _mouse.MouseUp += mouseUp;
+            _mouse.MouseDown += mouseDown;
+            _mouse.MouseMove += mouseMove;
+            _game.OnUpdate += gameUpdate;
         }
 
         private void gameUpdate(double frameDelta)
@@ -190,8 +116,7 @@ namespace Axolotl2D.Input
                 _mouse.MouseMove -= mouseMove;
             }
 
-            if(_game.IsLoaded)
-                _game.Value.OnUpdate -= gameUpdate;
+            _game.OnUpdate -= gameUpdate;
         }
 
         ~Mouse()

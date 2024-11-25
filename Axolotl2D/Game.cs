@@ -81,6 +81,16 @@ namespace Axolotl2D
             _window.Update += _onUpdate;
         }
 
+        public Mouse GetMouse()
+        {
+            return new Mouse(this);
+        }
+
+        public IKeyboard? GetKeyboard()
+        {
+            return _input?.Keyboards.FirstOrDefault();
+        }
+
         internal void start()
         {
             _window.Run();

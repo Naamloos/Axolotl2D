@@ -2,6 +2,7 @@
 using Axolotl2D.Entities;
 using Axolotl2D.Input;
 using Microsoft.Extensions.Logging;
+using Silk.NET.Input;
 using System.Numerics;
 
 namespace Axolotl2D.Example
@@ -19,10 +20,11 @@ namespace Axolotl2D.Example
         private BaseDrawable? _object3;
 
         private Mouse? _mouse;
+        private IKeyboard? _keyboard;
 
         private ILogger<ExampleGame> _logger;
 
-        public ExampleGame(IServiceProvider services, Mouse mouse, ILogger<ExampleGame> logger) 
+        public ExampleGame(IServiceProvider services, ILogger<ExampleGame> logger) 
             : base(services, maxDrawRate: 240, maxUpdateRate: 240) // We want to pass the service provider to the game engine so it can utilize it.
         {
             // Set a title for the window
@@ -36,7 +38,6 @@ namespace Axolotl2D.Example
             OnResize += Resize;
 
             this._logger = logger;
-            this._mouse = mouse;
         }
 
         public void Draw(double frameDelta, double frameRate)
@@ -70,6 +71,9 @@ namespace Axolotl2D.Example
             _object2 = new Sprite(this, rei, new Vector2(0, 0), new Vector2(50, 50));
             _object3 = new SimpleQuad(this, new Vector2(0,0), new Vector2(50, 50));
 
+            _mouse = GetMouse();
+            _keyboard = GetKeyboard();
+
             _logger.LogInformation("Loaded Game");
         }
 
@@ -97,7 +101,7 @@ namespace Axolotl2D.Example
             if (_mouse!.LeftButton == MouseKeyState.Release)
                 _logger.LogInformation("Mouse Released");
 
-            if (_mouse.LeftButton == MouseKeyState.Held)
+            if (_mouse.LeftButton == MouseKeyState.Held || _keyboard.IsKeyPressed(Key.Space))
                 ClearColor = Color.Red;
             else
                 ClearColor = Color.FromHTML("#0088FF");

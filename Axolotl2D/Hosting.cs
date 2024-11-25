@@ -16,10 +16,5 @@ namespace Axolotl2D
             services.AddTransient(typeof(ILazyDependencyLoader<>), typeof(LazyDependencyLoader<>));
             services.AddHostedService<GameHost>();
         }
-
-        public static void UseMouse(this IServiceCollection services)
-        {
-            services.AddSingleton<Mouse>();
-        }
     }
 }
