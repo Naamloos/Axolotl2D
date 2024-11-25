@@ -17,33 +17,11 @@ namespace Axolotl2D
         /// </summary>
         public string Title { get; set; } = "";
 
-        /// <summary>
-        /// Represents the window width for the game.
-        /// </summary>
-        public int WindowWidth
+        public Vector2 Viewport
         {
-            get => _width;
-            set
-            {
-                _width = value;
-                _window.Size = new Vector2D<int>(_width, _height);
-            }
+            get => new Vector2(_window.Size.X, _window.Size.Y);
+            set => _window.Size = new Vector2D<int>((int)value.X, (int)value.Y);
         }
-        private int _width;
-
-        /// <summary>
-        /// Represents the window height for the game.
-        /// </summary>
-        public int WindowHeight
-        {
-            get => _height;
-            set
-            {
-                _height = value;
-                _window.Size = new Vector2D<int>(_width, _height);
-            }
-        }
-        private int _height;
 
         /// <summary>
         /// Represents the current framerate of the game.
@@ -86,11 +64,8 @@ namespace Axolotl2D
         {
             _services = services;
 
-            _width = 500;
-            _height = 500;
-
             var options = WindowOptions.Default;
-            options.Size = new Vector2D<int>(_width, _height);
+            options.Size = new Vector2D<int>(500, 500);
             options.WindowClass = "axl2d";
             options.WindowBorder = WindowBorder.Resizable;
             options.FramesPerSecond = maxDrawRate;
@@ -181,8 +156,6 @@ namespace Axolotl2D
 
             // Handle resizes in GL context when window resizes.
             _openGL.Viewport(size);
-            _width = size.X;
-            _height = size.Y;
 
             this.OnResize?.Invoke(new Vector2(size.X, size.Y));
         }

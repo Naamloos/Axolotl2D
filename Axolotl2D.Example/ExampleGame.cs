@@ -14,8 +14,9 @@ namespace Axolotl2D.Example
         private float _currentXPos = 0;
         private bool _goesRight = true;
 
-        private Sprite? _sprite1;
-        private Sprite? _sprite2;
+        private BaseDrawable? _object1;
+        private BaseDrawable? _object2;
+        private BaseDrawable? _object3;
 
         private Mouse? _mouse;
 
@@ -42,15 +43,32 @@ namespace Axolotl2D.Example
         {
             for (int i = 0; i < QUAD_COUNT; i++)
             {
-                var thisSprite = i % 2 == 0 ? _sprite1 : _sprite2;
-                thisSprite!.Draw(_currentXPos, i * 75, 50, 50);
+                BaseDrawable? thisSprite;
+                if (i % 3 == 0)
+                {
+                    thisSprite = _object1;
+                }
+                else if (i % 3 == 1)
+                {
+                    thisSprite = _object2;
+                }
+                else
+                {
+                    thisSprite = _object3;
+                }
+                thisSprite!.Draw(new Vector2(_currentXPos, i * 74), new Vector2(50, 50));
             }
         }
 
         public void Load()
         {
-            _sprite1 = Sprite.FromManifestResource(this, "Axolotl2D.Example.Resources.Sprites.mochicat.png");
-            _sprite2 = Sprite.FromManifestResource(this, "Axolotl2D.Example.Resources.Sprites.rei.png");
+            // get streams for resources
+            using var mochiCat = GetType().Assembly.GetManifestResourceStream("Axolotl2D.Example.Resources.Sprites.mochicat.png")!;
+            using var rei = GetType().Assembly.GetManifestResourceStream("Axolotl2D.Example.Resources.Sprites.rei.png")!;
+
+            _object1 = new Sprite(this, mochiCat, new Vector2(0, 0), new Vector2(50, 50));
+            _object2 = new Sprite(this, rei, new Vector2(0, 0), new Vector2(50, 50));
+            _object3 = new SimpleQuad(this, new Vector2(0,0), new Vector2(50, 50));
 
             _logger.LogInformation("Loaded Game");
         }
@@ -61,7 +79,7 @@ namespace Axolotl2D.Example
 
         public void Update(double frameDelta)
         {
-            float maxX = WindowWidth - 50;
+            float maxX = Viewport.X - 50;
             float deltaPosition = MOVE_SPEED * ((float)frameDelta * 60);
             _currentXPos += _goesRight ? deltaPosition : -deltaPosition;
 

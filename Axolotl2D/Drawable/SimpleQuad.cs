@@ -3,42 +3,27 @@ using Silk.NET.OpenGL;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Axolotl2D.Drawable
 {
-    public class SimpleQuad
+    public class SimpleQuad : BaseDrawable
     {
-        private float[] _vertices;
-        private uint[] _indices;
-
         private uint _vbo;
         private uint _ebo;
         private uint _vao;
 
         private GL _gl;
 
-        private Game _game;
-
-        public unsafe SimpleQuad(Game baseGame)
+        public unsafe SimpleQuad(Game game, Vector2 position, Vector2 size) : base(game, position, size)
         {
-            _game = baseGame;
-
-            _gl = _game._openGL!;
+            _gl = game._openGL!;
 
             // Create a VAO.
             _vao = _gl.GenVertexArray();
             _gl.BindVertexArray(_vao);
-
-            // These are all the points we have in our quad.
-            _vertices =
-            [
-                 0.5f,  0.5f, 0.0f,
-                 0.5f, -0.5f, 0.0f,
-                -0.5f, -0.5f, 0.0f,
-                -0.5f,  0.5f, 0.0f
-            ];
 
             // Create a VBO.
             _vbo = _gl.GenBuffer();
@@ -47,13 +32,6 @@ namespace Axolotl2D.Drawable
             // fix vertices and buffer data
             fixed (void* vertices = _vertices)
                 _gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(_vertices.Length * sizeof(float)), vertices, BufferUsageARB.StaticDraw);
-
-            // These are the indices that make up the quad. So 3 points make up a triangle. These are drawn in order.
-            _indices =
-            [
-                0u, 1u, 3u,
-                1u, 2u, 3u
-            ];
 
             // Create an EBO.
             _ebo = _gl.GenBuffer();
@@ -64,14 +42,14 @@ namespace Axolotl2D.Drawable
 
             const uint positionLocation = 0;
             _gl.EnableVertexAttribArray(positionLocation);
-            _gl.VertexAttribPointer(positionLocation, 3, VertexAttribPointerType.Float, false, 3 * sizeof(float), 0);
+            _gl.VertexAttribPointer(positionLocation, 3, VertexAttribPointerType.Float, false, 5 * sizeof(float), 0);
 
             _gl.BindVertexArray(0);
             _gl.BindBuffer(BufferTargetARB.ArrayBuffer, 0);
             _gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, 0);
         }
 
-        public unsafe void Draw()
+        public unsafe override void Draw()
         {
             _gl.BindBuffer(BufferTargetARB.ArrayBuffer, _vbo);
 
@@ -82,31 +60,20 @@ namespace Axolotl2D.Drawable
             _gl.BindBuffer(BufferTargetARB.ArrayBuffer, 0);
 
             _gl.BindVertexArray(_vao);
-            _gl.UseProgram(_game._shaderProgram);
             _gl.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, (void*) 0);
             _gl.BindVertexArray(0);
         }
 
-        public void SetRect(float x, float y, float width, float height)
+        public override void Draw(Vector2 position)
         {
-            var viewportWidth = _game.WindowWidth;
-            var viewportHeight = _game.WindowHeight;
+            Position = position;
+            Draw();
+        }
 
-            _vertices[0] = x / viewportWidth * 2 - 1;
-            _vertices[1] = 1 - y / viewportHeight * 2;
-            _vertices[2] = 0;
-
-            _vertices[3] = (x + width) / viewportWidth * 2 - 1;
-            _vertices[4] = 1 - y / viewportHeight * 2;
-            _vertices[5] = 0;
-
-            _vertices[6] = (x + width) / viewportWidth * 2 - 1;
-            _vertices[7] = 1 - (y + height) / viewportHeight * 2;
-            _vertices[8] = 0;
-
-            _vertices[9] = x / viewportWidth * 2 - 1;
-            _vertices[10] = 1 - (y + height) / viewportHeight * 2;
-            _vertices[11] = 0;
+        public override void Draw(Vector2 position, Vector2 size)
+        {
+            Bounds = (position, size);
+            Draw();
         }
     }
 }
