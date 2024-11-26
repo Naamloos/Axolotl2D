@@ -18,7 +18,7 @@ namespace Axolotl2D.Example.Scenes
 
         public ExampleScene2(ExampleGame game, ILogger<ExampleScene2> logger)
         {
-            game.Title = "Example Scene 2";
+            game.Title = "Scene 2";
             game.ClearColor = Color.FromHTML("#FF00FF");
 
             _game = game;

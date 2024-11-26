@@ -17,11 +17,8 @@ namespace Axolotl2D.Example
         public ExampleGame(IServiceProvider services, ILogger<ExampleGame> logger, AssetManager assetManager) 
             : base(services, maxDrawRate: 240, maxUpdateRate: 240) // We want to pass the service provider to the game engine so it can utilize it.
         {
-            // Set a title for the window
-            Title = "Axolotl2D Example";
-            ClearColor = Color.FromHTML("#0088FF");
-
             // Subscribe to game events, if needed outside of the Scene Manager
+            // It is recommended to hook OnLoad to load assets
             OnLoad += Load;
 
             this._logger = logger;

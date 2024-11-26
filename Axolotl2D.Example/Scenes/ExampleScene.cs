@@ -22,6 +22,7 @@ namespace Axolotl2D.Example.Scenes
 
         private float _currentXPos = 0;
         private bool _goesRight = true;
+        private float _currentRotation = 0;
 
         private BaseDrawable? _object1;
         private BaseDrawable? _object2;
@@ -62,6 +63,7 @@ namespace Axolotl2D.Example.Scenes
                 {
                     thisSprite = _object3;
                 }
+                thisSprite!.Rotation = _currentRotation;
                 thisSprite!.Draw(new Vector2(_currentXPos, i * 74), new Vector2(50, 50));
             }
         }
@@ -101,6 +103,8 @@ namespace Axolotl2D.Example.Scenes
             float maxX = _game.Viewport.X - 50;
             float deltaPosition = MOVE_SPEED * ((float)frameDelta * 60);
             _currentXPos += _goesRight ? deltaPosition : -deltaPosition;
+
+            _currentRotation += 0.01f;
 
             if (_currentXPos > maxX)
             {
