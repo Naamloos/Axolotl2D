@@ -36,6 +36,16 @@ namespace Axolotl2D
             services.AddHostedService<SceneGameHost>();
         }
 
+        public static void UseAssetManager(this IServiceCollection services)
+        {
+            if(!services.Any(x => x.ServiceType == typeof(ILazyDependencyLoader<>)))
+            {
+                services.AddTransient(typeof(ILazyDependencyLoader<>), typeof(LazyDependencyLoader<>));
+            }
+
+            services.AddSingleton<AssetManager>();
+        }
+
         public static void AddScene<T>(this IServiceCollection services) where T : BaseScene
         {
             if(typeof(T).IsAbstract)

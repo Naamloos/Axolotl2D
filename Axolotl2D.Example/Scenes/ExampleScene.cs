@@ -33,14 +33,16 @@ namespace Axolotl2D.Example.Scenes
         private ILogger<ExampleScene> _logger;
 
         private ExampleGame _game;
+        private AssetManager _assetManager;
 
-        public ExampleScene(ExampleGame game, IServiceProvider services, ILogger<ExampleScene> logger) 
+        public ExampleScene(ExampleGame game, IServiceProvider services, ILogger<ExampleScene> logger, AssetManager assetManager) 
         {
-            _game = game;
-            _keyboard = game.GetKeyboard()!;
-            _game.Title = "Scene 1";
+            this._game = game;
+            this._keyboard = game.GetKeyboard()!;
+            this._game.Title = "Scene 1";
 
             this._logger = logger;
+            this._assetManager = assetManager;
         }
 
         public override void Draw(double frameDelta, double frameRate)
@@ -72,8 +74,8 @@ namespace Axolotl2D.Example.Scenes
 
             // It is not recommended to load Sprites any time a scene is initialized, as it can cause memory leaks.
             // At this moment it is not possible to do this any other way. This will be fixed in the future.
-            _object1 = new Sprite(_game, mochiCat, new Vector2(0, 0), new Vector2(50, 50));
-            _object2 = new Sprite(_game, rei, new Vector2(0, 0), new Vector2(50, 50));
+            _object1 = this._assetManager.GetSprite("mochicat");
+            _object2 = this._assetManager.GetSprite("rei");
             _object3 = new SimpleQuad(_game, new Vector2(0, 0), new Vector2(50, 50));
 
             _mouse = _game.GetMouse();

@@ -13,6 +13,9 @@ namespace Axolotl2D.Example
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.UseSceneManagerGameHost<ExampleGame>();
+
+                    services.UseAssetManager();
+
                     services.AddScene<ExampleScene>();
                     services.AddScene<ExampleScene2>();
 

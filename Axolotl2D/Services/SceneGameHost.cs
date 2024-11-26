@@ -81,6 +81,9 @@ namespace Axolotl2D.Services
                 _currentScene.Unload();
             }
 
+            // GC collecting
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
+
             _currentScene = newScene;
             _currentScene._sceneGameHost = this;
 

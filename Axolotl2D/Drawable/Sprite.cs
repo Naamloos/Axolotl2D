@@ -20,7 +20,7 @@ namespace Axolotl2D.Drawable
 
         private GL _gl;
 
-        public unsafe Sprite(Game game, Stream imageFile, Vector2 position, Vector2 size) : base(game, position, size)
+        internal unsafe Sprite(Game game, Stream imageFile) : base(game, Vector2.Zero, Vector2.One)
         {
             _gl = game._openGL!;
 

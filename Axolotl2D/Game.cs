@@ -107,13 +107,6 @@ namespace Axolotl2D
             if (_openGL is null)
                 return;
 
-            _gcCounter++;
-            if (_gcCounter >= 2400)
-            {
-                GC.Collect();
-                _gcCounter = 0;
-            }
-
             OnUpdate?.Invoke(frameDelta);
         }
 
