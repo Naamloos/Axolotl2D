@@ -1,6 +1,7 @@
 ﻿using Axolotl2D.Drawable;
 using Axolotl2D.Entities;
 using CefSharp.OffScreen;
+using CefSharp.Structs;
 using Silk.NET.OpenGL;
 using StbImageSharp;
 using System.Numerics;
@@ -15,13 +16,14 @@ namespace Axolotl2D.Cef
     // <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
     public class CefBrowser : BaseDrawable
     {
-        private readonly GL _gl;
+        private GL _gl;
         private readonly ChromiumWebBrowser _browser;
         private uint _vbo;
         private uint _ebo;
         private uint _vao;
         private uint _texture;
         private nint _lastBufferHandle;
+        private Vector2 _renderedSize;
 
         private static bool _cefInitialized = false;
 
@@ -98,17 +100,18 @@ namespace Axolotl2D.Cef
 
         private void OnBrowserPaint(object? sender, OnPaintEventArgs e)
         {
+            _renderedSize = new Vector2(e.Width, e.Height);
             _lastBufferHandle = e.BufferHandle;
+            e.Handled = true;
         }
 
-        public unsafe override void Draw()
+        private unsafe void updateFromBuffer()
         {
             if (_lastBufferHandle != nint.Zero)
             {
                 _gl.BindTexture(TextureTarget.Texture2D, _texture);
 
-                byte* ptr = (byte*)_lastBufferHandle;
-                _gl.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, (uint)Size.X, (uint)Size.Y, PixelFormat.Bgra, PixelType.UnsignedByte, ptr);
+                _gl.TexImage2D(TextureTarget.Texture2D, 0, (int)InternalFormat.Rgba, (uint)_renderedSize.X, (uint)_renderedSize.Y, 0, PixelFormat.Bgra, PixelType.UnsignedByte, ref _lastBufferHandle);
 
                 int location = _gl.GetUniformLocation(_game._shaderProgram, "uTexture");
                 _gl.Uniform1(location, 0);
@@ -117,8 +120,15 @@ namespace Axolotl2D.Cef
 
                 _lastBufferHandle = nint.Zero;
             }
+        }
+
+        public unsafe override void Draw()
+        {
+            _gl = _game._openGL ?? throw new ArgumentNullException(nameof(_game._openGL));
 
             _gl.UseProgram(_game._shaderProgram);
+
+            updateFromBuffer();
 
             _gl.BindVertexArray(_vao);
 
