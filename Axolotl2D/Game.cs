@@ -101,7 +101,6 @@ namespace Axolotl2D
             _window.Close();
         }
 
-        private int _gcCounter = 0;
         private void _onUpdate(double frameDelta)
         {
             if (_openGL is null)
