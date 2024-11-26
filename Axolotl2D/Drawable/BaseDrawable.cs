@@ -17,7 +17,7 @@ namespace Axolotl2D.Drawable
             set
             {
                 _position = value;
-                _vertices = calculateVertices();
+                calculateVertices();
             }
         }
         private Vector2 _position;
@@ -27,7 +27,7 @@ namespace Axolotl2D.Drawable
             set
             {
                 _size = value;
-                _vertices = calculateVertices();
+                calculateVertices();
             }
         }
         private Vector2 _size;
@@ -38,7 +38,7 @@ namespace Axolotl2D.Drawable
             set
             {
                 _rotation = value;
-                _vertices = calculateVertices();
+                calculateVertices();
             }
         }
         private float _rotation;
@@ -53,12 +53,12 @@ namespace Axolotl2D.Drawable
             {
                 Position = value.Item1;
                 Size = value.Item2;
-                _vertices = calculateVertices();
+                calculateVertices();
             }
         }
 
         // These are the vertices that make up the quad. Each point has 3 values (x, y, z) and 2 values for the texture coordinates (u, v).
-        protected float[] _vertices = new float[12];
+        protected float[] _vertices = new float[20];
         // These are the indices that make up the quad. So 3 points make up a triangle. These are drawn in order.
         protected uint[] _indices =
         [
@@ -76,7 +76,7 @@ namespace Axolotl2D.Drawable
             _game = game;
             _cachedViewport = game.Viewport;
 
-            this._vertices = calculateVertices();
+            calculateVertices();
 
             _game.OnResize += resizeWindow;
         }
@@ -113,7 +113,7 @@ namespace Axolotl2D.Drawable
             calculateVertices();
         }
 
-        protected float[] calculateVertices()
+        protected void calculateVertices()
         {
             float x1 = Position.X / _cachedViewport.X * 2 - 1;
             float y1 = 1 - (Position.Y + Size.Y) / _cachedViewport.Y * 2;
@@ -147,13 +147,29 @@ namespace Axolotl2D.Drawable
                 vertices[i] += center;
             }
 
-            return new float[]
-            {
-                vertices[0].X, vertices[0].Y, 0, 1.0f, 1.0f,
-                vertices[1].X, vertices[1].Y, 0, 1.0f, 0.0f,
-                vertices[2].X, vertices[2].Y, 0, 0.0f, 0.0f,
-                vertices[3].X, vertices[3].Y, 0, 0.0f, 1.0f
-            };
+            _vertices[0] = vertices[0].X;
+            _vertices[1] = vertices[0].Y;
+            _vertices[2] = 0;
+            _vertices[3] = 1.0f;
+            _vertices[4] = 1.0f;
+
+            _vertices[5] = vertices[1].X;
+            _vertices[6] = vertices[1].Y;
+            _vertices[7] = 0;
+            _vertices[8] = 1.0f;
+            _vertices[9] = 0.0f;
+
+            _vertices[10] = vertices[2].X;
+            _vertices[11] = vertices[2].Y;
+            _vertices[12] = 0;
+            _vertices[13] = 0.0f;
+            _vertices[14] = 0.0f;
+
+            _vertices[15] = vertices[3].X;
+            _vertices[16] = vertices[3].Y;
+            _vertices[17] = 0;
+            _vertices[18] = 0.0f;
+            _vertices[19] = 1.0f;
         }
     }
 }
