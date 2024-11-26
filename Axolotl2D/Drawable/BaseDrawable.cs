@@ -17,18 +17,17 @@ namespace Axolotl2D.Drawable
             set
             {
                 _position = value;
-                _vertices = CalculateVertices();
+                _vertices = calculateVertices();
             }
         }
         private Vector2 _position;
-
         public Vector2 Size
         {
             get => _size;
             set
             {
                 _size = value;
-                _vertices = CalculateVertices();
+                _vertices = calculateVertices();
             }
         }
         private Vector2 _size;
@@ -39,7 +38,7 @@ namespace Axolotl2D.Drawable
             set
             {
                 _rotation = value;
-                _vertices = CalculateVertices();
+                _vertices = calculateVertices();
             }
         }
         private float _rotation;
@@ -54,33 +53,32 @@ namespace Axolotl2D.Drawable
             {
                 Position = value.Item1;
                 Size = value.Item2;
-                _vertices = CalculateVertices();
+                _vertices = calculateVertices();
             }
         }
 
         // These are the vertices that make up the quad. Each point has 3 values (x, y, z) and 2 values for the texture coordinates (u, v).
-        protected float[] _vertices = new float[20];
+        protected float[] _vertices = new float[12];
         // These are the indices that make up the quad. So 3 points make up a triangle. These are drawn in order.
         protected uint[] _indices =
-        {
+        [
             0u, 1u, 3u,
             1u, 2u, 3u
-        };
+        ];
 
-        private readonly Game _game;
+        private Game _game;
         private Vector2 _cachedViewport;
 
-        internal BaseDrawable(Game game, Vector2 position, Vector2 size, float rotation = 0)
+        internal BaseDrawable(Game game, Vector2 position, Vector2 size)
         {
             Position = position;
             Size = size;
-            Rotation = rotation;
             _game = game;
             _cachedViewport = game.Viewport;
 
-            this._vertices = CalculateVertices();
+            this._vertices = calculateVertices();
 
-            _game.OnResize += ResizeWindow;
+            _game.OnResize += resizeWindow;
         }
 
         /// <summary>
@@ -106,25 +104,25 @@ namespace Axolotl2D.Drawable
         /// </summary>
         public virtual void Dispose()
         {
-            _game.OnResize -= ResizeWindow;
-
-            GC.SuppressFinalize(this);
+            _game.OnResize -= resizeWindow;
         }
 
-        private void ResizeWindow(Vector2 size)
+        private void resizeWindow(Vector2 size)
         {
             _cachedViewport = size;
-            CalculateVertices();
+            calculateVertices();
         }
 
-        protected float[] CalculateVertices()
+        protected float[] calculateVertices()
         {
             float x1 = Position.X / _cachedViewport.X * 2 - 1;
             float y1 = 1 - (Position.Y + Size.Y) / _cachedViewport.Y * 2;
             float x2 = (Position.X + Size.X) / _cachedViewport.X * 2 - 1;
             float y2 = 1 - Position.Y / _cachedViewport.Y * 2;
 
-            Vector2[] corners = new Vector2[]
+            Vector2 center = new Vector2((x1 + x2) / 2, (y1 + y2) / 2);
+
+            Vector2[] vertices = new Vector2[]
             {
                 new Vector2(x1, y1),
                 new Vector2(x1, y2),
@@ -132,25 +130,29 @@ namespace Axolotl2D.Drawable
                 new Vector2(x2, y1)
             };
 
-            Vector2 center = new Vector2((x1 + x2) / 2, (y1 + y2) / 2);
             float cos = MathF.Cos(Rotation);
             float sin = MathF.Sin(Rotation);
 
-            for (int i = 0; i < corners.Length; i++)
+            float aspectRatio = _cachedViewport.X / _cachedViewport.Y;
+
+            for (int i = 0; i < vertices.Length; i++)
             {
-                Vector2 dir = corners[i] - center;
-                corners[i] = new Vector2(
-                    center.X + dir.X * cos - dir.Y * sin,
-                    center.Y + dir.X * sin + dir.Y * cos
+                Vector2 dir = vertices[i] - center;
+                dir.X *= aspectRatio; // Adjust for aspect ratio
+                vertices[i] = new Vector2(
+                    dir.X * cos - dir.Y * sin,
+                    dir.X * sin + dir.Y * cos
                 );
+                vertices[i].X /= aspectRatio; // Revert aspect ratio adjustment
+                vertices[i] += center;
             }
 
             return new float[]
             {
-                corners[0].X, corners[0].Y, 0, 1.0f, 1.0f,
-                corners[1].X, corners[1].Y, 0, 1.0f, 0.0f,
-                corners[2].X, corners[2].Y, 0, 0.0f, 0.0f,
-                corners[3].X, corners[3].Y, 0, 0.0f, 1.0f
+                vertices[0].X, vertices[0].Y, 0, 1.0f, 1.0f,
+                vertices[1].X, vertices[1].Y, 0, 1.0f, 0.0f,
+                vertices[2].X, vertices[2].Y, 0, 0.0f, 0.0f,
+                vertices[3].X, vertices[3].Y, 0, 0.0f, 1.0f
             };
         }
     }
