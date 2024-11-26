@@ -32,14 +32,12 @@ namespace Axolotl2D.Example.Scenes
 
         private ILogger<ExampleScene> _logger;
 
-        private IKeyboard kb;
-
         private ExampleGame _game;
 
         public ExampleScene(ExampleGame game, IServiceProvider services, ILogger<ExampleScene> logger) 
         {
             _game = game;
-            kb = game.GetKeyboard()!;
+            _keyboard = game.GetKeyboard()!;
             _game.Title = "Scene 1";
 
             this._logger = logger;
@@ -91,8 +89,10 @@ namespace Axolotl2D.Example.Scenes
 
         public override void Unload()
         {
-            Console.WriteLine("Unloaded Example Scene");
+            _logger.LogInformation("Unloaded Example Scene");
         }
+
+        private bool? wasKeyPressed = null;
 
         public override void Update(double frameDelta)
         {
@@ -119,9 +119,17 @@ namespace Axolotl2D.Example.Scenes
             else
                 _game.ClearColor = Color.FromHTML("#0088FF");
 
-            if (kb.IsKeyPressed(Key.Escape))
+            if (_keyboard!.IsKeyPressed(Key.Escape))
             {
-                SceneGameHost.ChangeScene<ExampleScene2>();
+                if (wasKeyPressed == false)
+                {
+                    SceneGameHost.ChangeScene<ExampleScene2>();
+                }
+                wasKeyPressed = true;
+            }
+            else
+            {
+                wasKeyPressed = false;
             }
         }
     }
