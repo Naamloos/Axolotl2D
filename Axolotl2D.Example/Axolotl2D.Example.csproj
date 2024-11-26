@@ -6,6 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Configurations>Debug;Release;Debug-NoMenu</Configurations>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+	<RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+	<CefSharpAnyCpuSupport>true</CefSharpAnyCpuSupport>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,6 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Axolotl2D.Cef\Axolotl2D.Cef.csproj" />
     <ProjectReference Include="..\Axolotl2D\Axolotl2D.csproj" />
   </ItemGroup>
 

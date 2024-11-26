@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CefSharp.Common.NETCore" Version="131.2.70" />
+    <PackageReference Include="CefSharp.OffScreen.NETCore" Version="131.2.70" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Axolotl2D\Axolotl2D.csproj" />
+  </ItemGroup>
+
+</Project>

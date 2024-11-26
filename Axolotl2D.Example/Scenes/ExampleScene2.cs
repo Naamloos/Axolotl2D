@@ -1,4 +1,5 @@
-﻿using Axolotl2D.Entities;
+﻿using Axolotl2D.Cef;
+using Axolotl2D.Entities;
 using Microsoft.Extensions.Logging;
 using Silk.NET.Input;
 using System;
@@ -16,6 +17,8 @@ namespace Axolotl2D.Example.Scenes
         private IKeyboard? _keyboard;
         private readonly ILogger<ExampleScene2> _logger;
 
+        private CefBrowser _cef;
+
         public ExampleScene2(ExampleGame game, ILogger<ExampleScene2> logger)
         {
             game.Title = "Scene 2";
@@ -29,11 +32,18 @@ namespace Axolotl2D.Example.Scenes
         {
             _keyboard = _game.GetKeyboard()!;
             _logger.LogInformation("Loaded Example Scene 2");
+
+            _cef = new CefBrowser(_game, Vector2.Zero, new Vector2(350, 150));
         }
 
         public override void Unload()
         {
             _logger.LogInformation("Unloaded Example Scene 2");
+        }
+
+        public override void Draw(double frameDelta, double frameRate)
+        {
+            _cef.Draw();
         }
 
         private bool? wasKeyPressed = null;

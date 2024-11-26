@@ -12,6 +12,8 @@ namespace Axolotl2D.Entities
         public float G { get; }
         public float B { get; }
         public float A { get; }
+
+        public uint Value => (uint)((int)(A * 255) << 24 | (int)(R * 255) << 16 | (int)(G * 255) << 8 | (int)(B * 255));
         public Color(float r, float g, float b, float a)
         {
             R = r;
