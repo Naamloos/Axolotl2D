@@ -28,7 +28,7 @@ namespace Axolotl2D.Cef
 
         private static bool _cefInitialized = false;
 
-        public CefBrowser(Game game, Vector2 position, Vector2 size) : base(game, position, size)
+        public CefBrowser(Game game, Vector2 position, Vector2 size, string url) : base(game, position, size)
         {
             if (!_cefInitialized)
             {
@@ -44,7 +44,7 @@ namespace Axolotl2D.Cef
             }
 
             _gl = game._openGL ?? throw new ArgumentNullException(nameof(game));
-            _browser = new ChromiumWebBrowser("https://puginarug.com/")
+            _browser = new ChromiumWebBrowser(url)
             {
                 Size = new System.Drawing.Size((int)size.X, (int)size.Y),
             };

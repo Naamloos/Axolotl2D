@@ -33,7 +33,7 @@ namespace Axolotl2D.Example.Scenes
             _keyboard = _game.GetKeyboard()!;
             _logger.LogInformation("Loaded Example Scene 2");
 
-            _cef = new CefBrowser(_game, Vector2.Zero, new Vector2(500, 500));
+            _cef = new CefBrowser(_game, Vector2.Zero, new Vector2(500, 500), "https://www.google.com");
         }
 
         public override void Unload()
