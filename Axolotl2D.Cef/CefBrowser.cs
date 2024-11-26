@@ -148,18 +148,18 @@ namespace Axolotl2D.Cef
 
             _gl = _game._openGL ?? throw new ArgumentNullException(nameof(_game._openGL));
 
-            _gl.UseProgram(_game._shaderProgram);
+            _gl.BindBuffer(BufferTargetARB.ArrayBuffer, _vbo);
+            // fix vertices and buffer data
+            fixed (void* vertices = _vertices)
+                _gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(_vertices.Length * sizeof(float)), vertices, BufferUsageARB.StaticDraw);
+            _gl.BindBuffer(BufferTargetARB.ArrayBuffer, 0);
+
+            _gl.BindBuffer(BufferTargetARB.ArrayBuffer, 0);
 
             _gl.BindVertexArray(_vao);
-
-            _gl.ActiveTexture(TextureUnit.Texture0);
             _gl.BindTexture(TextureTarget.Texture2D, _texture);
-
             _gl.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, (void*)0);
-
             _gl.BindVertexArray(0);
-            _gl.BindTexture(TextureTarget.Texture2D, 0);
-            _gl.UseProgram(0);
         }
 
         public override void Draw(Vector2 position)

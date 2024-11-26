@@ -61,6 +61,8 @@ namespace Axolotl2D.Example.Scenes
             {
                 wasKeyPressed = false;
             }
+
+            _cef.Rotation += 0.01f;
         }
     }
 }
