@@ -23,20 +23,20 @@ namespace Axolotl2D.Input
         private MouseKeyState _previousRightButton = MouseKeyState.Unheld;
         private MouseKeyState _previousMiddleButton = MouseKeyState.Unheld;
 
-        private Game _game;
-        private IMouse? _mouse;
+        private readonly Game _game;
+        private readonly IMouse? _mouse;
 
         public Mouse(Game game)
         {
             _game = game;
             _mouse = game._input?.Mice[0]!;
-            _mouse.MouseUp += mouseUp;
-            _mouse.MouseDown += mouseDown;
-            _mouse.MouseMove += mouseMove;
-            _game.OnUpdate += gameUpdate;
+            _mouse.MouseUp += MouseUp;
+            _mouse.MouseDown += MouseDown;
+            _mouse.MouseMove += MouseMove;
+            _game.OnUpdate += GameUpdate;
         }
 
-        private void gameUpdate(double frameDelta)
+        private void GameUpdate(double frameDelta)
         {
             if(LeftButton == MouseKeyState.Click && _previousLeftButton != MouseKeyState.Click)
             {
@@ -69,13 +69,13 @@ namespace Axolotl2D.Input
             _previousMiddleButton = MiddleButton;
         }
 
-        private void mouseMove(IMouse mouse, Vector2 position)
+        private void MouseMove(IMouse mouse, Vector2 position)
         {
             X = (int)position.X;
             Y = (int)position.Y;
         }
 
-        private void mouseDown(IMouse mouse, MouseButton button)
+        private void MouseDown(IMouse mouse, MouseButton button)
         {
             switch (button)
             {
@@ -91,7 +91,7 @@ namespace Axolotl2D.Input
             }
         }
 
-        private void mouseUp(IMouse mouse, MouseButton button)
+        private void MouseUp(IMouse mouse, MouseButton button)
         {
             switch (button)
             {
@@ -111,12 +111,13 @@ namespace Axolotl2D.Input
         {
             if (_mouse is not null)
             {
-                _mouse.MouseUp -= mouseUp;
-                _mouse.MouseDown -= mouseDown;
-                _mouse.MouseMove -= mouseMove;
+                _mouse.MouseUp -= MouseUp;
+                _mouse.MouseDown -= MouseDown;
+                _mouse.MouseMove -= MouseMove;
             }
 
-            _game.OnUpdate -= gameUpdate;
+            _game.OnUpdate -= GameUpdate;
+            GC.SuppressFinalize(this);
         }
 
         ~Mouse()

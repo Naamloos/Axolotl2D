@@ -11,28 +11,20 @@ using System.Threading.Tasks;
 
 namespace Axolotl2D.Services
 {
-    public class SceneGameHost : IGameHost
+    public class SceneGameHost(Game game, IServiceProvider _services) : IGameHost
     {
-        private Game _game;
         private BaseScene? _currentScene;
-        private IServiceProvider _services;
 
-        public SceneGameHost(Game game, IServiceProvider _services) 
-        {
-            this._services = _services;
-            this._game = game;
-        }
-
-        public void ChangeScene<T>() where T : BaseScene => changeScene(typeof(T));
+        public void ChangeScene<T>() where T : BaseScene => ChangeScene(typeof(T));
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            _game.OnLoad += preloadSceneManager;
+            game.OnLoad += PreloadSceneManager;
 
-            return Task.Run(() => _game.start());
+            return Task.Run(() => game.Start(), cancellationToken);
         }
 
-        private void preloadSceneManager()
+        private void PreloadSceneManager()
         {
             // find IScene in executing assembly where the DefaultSceneAttribute is applied
             var scenes = Assembly.
@@ -40,7 +32,7 @@ namespace Axolotl2D.Services
                 .GetTypes()
                 .Where(t => t.IsAssignableTo(typeof(BaseScene)) && t.GetCustomAttribute<DefaultSceneAttribute>() != null);
 
-            if (scenes.Count() == 0)
+            if (!scenes.Any())
             {
                 throw new Exception("No scene found with DefaultSceneAttribute applied");
             }
@@ -49,34 +41,33 @@ namespace Axolotl2D.Services
                 throw new Exception("Multiple scenes found with DefaultSceneAttribute applied");
             }
 
-            changeScene(scenes.First());
-            _game.OnLoad -= preloadSceneManager;
+            ChangeScene(scenes.First());
+            game.OnLoad -= PreloadSceneManager;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
             if (_currentScene != null)
             {
-                _game.OnUpdate -= _currentScene.Update;
-                _game.OnDraw -= _currentScene.Draw;
-                _game.OnResize -= _currentScene.Resize;
+                game.OnUpdate -= _currentScene.Update;
+                game.OnDraw -= _currentScene.Draw;
+                game.OnResize -= _currentScene.Resize;
             }
 
-            return Task.Run(() => _game.stop());
+            return Task.Run(() => game.Stop(), cancellationToken);
         }
 
-        private void changeScene(Type t)
+        private void ChangeScene(Type t)
         {
-            var newScene = _services.GetRequiredService(t) as BaseScene;
-            if (newScene == null)
+            if (_services.GetRequiredService(t) is not BaseScene newScene)
             {
                 throw new Exception("Tried switching to a scene that is not part of the service provider!");
             }
             if (_currentScene != null)
             {
-                _game.OnUpdate -= _currentScene.Update;
-                _game.OnDraw -= _currentScene.Draw;
-                _game.OnResize -= _currentScene.Resize;
+                game.OnUpdate -= _currentScene.Update;
+                game.OnDraw -= _currentScene.Draw;
+                game.OnResize -= _currentScene.Resize;
 
                 _currentScene.Unload();
             }
@@ -88,9 +79,9 @@ namespace Axolotl2D.Services
             _currentScene._sceneGameHost = this;
 
             _currentScene.Load();
-            _game.OnUpdate += _currentScene.Update;
-            _game.OnDraw += _currentScene.Draw;
-            _game.OnResize += _currentScene.Resize;
+            game.OnUpdate += _currentScene.Update;
+            game.OnDraw += _currentScene.Draw;
+            game.OnResize += _currentScene.Resize;
         }
     }
 }

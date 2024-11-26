@@ -7,17 +7,10 @@ using System.Threading.Tasks;
 
 namespace Axolotl2D.Services
 {
-    internal class SimpleGameHost : IGameHost
+    internal class SimpleGameHost(Game game) : IGameHost
     {
-        private Game game;
+        public Task StartAsync(CancellationToken cancellationToken) => Task.Run(() => game.Start(), cancellationToken);
 
-        public SimpleGameHost(Game game)
-        {
-            this.game = game;
-        }
-
-        public Task StartAsync(CancellationToken cancellationToken) => Task.Run(() => game.start());
-
-        public Task StopAsync(CancellationToken cancellationToken) => Task.Run(() => game.stop());
+        public Task StopAsync(CancellationToken cancellationToken) => Task.Run(() => game.Stop(), cancellationToken);
     }
 }

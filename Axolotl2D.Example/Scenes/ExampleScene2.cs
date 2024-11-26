@@ -12,9 +12,9 @@ namespace Axolotl2D.Example.Scenes
 {
     public class ExampleScene2 : BaseScene
     {
-        private ExampleGame _game;
+        private readonly ExampleGame _game;
         private IKeyboard? _keyboard;
-        private ILogger<ExampleScene2> _logger;
+        private readonly ILogger<ExampleScene2> _logger;
 
         public ExampleScene2(ExampleGame game, ILogger<ExampleScene2> logger)
         {

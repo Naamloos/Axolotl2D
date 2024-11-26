@@ -11,11 +11,11 @@ namespace Axolotl2D.Drawable
 {
     public class SimpleQuad : BaseDrawable
     {
-        private uint _vbo;
-        private uint _ebo;
-        private uint _vao;
+        private readonly uint _vbo;
+        private readonly uint _ebo;
+        private readonly uint _vao;
 
-        private GL _gl;
+        private readonly GL _gl;
 
         public unsafe SimpleQuad(Game game, Vector2 position, Vector2 size) : base(game, position, size)
         {

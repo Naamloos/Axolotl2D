@@ -7,15 +7,10 @@ using System.Threading.Tasks;
 
 namespace Axolotl2D.Services
 {
-    public class AssetManager
+    public class AssetManager(ILazyDependencyLoader<Game> lazyGame)
     {
-        private Dictionary<string, Sprite> sprites = [];
-        private ILazyDependencyLoader<Game> _lazyGame;
-
-        public AssetManager(ILazyDependencyLoader<Game> lazyGame) 
-        {
-            _lazyGame = lazyGame;
-        }
+        private readonly Dictionary<string, Sprite> sprites = [];
+        private readonly ILazyDependencyLoader<Game> _lazyGame = lazyGame;
 
         public void LoadSprite(string key, Stream assetStream)
         {
@@ -27,23 +22,20 @@ namespace Axolotl2D.Services
             {
                 throw new Exception($"Sprite with key {key} already exists!");
             }
-            if(assetStream == null)
-            {
-                throw new ArgumentNullException(nameof(assetStream));
-            }
+
+            ArgumentNullException.ThrowIfNull(assetStream, nameof(assetStream));
 
             var _game = _lazyGame.Value;
             var sprite = new Sprite(_game, assetStream);
             sprites.Add(key, sprite);
         }
 
-        public Sprite GetSprite(string key)
+        public bool TryGetSprite(string key, out BaseDrawable? sprite)
         {
-            if (!sprites.ContainsKey(key))
-            {
-                throw new Exception($"Sprite with key {key} does not exist!");
-            }
-            return sprites[key];
+            var success = sprites.TryGetValue(key, out Sprite? output);
+            sprite = output;
+
+            return success;
         }
     }
 }

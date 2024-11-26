@@ -12,13 +12,13 @@ namespace Axolotl2D.Drawable
 {
     public class Sprite : BaseDrawable
     {
-        private uint _vbo;
-        private uint _ebo;
-        private uint _vao;
+        private readonly uint _vbo;
+        private readonly uint _ebo;
+        private readonly uint _vao;
 
-        private uint _texture;
+        private readonly uint _texture;
 
-        private GL _gl;
+        private readonly GL _gl;
 
         internal unsafe Sprite(Game game, Stream imageFile) : base(game, Vector2.Zero, Vector2.One)
         {

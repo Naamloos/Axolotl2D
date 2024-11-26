@@ -19,7 +19,7 @@ namespace Axolotl2D
 
         public Vector2 Viewport
         {
-            get => new Vector2(_window.Size.X, _window.Size.Y);
+            get => new(_window.Size.X, _window.Size.Y);
             set => _window.Size = new Vector2D<int>((int)value.X, (int)value.Y);
         }
 
@@ -42,8 +42,7 @@ namespace Axolotl2D
             set
             {
                 _clearColor = value;
-                if (_openGL is not null)
-                    _openGL.ClearColor(_clearColor.R, _clearColor.G, _clearColor.B, _clearColor.A);
+                _openGL?.ClearColor(_clearColor.R, _clearColor.G, _clearColor.B, _clearColor.A);
             }
         }
 
@@ -75,10 +74,10 @@ namespace Axolotl2D
             _window = Window.Create(options);
 
             // Hook window events
-            _window.Load += _onLoad;
-            _window.Render += _onDraw;
-            _window.FramebufferResize += _onResize;
-            _window.Update += _onUpdate;
+            _window.Load += Load;
+            _window.Render += Draw;
+            _window.FramebufferResize += Resize;
+            _window.Update += Update;
         }
 
         public Mouse GetMouse()
@@ -86,22 +85,25 @@ namespace Axolotl2D
             return new Mouse(this);
         }
 
-        public IKeyboard? GetKeyboard()
-        {
-            return _input?.Keyboards.FirstOrDefault();
-        }
+        public IKeyboard? GetKeyboard() => _input?.Keyboards[0];
 
-        internal void start()
+        internal void Start()
         {
             _window.Run();
         }
 
-        internal void stop()
+        internal void Stop()
         {
+            // remove all events
+            _window.Load -= Load;
+            _window.Render -= Draw;
+            _window.FramebufferResize -= Resize;
+            _window.Update -= Update;
+
             _window.Close();
         }
 
-        private void _onUpdate(double frameDelta)
+        private void Update(double frameDelta)
         {
             if (_openGL is null)
                 return;
@@ -112,7 +114,7 @@ namespace Axolotl2D
         /// <summary>
         /// Gets called when the game expects to load resources.
         /// </summary>
-        private void _onLoad()
+        private void Load()
         {
             // Prepare OpenGL context on load.
             _openGL = _window.CreateOpenGL();
@@ -151,7 +153,7 @@ namespace Axolotl2D
             OnLoad?.Invoke();
         }
 
-        private void _onResize(Vector2D<int> size)
+        private void Resize(Vector2D<int> size)
         {
             if (_openGL is null)
                 return;
@@ -162,7 +164,7 @@ namespace Axolotl2D
             this.OnResize?.Invoke(new Vector2(size.X, size.Y));
         }
 
-        private void _onDraw(double frameDelta)
+        private void Draw(double frameDelta)
         {
             if(_openGL is null)
                 return;
@@ -187,6 +189,8 @@ namespace Axolotl2D
         {
             Cleanup();
             _window.Dispose();
+
+            GC.SuppressFinalize(this);
         }
 
         ~Game() => Dispose();
