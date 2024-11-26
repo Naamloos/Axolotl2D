@@ -67,7 +67,7 @@ namespace Axolotl2D.Drawable
         ];
 
         internal Game _game;
-        private Vector2 _cachedViewport;
+        protected Vector2 _cachedViewport;
 
         internal BaseDrawable(Game game, Vector2 position, Vector2 size)
         {

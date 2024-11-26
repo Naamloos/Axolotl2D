@@ -1,11 +1,13 @@
 ﻿using Axolotl2D.Drawable;
 using Axolotl2D.Entities;
+using CefSharp;
 using CefSharp.OffScreen;
 using CefSharp.Structs;
 using Silk.NET.OpenGL;
 using StbImageSharp;
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 // https://github.com/cefsharp/CefSharp/wiki/General-Usage#need-to-knowlimitations
 // https://github.com/cefsharp/CefSharp/issues/1714
@@ -43,13 +45,19 @@ namespace Axolotl2D.Cef
             }
 
             _gl = game._openGL ?? throw new ArgumentNullException(nameof(game));
-            _browser = new ChromiumWebBrowser("https://github.com/Naamloos/Axolotl2D")
+            _browser = new ChromiumWebBrowser("https://puginarug.com/")
             {
-                Size = new System.Drawing.Size((int)size.X, (int)size.Y)
+                Size = new System.Drawing.Size((int)size.X, (int)size.Y),
             };
             InitializeBuffers();
             InitializeTexture();
             _browser.Paint += OnBrowserPaint;
+            _browser.BrowserInitialized += BrowserInitialized;
+        }
+
+        private void BrowserInitialized(object? sender, EventArgs e)
+        {
+            _browser.SetZoomLevel(0.5);
         }
 
         private unsafe void InitializeBuffers()
@@ -100,25 +108,32 @@ namespace Axolotl2D.Cef
 
         private void OnBrowserPaint(object? sender, OnPaintEventArgs e)
         {
+            if (frameBuffer.Length != e.Width * e.Height * 4)
+                frameBuffer = new byte[e.Width * e.Height * 4];
+
+            Marshal.Copy(e.BufferHandle, frameBuffer, 0, frameBuffer.Length);
+            dirty = true;
             _renderedSize = new Vector2(e.Width, e.Height);
-            _lastBufferHandle = e.BufferHandle;
-            e.Handled = true;
         }
+
+        private byte[] frameBuffer = Array.Empty<byte>();
+        private bool dirty = false;
 
         private unsafe void updateFromBuffer()
         {
-            if (_lastBufferHandle != nint.Zero)
+            if (dirty)
             {
                 _gl.BindTexture(TextureTarget.Texture2D, _texture);
 
-                _gl.TexImage2D(TextureTarget.Texture2D, 0, (int)InternalFormat.Rgba, (uint)_renderedSize.X, (uint)_renderedSize.Y, 0, PixelFormat.Bgra, PixelType.UnsignedByte, ref _lastBufferHandle);
+                fixed (byte* ptr = frameBuffer)
+                    _gl.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, (uint)_renderedSize.X, (uint)_renderedSize.Y, PixelFormat.Bgra, PixelType.UnsignedByte, ptr);
 
                 int location = _gl.GetUniformLocation(_game._shaderProgram, "uTexture");
                 _gl.Uniform1(location, 0);
 
                 _gl.BindTexture(TextureTarget.Texture2D, 0);
 
-                _lastBufferHandle = nint.Zero;
+                dirty = false;
             }
         }
 
@@ -153,5 +168,6 @@ namespace Axolotl2D.Cef
             Bounds = (position, size);
             Draw();
         }
+
     }
 }
