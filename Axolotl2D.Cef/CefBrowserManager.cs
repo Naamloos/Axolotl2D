@@ -1,7 +1,9 @@
-﻿using System;
+﻿using CefSharp.OffScreen;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -15,6 +17,15 @@ namespace Axolotl2D.Cef
         public CefBrowserManager(ILazyDependencyLoader<Game> game)
         {
             _lazyGame = game;
+
+            var cefSett = new CefSettings
+            {
+                RootCachePath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? string.Empty) ?? string.Empty, "cefCache"),
+                WindowlessRenderingEnabled = true,
+                LogSeverity = CefSharp.LogSeverity.Verbose,
+                LogFile = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? string.Empty) ?? string.Empty, "cef.log")
+            };
+            CefSharp.Cef.Initialize(cefSett, true, browserProcessHandler: null);
         }
 
         public void RegisterBrowser(string key, string baseUrl)

@@ -29,8 +29,6 @@ namespace Axolotl2D.Cef
 
         private IMouse? _mouse;
 
-        private static bool _cefInitialized = false;
-
         private Vector2 _mousePos = Vector2.Zero;
 
         private string _url = "https://www.google.com";
@@ -38,19 +36,6 @@ namespace Axolotl2D.Cef
         public CefBrowser(Game game, Vector2 position, Vector2 size, string url) : base(game, position, size)
         {
             _url = url;
-
-            if (!_cefInitialized)
-            {
-                var cefSett = new CefSettings
-                {
-                    RootCachePath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? string.Empty) ?? string.Empty, "cefCache"),
-                    WindowlessRenderingEnabled = true,
-                    LogSeverity = CefSharp.LogSeverity.Verbose,
-                    LogFile = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? string.Empty) ?? string.Empty, "cef.log")
-                };
-                CefSharp.Cef.Initialize(cefSett, true, browserProcessHandler: null);
-                _cefInitialized = true;
-            }
 
             _gl = game._openGL ?? throw new ArgumentNullException(nameof(game));
             InitializeBuffers();
