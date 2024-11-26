@@ -21,6 +21,7 @@ namespace Axolotl2D.Cef
         private uint _ebo;
         private uint _vao;
         private uint _texture;
+        private nint _lastBufferHandle;
 
         private static bool _cefInitialized = false;
 
@@ -28,7 +29,7 @@ namespace Axolotl2D.Cef
         {
             if (!_cefInitialized)
             {
-                var cefSett = new CefSettings()
+                var cefSett = new CefSettings
                 {
                     RootCachePath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? string.Empty) ?? string.Empty, "cefCache"),
                     WindowlessRenderingEnabled = true,
@@ -39,9 +40,11 @@ namespace Axolotl2D.Cef
                 _cefInitialized = true;
             }
 
-            _gl = game._openGL ?? throw new ArgumentNullException(nameof(game._openGL));
-            _browser = new ChromiumWebBrowser(address: "https://github.com/Naamloos/Axolotl2D");
-            _browser.Size = new System.Drawing.Size((int)size.X, (int)size.Y);
+            _gl = game._openGL ?? throw new ArgumentNullException(nameof(game));
+            _browser = new ChromiumWebBrowser("https://github.com/Naamloos/Axolotl2D")
+            {
+                Size = new System.Drawing.Size((int)size.X, (int)size.Y)
+            };
             InitializeBuffers();
             InitializeTexture();
             _browser.Paint += OnBrowserPaint;
@@ -95,24 +98,26 @@ namespace Axolotl2D.Cef
 
         private void OnBrowserPaint(object? sender, OnPaintEventArgs e)
         {
-            tryUpdateTexture(e.BufferHandle);
-        }
-
-        private unsafe void tryUpdateTexture(nint handle)
-        {
-            _gl.BindTexture(TextureTarget.Texture2D, _texture);
-
-            byte* ptr = (byte*)handle;
-            _gl.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, (uint)Size.X, (uint)Size.Y, PixelFormat.Bgra, PixelType.UnsignedByte, ptr);
-
-            int location = _gl.GetUniformLocation(_game._shaderProgram, "uTexture");
-            _gl.Uniform1(location, 0);
-
-            _gl.BindTexture(TextureTarget.Texture2D, 0);
+            _lastBufferHandle = e.BufferHandle;
         }
 
         public unsafe override void Draw()
         {
+            if (_lastBufferHandle != nint.Zero)
+            {
+                _gl.BindTexture(TextureTarget.Texture2D, _texture);
+
+                byte* ptr = (byte*)_lastBufferHandle;
+                _gl.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, (uint)Size.X, (uint)Size.Y, PixelFormat.Bgra, PixelType.UnsignedByte, ptr);
+
+                int location = _gl.GetUniformLocation(_game._shaderProgram, "uTexture");
+                _gl.Uniform1(location, 0);
+
+                _gl.BindTexture(TextureTarget.Texture2D, 0);
+
+                _lastBufferHandle = nint.Zero;
+            }
+
             _gl.UseProgram(_game._shaderProgram);
 
             _gl.BindVertexArray(_vao);
