@@ -5,13 +5,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Axolotl2D
+namespace Axolotl2D.Services
 {
-    internal class GameHost : IHostedService
+    internal class SimpleGameHost : IGameHost
     {
         private Game game;
 
-        public GameHost(Game game)
+        public SimpleGameHost(Game game)
         {
             this.game = game;
         }

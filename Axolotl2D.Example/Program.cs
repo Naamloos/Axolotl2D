@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Axolotl2D;
 using Microsoft.Extensions.DependencyInjection;
+using Axolotl2D.Example.Scenes;
 
 namespace Axolotl2D.Example
 {
@@ -11,7 +12,10 @@ namespace Axolotl2D.Example
             var host = Host.CreateDefaultBuilder(args)
                 .ConfigureServices((hostContext, services) =>
                 {
-                    services.AddGame<ExampleGame>();
+                    services.UseSceneManagerGameHost<ExampleGame>();
+                    services.AddScene<ExampleScene>();
+                    services.AddScene<ExampleScene2>();
+
                     services.AddLogging();
                 })
                 .Build();

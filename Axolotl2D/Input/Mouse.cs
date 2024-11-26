@@ -15,9 +15,9 @@ namespace Axolotl2D.Input
         public int ScrollX { get; private set; }
         public int ScrollY { get; private set; }
 
-        public MouseKeyState LeftButton { get; private set; }
-        public MouseKeyState RightButton { get; private set; }
-        public MouseKeyState MiddleButton { get; private set; }
+        public MouseKeyState LeftButton { get; private set; } = MouseKeyState.Unheld;
+        public MouseKeyState RightButton { get; private set; } = MouseKeyState.Unheld;
+        public MouseKeyState MiddleButton { get; private set; } = MouseKeyState.Unheld;
 
         private MouseKeyState _previousLeftButton = MouseKeyState.Unheld;
         private MouseKeyState _previousRightButton = MouseKeyState.Unheld;
