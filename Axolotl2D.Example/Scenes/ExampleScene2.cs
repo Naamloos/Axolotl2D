@@ -20,6 +20,7 @@ namespace Axolotl2D.Example.Scenes
         private CefBrowserManager _cefBrowserManager;
         private CefBrowser? _cef1;
         private CefBrowser? _cef2;
+        private CefBrowser? _cef3;
 
         public ExampleScene2(ExampleGame game, ILogger<ExampleScene2> logger, CefBrowserManager cefBrowserManager)
         {
@@ -38,8 +39,9 @@ namespace Axolotl2D.Example.Scenes
 
             _cefBrowserManager.TryGetBrowser("github", out _cef1);
             _cefBrowserManager.TryGetBrowser("google", out _cef2);
+            _cefBrowserManager.TryGetBrowser("discord", out _cef3);
 
-            if (_cef1 == null || _cef2 == null)
+            if (_cef1 == null || _cef2 == null || _cef3 == null)
             {
                 _logger.LogError("Failed to load CEF browsers!");
                 return;
@@ -49,6 +51,7 @@ namespace Axolotl2D.Example.Scenes
 
             _cef1.Enable();
             _cef2.Enable();
+            _cef3.Enable();
         }
 
         public override void Unload()
@@ -56,21 +59,25 @@ namespace Axolotl2D.Example.Scenes
             _logger.LogInformation("Unloaded Example Scene 2");
             _cef1?.Disable();
             _cef2?.Disable();
+            _cef3?.Disable();
         }
 
         public override void Draw(double frameDelta, double frameRate)
         {
             _cef1?.Draw();
             _cef2?.Draw();
+            _cef3?.Draw();
         }
 
         public override void Resize(Vector2 size)
         {
             // set both browsers to half of the screen
             if (_cef1 != null)
-                _cef1.Size = new Vector2(size.X / 2, size.Y);
+                _cef1.Size = new Vector2(size.X / 2, size.Y / 2);
             if (_cef2 != null)
-                _cef2.Bounds = (new Vector2(size.X / 2, 0), new Vector2(size.X / 2, size.Y));
+                _cef2.Bounds = (new Vector2(size.X / 2, 0), new Vector2(size.X / 2, size.Y / 2));
+            if (_cef3 != null)
+                _cef3.Bounds = (new Vector2(0, size.Y / 2), new Vector2(size.X, size.Y / 2));
         }
 
         private bool? wasKeyPressed = null;

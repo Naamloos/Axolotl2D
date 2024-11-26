@@ -35,6 +35,7 @@ namespace Axolotl2D.Example
 
             _cefBrowserManager.RegisterBrowser("github", "https://naamloos.github.io/Axolotl2D.Webtest/");
             _cefBrowserManager.RegisterBrowser("google", "https://google.com");
+            _cefBrowserManager.RegisterBrowser("discord", "https://discord.com/app");
 
             _logger.LogInformation("Loaded Game");
         }
