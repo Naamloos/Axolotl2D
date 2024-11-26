@@ -113,7 +113,7 @@ namespace Axolotl2D.Drawable
             calculateVertices();
         }
 
-        protected void calculateVertices()
+        protected virtual void calculateVertices()
         {
             float x1 = Position.X / _cachedViewport.X * 2 - 1;
             float y1 = 1 - (Position.Y + Size.Y) / _cachedViewport.Y * 2;

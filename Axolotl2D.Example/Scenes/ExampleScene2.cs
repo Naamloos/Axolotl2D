@@ -17,7 +17,7 @@ namespace Axolotl2D.Example.Scenes
         private IKeyboard? _keyboard;
         private readonly ILogger<ExampleScene2> _logger;
 
-        private CefBrowser _cef;
+        private CefBrowser? _cef;
 
         public ExampleScene2(ExampleGame game, ILogger<ExampleScene2> logger)
         {
@@ -43,7 +43,7 @@ namespace Axolotl2D.Example.Scenes
 
         public override void Draw(double frameDelta, double frameRate)
         {
-            _cef.Draw();
+            _cef?.Draw();
         }
 
         private bool? wasKeyPressed = null;

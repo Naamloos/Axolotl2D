@@ -24,7 +24,6 @@ namespace Axolotl2D.Cef
         private uint _ebo;
         private uint _vao;
         private uint _texture;
-        private nint _lastBufferHandle;
         private Vector2 _renderedSize;
 
         private static bool _cefInitialized = false;
@@ -57,7 +56,7 @@ namespace Axolotl2D.Cef
 
         private void BrowserInitialized(object? sender, EventArgs e)
         {
-            _browser.SetZoomLevel(0.5);
+            _browser.SetZoomLevel(50);
         }
 
         private unsafe void InitializeBuffers()
@@ -123,7 +122,13 @@ namespace Axolotl2D.Cef
         {
             if (dirty)
             {
+                calculateVertices();
                 _gl.BindTexture(TextureTarget.Texture2D, _texture);
+
+                _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+                _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+                _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+                _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
 
                 fixed (byte* ptr = frameBuffer)
                     _gl.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, (uint)_renderedSize.X, (uint)_renderedSize.Y, PixelFormat.Bgra, PixelType.UnsignedByte, ptr);
@@ -139,11 +144,11 @@ namespace Axolotl2D.Cef
 
         public unsafe override void Draw()
         {
+            updateFromBuffer();
+
             _gl = _game._openGL ?? throw new ArgumentNullException(nameof(_game._openGL));
 
             _gl.UseProgram(_game._shaderProgram);
-
-            updateFromBuffer();
 
             _gl.BindVertexArray(_vao);
 
@@ -167,6 +172,65 @@ namespace Axolotl2D.Cef
         {
             Bounds = (position, size);
             Draw();
+        }
+
+        protected override void calculateVertices()
+        {
+            float x1 = Position.X / _cachedViewport.X * 2 - 1;
+            float y1 = 1 - (Position.Y + Size.Y) / _cachedViewport.Y * 2;
+            float x2 = (Position.X + Size.X) / _cachedViewport.X * 2 - 1;
+            float y2 = 1 - Position.Y / _cachedViewport.Y * 2;
+
+            Vector2 center = new Vector2((x1 + x2) / 2, (y1 + y2) / 2);
+
+            Vector2[] vertices = new Vector2[]
+            {
+                new Vector2(x2, y1),
+                new Vector2(x2, y2),
+                new Vector2(x1, y2),
+                new Vector2(x1, y1)
+            };
+
+            float cos = MathF.Cos(Rotation);
+            float sin = MathF.Sin(Rotation);
+
+            float aspectRatio = _cachedViewport.X / _cachedViewport.Y;
+
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                Vector2 dir = vertices[i] - center;
+                dir.X *= aspectRatio; // Adjust for aspect ratio
+                vertices[i] = new Vector2(
+                    dir.X * cos - dir.Y * sin,
+                    dir.X * sin + dir.Y * cos
+                );
+                vertices[i].X /= aspectRatio; // Revert aspect ratio adjustment
+                vertices[i] += center;
+            }
+
+            _vertices[0] = vertices[0].X;
+            _vertices[1] = vertices[0].Y;
+            _vertices[2] = 0;
+            _vertices[3] = 1.0f;
+            _vertices[4] = 1.0f;
+
+            _vertices[5] = vertices[1].X;
+            _vertices[6] = vertices[1].Y;
+            _vertices[7] = 0;
+            _vertices[8] = 1.0f;
+            _vertices[9] = 0.0f;
+
+            _vertices[10] = vertices[2].X;
+            _vertices[11] = vertices[2].Y;
+            _vertices[12] = 0;
+            _vertices[13] = 0.0f;
+            _vertices[14] = 0.0f;
+
+            _vertices[15] = vertices[3].X;
+            _vertices[16] = vertices[3].Y;
+            _vertices[17] = 0;
+            _vertices[18] = 0.0f;
+            _vertices[19] = 1.0f;
         }
 
     }

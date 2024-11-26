@@ -64,7 +64,7 @@ namespace Axolotl2D
             _services = services;
 
             var options = WindowOptions.Default;
-            options.Size = new Vector2D<int>(500, 500);
+            options.Size = new Vector2D<int>(1080, 720);
             options.WindowClass = "axl2d";
             options.WindowBorder = WindowBorder.Resizable;
             options.FramesPerSecond = maxDrawRate;
