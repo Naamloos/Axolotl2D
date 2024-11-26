@@ -1,6 +1,5 @@
 ﻿using Axolotl2D.Entities;
 using Axolotl2D.Exceptions;
-using Axolotl2D.Input;
 using Microsoft.Extensions.Hosting;
 using Silk.NET.Input;
 using Silk.NET.Maths;
@@ -80,10 +79,7 @@ namespace Axolotl2D
             _window.Update += Update;
         }
 
-        public Mouse GetMouse()
-        {
-            return new Mouse(this);
-        }
+        public IMouse? GetMouse() => _input?.Mice[0];
 
         public IKeyboard? GetKeyboard() => _input?.Keyboards[0];
 

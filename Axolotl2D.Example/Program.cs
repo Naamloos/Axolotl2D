@@ -2,6 +2,7 @@
 using Axolotl2D;
 using Microsoft.Extensions.DependencyInjection;
 using Axolotl2D.Example.Scenes;
+using Axolotl2D.Cef;
 
 namespace Axolotl2D.Example
 {
@@ -15,6 +16,8 @@ namespace Axolotl2D.Example
                     services.UseSceneManagerGameHost<ExampleGame>();
 
                     services.UseAssetManager();
+
+                    services.UseCefBrowserManager();
 
                     services.AddScene<ExampleScene>();
                     services.AddScene<ExampleScene2>();

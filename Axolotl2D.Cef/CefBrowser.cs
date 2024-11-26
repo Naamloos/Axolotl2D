@@ -3,6 +3,7 @@ using Axolotl2D.Entities;
 using CefSharp;
 using CefSharp.OffScreen;
 using CefSharp.Structs;
+using Silk.NET.Input;
 using Silk.NET.OpenGL;
 using StbImageSharp;
 using System.Numerics;
@@ -19,17 +20,25 @@ namespace Axolotl2D.Cef
     public class CefBrowser : BaseDrawable
     {
         private GL _gl;
-        private readonly ChromiumWebBrowser _browser;
+        private ChromiumWebBrowser _browser;
         private uint _vbo;
         private uint _ebo;
         private uint _vao;
         private uint _texture;
         private Vector2 _renderedSize;
 
+        private IMouse? _mouse;
+
         private static bool _cefInitialized = false;
+
+        private Vector2 _mousePos = Vector2.Zero;
+
+        private string _url = "https://www.google.com";
 
         public CefBrowser(Game game, Vector2 position, Vector2 size, string url) : base(game, position, size)
         {
+            _url = url;
+
             if (!_cefInitialized)
             {
                 var cefSett = new CefSettings
@@ -44,19 +53,97 @@ namespace Axolotl2D.Cef
             }
 
             _gl = game._openGL ?? throw new ArgumentNullException(nameof(game));
-            _browser = new ChromiumWebBrowser(url)
-            {
-                Size = new System.Drawing.Size((int)size.X, (int)size.Y),
-            };
             InitializeBuffers();
             InitializeTexture();
-            _browser.Paint += OnBrowserPaint;
-            _browser.BrowserInitialized += BrowserInitialized;
+            
+            _mouse = game.GetMouse();
+            _mouse!.MouseDown += mouseDown;
+            _mouse!.MouseUp += mouseUp;
+            _mouse!.Scroll += mouseScroll;
         }
 
+        public void Enable()
+        {
+            if(!_initialized)
+            {
+                _browser = new ChromiumWebBrowser(_url)
+                {
+                    Size = new System.Drawing.Size((int)Size.X, (int)Size.Y),
+                };
+                _browser.Paint += OnBrowserPaint;
+                _browser.BrowserInitialized += BrowserInitialized;
+            }
+            else
+            {
+                throw new InvalidOperationException("Browser already enabled!");
+            }
+        }
+
+        public void Disable()
+        {
+            if (_initialized)
+            {
+                _initialized = false;
+                _browser.Paint -= OnBrowserPaint;
+                _browser.BrowserInitialized -= BrowserInitialized;
+                _browser.Dispose();
+            }
+            else
+            {
+                throw new InvalidOperationException("Browser already disabled!");
+            }
+        }
+
+        public void SetUrl(string url)
+        {
+            _url = url;
+            if (_initialized)
+            {
+                _browser.Load(url);
+            }
+        }
+
+        private float oldScrollX = 0;
+        private float oldScrollY = 0;
+        private void mouseScroll(IMouse arg1, ScrollWheel arg2)
+        {
+            oldScrollX = arg2.X;
+            oldScrollY = arg2.Y;
+            var deltaX = oldScrollX;
+            var deltaY = oldScrollY;
+            if(_initialized)
+                _browser.GetBrowserHost().SendMouseWheelEvent((int)_mousePos.X, (int)_mousePos.Y, (int)deltaX, (int)deltaY, CefEventFlags.None);
+        }
+
+        private MouseButtonType TranslateMouseButton(MouseButton button)
+        {
+            return button switch
+            {
+                MouseButton.Left => MouseButtonType.Left,
+                MouseButton.Right => MouseButtonType.Right,
+                MouseButton.Middle => MouseButtonType.Middle,
+                _ => MouseButtonType.Left,
+            };
+        }
+
+        private void mouseDown(IMouse arg1, MouseButton arg2)
+        {
+            // relay to browser
+            if(_initialized)
+                _browser.GetBrowserHost().SendMouseClickEvent(new MouseEvent((int)_mousePos.X, (int)_mousePos.Y, CefEventFlags.LeftMouseButton), TranslateMouseButton(arg2), false, 1);
+        }
+
+        private void mouseUp(IMouse arg1, MouseButton arg2)
+        {
+            if (_initialized)
+                _browser.GetBrowserHost().SendMouseClickEvent(new MouseEvent((int)_mousePos.X, (int)_mousePos.Y, CefEventFlags.LeftMouseButton), TranslateMouseButton(arg2), true, 1);
+        }
+
+        private bool _initialized = false;
         private void BrowserInitialized(object? sender, EventArgs e)
         {
-            _browser.SetZoomLevel(50);
+            _initialized = true;
+            _browser.SetZoomLevel(0.25);
         }
 
         private unsafe void InitializeBuffers()
@@ -111,8 +198,18 @@ namespace Axolotl2D.Cef
                 frameBuffer = new byte[e.Width * e.Height * 4];
 
             Marshal.Copy(e.BufferHandle, frameBuffer, 0, frameBuffer.Length);
-            dirty = true;
             _renderedSize = new Vector2(e.Width, e.Height);
+            dirty = true;
+        }
+
+        protected override void onResize(Vector2 size)
+        {
+            if (_initialized)
+            {
+                _browser.Size = new System.Drawing.Size((int)size.X, (int)size.Y);
+                _browser.GetBrowserHost().Invalidate(PaintElementType.View);
+            }
+            base.onResize(size);
         }
 
         private byte[] frameBuffer = Array.Empty<byte>();
@@ -131,7 +228,7 @@ namespace Axolotl2D.Cef
                 _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
 
                 fixed (byte* ptr = frameBuffer)
-                    _gl.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, (uint)_renderedSize.X, (uint)_renderedSize.Y, PixelFormat.Bgra, PixelType.UnsignedByte, ptr);
+                    _gl.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba, (uint)_renderedSize.X, (uint)_renderedSize.Y, 0, PixelFormat.Bgra, PixelType.UnsignedByte, ptr);
 
                 int location = _gl.GetUniformLocation(_game._shaderProgram, "uTexture");
                 _gl.Uniform1(location, 0);
@@ -160,6 +257,16 @@ namespace Axolotl2D.Cef
             _gl.BindTexture(TextureTarget.Texture2D, _texture);
             _gl.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, (void*)0);
             _gl.BindVertexArray(0);
+
+            // update mouse position and clicks in the browser
+            if (_initialized && _mouse != null)
+            {
+                float mouseX = (_mouse.Position.X - Position.X) / Size.X * _browser.Size.Width;
+                float mouseY = (_mouse.Position.Y - Position.Y) / Size.Y * _browser.Size.Height;
+                _mousePos = new Vector2(mouseX, mouseY);
+                var mouseEvent = new MouseEvent((int)mouseX, (int)mouseY, CefEventFlags.None);
+                _browser.GetBrowserHost().SendMouseMoveEvent(mouseEvent, false);
+            }
         }
 
         public override void Draw(Vector2 position)
@@ -185,10 +292,10 @@ namespace Axolotl2D.Cef
 
             Vector2[] vertices = new Vector2[]
             {
-                new Vector2(x2, y1),
-                new Vector2(x2, y2),
-                new Vector2(x1, y2),
-                new Vector2(x1, y1)
+                    new Vector2(x2, y1),
+                    new Vector2(x2, y2),
+                    new Vector2(x1, y2),
+                    new Vector2(x1, y1)
             };
 
             float cos = MathF.Cos(Rotation);

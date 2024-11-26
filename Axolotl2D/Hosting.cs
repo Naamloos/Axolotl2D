@@ -1,5 +1,4 @@
 ﻿using Axolotl2D.Entities;
-using Axolotl2D.Input;
 using Axolotl2D.Services;
 using Microsoft.Extensions.DependencyInjection;
 using System;

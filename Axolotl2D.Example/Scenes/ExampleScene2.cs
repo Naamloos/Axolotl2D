@@ -17,15 +17,18 @@ namespace Axolotl2D.Example.Scenes
         private IKeyboard? _keyboard;
         private readonly ILogger<ExampleScene2> _logger;
 
-        private CefBrowser? _cef;
+        private CefBrowserManager _cefBrowserManager;
+        private CefBrowser? _cef1;
+        private CefBrowser? _cef2;
 
-        public ExampleScene2(ExampleGame game, ILogger<ExampleScene2> logger)
+        public ExampleScene2(ExampleGame game, ILogger<ExampleScene2> logger, CefBrowserManager cefBrowserManager)
         {
             game.Title = "Scene 2";
-            game.ClearColor = Color.FromHTML("#FF00FF");
+            game.ClearColor = Color.FromHTML("#FFaB6A");
 
             _game = game;
             _logger = logger;
+            _cefBrowserManager = cefBrowserManager;
         }
 
         public override void Load()
@@ -33,17 +36,41 @@ namespace Axolotl2D.Example.Scenes
             _keyboard = _game.GetKeyboard()!;
             _logger.LogInformation("Loaded Example Scene 2");
 
-            _cef = new CefBrowser(_game, Vector2.Zero, new Vector2(500, 500), "https://www.google.com");
+            _cefBrowserManager.TryGetBrowser("github", out _cef1);
+            _cefBrowserManager.TryGetBrowser("google", out _cef2);
+
+            if (_cef1 == null || _cef2 == null)
+            {
+                _logger.LogError("Failed to load CEF browsers!");
+                return;
+            }
+
+            Resize(_game.Viewport);
+
+            _cef1.Enable();
+            _cef2.Enable();
         }
 
         public override void Unload()
         {
             _logger.LogInformation("Unloaded Example Scene 2");
+            _cef1?.Disable();
+            _cef2?.Disable();
         }
 
         public override void Draw(double frameDelta, double frameRate)
         {
-            _cef?.Draw();
+            _cef1?.Draw();
+            _cef2?.Draw();
+        }
+
+        public override void Resize(Vector2 size)
+        {
+            // set both browsers to half of the screen
+            if (_cef1 != null)
+                _cef1.Size = new Vector2(size.X / 2, size.Y);
+            if (_cef2 != null)
+                _cef2.Bounds = (new Vector2(size.X / 2, 0), new Vector2(size.X / 2, size.Y));
         }
 
         private bool? wasKeyPressed = null;
@@ -61,8 +88,6 @@ namespace Axolotl2D.Example.Scenes
             {
                 wasKeyPressed = false;
             }
-
-            _cef.Rotation += 0.01f;
         }
     }
 }

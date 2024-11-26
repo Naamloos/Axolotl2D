@@ -17,7 +17,7 @@ namespace Axolotl2D.Drawable
             set
             {
                 _position = value;
-                calculateVertices();
+                onMove(value);
             }
         }
         private Vector2 _position;
@@ -27,7 +27,7 @@ namespace Axolotl2D.Drawable
             set
             {
                 _size = value;
-                calculateVertices();
+                onResize(value);
             }
         }
         private Vector2 _size;
@@ -38,7 +38,7 @@ namespace Axolotl2D.Drawable
             set
             {
                 _rotation = value;
-                calculateVertices();
+                onRotate(value);
             }
         }
         private float _rotation;
@@ -53,7 +53,7 @@ namespace Axolotl2D.Drawable
             {
                 Position = value.Item1;
                 Size = value.Item2;
-                calculateVertices();
+                onBoundsUpdate(value.Item1, value.Item2);
             }
         }
 
@@ -110,6 +110,26 @@ namespace Axolotl2D.Drawable
         private void resizeWindow(Vector2 size)
         {
             _cachedViewport = size;
+            calculateVertices();
+        }
+
+        protected virtual void onResize(Vector2 size)
+        {
+            calculateVertices();
+        }
+
+        protected virtual void onMove(Vector2 position)
+        {
+            calculateVertices();
+        }
+
+        protected virtual void onBoundsUpdate(Vector2 position, Vector2 size)
+        {
+            calculateVertices();
+        }
+
+        protected virtual void onRotate(float rotation)
+        {
             calculateVertices();
         }
 

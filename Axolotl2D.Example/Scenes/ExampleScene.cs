@@ -1,7 +1,6 @@
 ﻿using Axolotl2D.Attributes;
 using Axolotl2D.Drawable;
 using Axolotl2D.Entities;
-using Axolotl2D.Input;
 using Axolotl2D.Services;
 using Microsoft.Extensions.Logging;
 using Silk.NET.Input;
@@ -28,7 +27,7 @@ namespace Axolotl2D.Example.Scenes
         private BaseDrawable? _object2;
         private BaseDrawable? _object3;
 
-        private Mouse? _mouse;
+        private IMouse? _mouse;
         private IKeyboard? _keyboard;
 
         private readonly ILogger<ExampleScene> _logger;
@@ -115,12 +114,7 @@ namespace Axolotl2D.Example.Scenes
                 _goesRight = true;
             }
 
-            if (_mouse!.LeftButton == MouseKeyState.Click)
-                _logger.LogInformation("Mouse Click");
-            if (_mouse!.LeftButton == MouseKeyState.Release)
-                _logger.LogInformation("Mouse Released");
-
-            if (_mouse.LeftButton == MouseKeyState.Held || _keyboard!.IsKeyPressed(Key.Space))
+            if (_keyboard!.IsKeyPressed(Key.Space))
                 _game.ClearColor = Color.Red;
             else
                 _game.ClearColor = Color.FromHTML("#0088FF");
