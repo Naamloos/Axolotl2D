@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Axolotl2D
+namespace Axolotl2D.Helpers
 {
     /// <summary>
     /// A lazy dependency loader that can be used to check if a dependency is loaded and load it if it is not.
@@ -16,10 +16,10 @@ namespace Axolotl2D
         /// <summary>
         /// Gets whether the dependency is loaded.
         /// </summary>
-        public bool IsLoaded 
-        { 
-            get 
-            { 
+        public bool IsLoaded
+        {
+            get
+            {
                 _value ??= _services.GetService<T>();
                 return _value != null;
             }

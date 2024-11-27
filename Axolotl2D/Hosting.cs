@@ -1,7 +1,7 @@
 ﻿using Axolotl2D.Audio;
 using Axolotl2D.Drawable;
+using Axolotl2D.Helpers;
 using Axolotl2D.Scenes;
-using Axolotl2D.Scenes.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;

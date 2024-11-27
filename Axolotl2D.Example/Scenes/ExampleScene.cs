@@ -1,5 +1,4 @@
-﻿using Axolotl2D.Attributes;
-using Axolotl2D.Drawable;
+﻿using Axolotl2D.Drawable;
 using Axolotl2D.Scenes;
 using Microsoft.Extensions.Logging;
 using Silk.NET.Input;
