@@ -83,6 +83,9 @@ namespace Axolotl2D.Drawable
             game.LoadedSprites++;
         }
 
+        /// <summary>
+        /// Draws the sprite to the screen.
+        /// </summary>
         public unsafe override void Draw()
         {
             _gl.BindBuffer(BufferTargetARB.ArrayBuffer, _vbo);
@@ -99,12 +102,21 @@ namespace Axolotl2D.Drawable
             _gl.BindVertexArray(0);
         }
 
+        /// <summary>
+        /// Draws the sprite to the screen at a specific position.
+        /// </summary>
+        /// <param name="position">Position to draw at.</param>
         public override void Draw(Vector2 position)
         {
             Position = position;
             Draw();
         }
 
+        /// <summary>
+        /// Draws the sprite to the screen at a specific position and size.
+        /// </summary>
+        /// <param name="position">Position to draw at.</param>
+        /// <param name="size">Size to draw with.</param>
         public override void Draw(Vector2 position, Vector2 size)
         {
             Bounds = (position, size);

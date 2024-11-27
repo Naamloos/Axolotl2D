@@ -59,6 +59,9 @@ namespace Axolotl2D.Drawable
             _gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, 0);
         }
 
+        /// <summary>
+        /// Draw the quad to the screen.
+        /// </summary>
         public unsafe override void Draw()
         {
             _gl.BindBuffer(BufferTargetARB.ArrayBuffer, _vbo);
@@ -74,12 +77,21 @@ namespace Axolotl2D.Drawable
             _gl.BindVertexArray(0);
         }
 
+        /// <summary>
+        /// Draw the quad to the screen at the given position.
+        /// </summary>
+        /// <param name="position">Position to draw at.</param>
         public override void Draw(Vector2 position)
         {
             Position = position;
             Draw();
         }
 
+        /// <summary>
+        /// Draw the quad to the screen at the given position and size.
+        /// </summary>
+        /// <param name="position">Position to draw at.</param>
+        /// <param name="size">Size to draw with.</param>
         public override void Draw(Vector2 position, Vector2 size)
         {
             Bounds = (position, size);

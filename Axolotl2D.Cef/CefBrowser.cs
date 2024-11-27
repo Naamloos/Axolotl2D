@@ -24,7 +24,7 @@ namespace Axolotl2D.Cef
     public class CefBrowser : BaseDrawable
     {
         private GL _gl;
-        private ChromiumWebBrowser _browser;
+        private ChromiumWebBrowser? _browser;
         private uint _vbo;
         private uint _ebo;
         private uint _vao;
@@ -78,7 +78,7 @@ namespace Axolotl2D.Cef
         /// <exception cref="InvalidOperationException">Browser was already disabled!</exception>
         public void Disable()
         {
-            if (_initialized)
+            if (_initialized && _browser is not null)
             {
                 _initialized = false;
                 _browser.Paint -= OnBrowserPaint;
@@ -98,7 +98,7 @@ namespace Axolotl2D.Cef
         public void SetUrl(string url)
         {
             _url = url;
-            if (_initialized)
+            if (_initialized && _browser is not null)
             {
                 _browser.Load(url);
             }
@@ -203,9 +203,9 @@ namespace Axolotl2D.Cef
             dirty = true;
         }
 
-        protected override void onResize(Vector2 size)
+        internal override void onResize(Vector2 size)
         {
-            if (_initialized)
+            if (_initialized && _browser is not null)
             {
                 _browser.Size = new System.Drawing.Size((int)size.X, (int)size.Y);
                 _browser.GetBrowserHost().Invalidate(PaintElementType.View);
@@ -240,6 +240,9 @@ namespace Axolotl2D.Cef
             }
         }
 
+        /// <summary>
+        /// Draws the browser to the screen.
+        /// </summary>
         public unsafe override void Draw()
         {
             updateFromBuffer();
@@ -260,7 +263,7 @@ namespace Axolotl2D.Cef
             _gl.BindVertexArray(0);
 
             // update mouse position and clicks in the browser
-            if (_initialized && _mouse != null)
+            if (_initialized && _mouse is not null && _browser is not null)
             {
                 float mouseX = (_mouse.Position.X - Position.X) / Size.X * _browser.Size.Width;
                 float mouseY = (_mouse.Position.Y - Position.Y) / Size.Y * _browser.Size.Height;
@@ -270,19 +273,28 @@ namespace Axolotl2D.Cef
             }
         }
 
+        /// <summary>
+        /// Draws the browser to the screen at the given position.
+        /// </summary>
+        /// <param name="position">Position to draw at.</param>
         public override void Draw(Vector2 position)
         {
             Position = position;
             Draw();
         }
 
+        /// <summary>
+        /// Draws the browser to the screen at the given position and size.
+        /// </summary>
+        /// <param name="position">Position to draw at.</param>
+        /// <param name="size">Size to draw with.</param>
         public override void Draw(Vector2 position, Vector2 size)
         {
             Bounds = (position, size);
             Draw();
         }
 
-        protected override void calculateVertices()
+        internal override void calculateVertices()
         {
             float x1 = Position.X / _cachedViewport.X * 2 - 1;
             float y1 = 1 - (Position.Y + Size.Y) / _cachedViewport.Y * 2;

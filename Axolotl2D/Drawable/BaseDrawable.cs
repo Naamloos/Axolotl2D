@@ -74,16 +74,16 @@ namespace Axolotl2D.Drawable
         }
 
         // These are the vertices that make up the quad. Each point has 3 values (x, y, z) and 2 values for the texture coordinates (u, v).
-        protected float[] _vertices = new float[20];
+        internal float[] _vertices = new float[20];
         // These are the indices that make up the quad. So 3 points make up a triangle. These are drawn in order.
-        protected uint[] _indices =
+        internal uint[] _indices =
         [
             0u, 1u, 3u,
             1u, 2u, 3u
         ];
 
         internal Game _game;
-        protected Vector2 _cachedViewport;
+        internal Vector2 _cachedViewport;
 
         internal BaseDrawable(Game game, Vector2 position, Vector2 size)
         {
@@ -129,27 +129,27 @@ namespace Axolotl2D.Drawable
             calculateVertices();
         }
 
-        protected virtual void onResize(Vector2 size)
+        internal virtual void onResize(Vector2 size)
         {
             calculateVertices();
         }
 
-        protected virtual void onMove(Vector2 position)
+        internal virtual void onMove(Vector2 position)
         {
             calculateVertices();
         }
 
-        protected virtual void onBoundsUpdate(Vector2 position, Vector2 size)
+        internal virtual void onBoundsUpdate(Vector2 position, Vector2 size)
         {
             calculateVertices();
         }
 
-        protected virtual void onRotate(float rotation)
+        internal virtual void onRotate(float rotation)
         {
             calculateVertices();
         }
 
-        protected virtual void calculateVertices()
+        internal virtual void calculateVertices()
         {
             float x1 = Position.X / _cachedViewport.X * 2 - 1;
             float y1 = 1 - (Position.Y + Size.Y) / _cachedViewport.Y * 2;

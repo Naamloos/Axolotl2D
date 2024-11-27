@@ -12,11 +12,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\Music\SpaceJazz.wav" />
     <None Remove="Resources\Sprites\mochicat.png" />
     <None Remove="Resources\Sprites\rei.png" />
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\Music\SpaceJazz.wav" />
     <EmbeddedResource Include="Resources\Sprites\mochicat.png" />
     <EmbeddedResource Include="Resources\Sprites\rei.png" />
   </ItemGroup>

@@ -1,4 +1,5 @@
-﻿using Axolotl2D.Cef;
+﻿using Axolotl2D.Audio;
+using Axolotl2D.Cef;
 using Axolotl2D.Drawable;
 using Axolotl2D.Entities;
 using Axolotl2D.Services;
@@ -15,7 +16,10 @@ namespace Axolotl2D.Example
         private readonly AssetManager _assetManager;
         private readonly CefBrowserManager _cefBrowserManager;
 
-        public ExampleGame(IServiceProvider services, ILogger<ExampleGame> logger, AssetManager assetManager, CefBrowserManager cefBrowserManager) 
+        private readonly Song _song;
+
+        public ExampleGame(IServiceProvider services, ILogger<ExampleGame> logger, AssetManager assetManager, CefBrowserManager cefBrowserManager,
+            AudioPlayer audioPlayer) 
             : base(services, maxDrawRate: 240, maxUpdateRate: 240) // We want to pass the service provider to the game engine so it can utilize it.
         {
             // Subscribe to game events, if needed outside of the Scene Manager
@@ -25,6 +29,8 @@ namespace Axolotl2D.Example
             this._logger = logger;
             this._assetManager = assetManager;
             this._cefBrowserManager = cefBrowserManager;
+
+            _song = audioPlayer.LoadSong(Assembly.GetEntryAssembly()!.GetManifestResourceStream("Axolotl2D.Example.Resources.Music.SpaceJazz.wav")!);
         }
 
         public void Load()
@@ -38,6 +44,8 @@ namespace Axolotl2D.Example
             _cefBrowserManager.RegisterBrowser("discord", "https://discord.com/app");
 
             _logger.LogInformation("Loaded Game");
+
+            _song.Play();
         }
 
         public override void Cleanup()

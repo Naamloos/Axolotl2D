@@ -12,6 +12,9 @@ namespace Axolotl2D.Attributes
     /// </summary>
     public class DefaultSceneAttribute : Attribute
     {
+        /// <summary>
+        /// Creates a new instance of the DefaultSceneAttribute.
+        /// </summary>
         public DefaultSceneAttribute()
         {
         }

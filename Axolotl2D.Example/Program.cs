@@ -19,6 +19,8 @@ namespace Axolotl2D.Example
 
                     services.UseCefBrowserManager();
 
+                    services.UseAudioPlayer();
+
                     services.AddScene<ExampleScene>();
                     services.AddScene<ExampleScene2>();
 

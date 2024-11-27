@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace Axolotl2D.Cef
 {
+    /// <summary>
+    /// Provides extension methods for hosting.
+    /// </summary>
     public static class Hosting
     {
         /// <summary>
