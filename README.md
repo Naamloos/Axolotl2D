@@ -1,6 +1,6 @@
 <p align="center">
     <img width="250" src="logo.png"/>
-    <h1>
+    <h1 align="center">
         Axolotl2D
     </h1>
 </p>
