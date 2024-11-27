@@ -1,5 +1,5 @@
 <p align="center">
-    <img width="250" src="logo.png"/>
+    <img width="250" src="docs/images/logo.png"/>
     <h1 align="center">
         Axolotl2D
     </h1>
