@@ -9,6 +9,10 @@ namespace Axolotl2D.Cef
 {
     public static class Hosting
     {
+        /// <summary>
+        /// Adds the CefBrowserManager to the service collection.
+        /// </summary>
+        /// <param name="services">Service Collection</param>
         public static void UseCefBrowserManager(this IServiceCollection services)
         {
             if (!services.Any(x => x.ServiceType == typeof(ILazyDependencyLoader<>)))

@@ -9,13 +9,19 @@ using System.Numerics;
 
 namespace Axolotl2D
 {
+    /// <summary>
+    /// Represents the base game class for Axolotl2D.
+    /// </summary>
     public abstract partial class Game : IDisposable
     {
         /// <summary>
-        /// Represents the window title for the game.
+        /// The window title.
         /// </summary>
         public string Title { get; set; } = "";
 
+        /// <summary>
+        /// The current Viewport of the game.
+        /// </summary>
         public Vector2 Viewport
         {
             get => new(_window.Size.X, _window.Size.Y);
@@ -58,6 +64,12 @@ namespace Axolotl2D
 
         internal IServiceProvider _services;
 
+        /// <summary>
+        /// Construct a new game.
+        /// </summary>
+        /// <param name="services">Service provider to relay.</param>
+        /// <param name="maxDrawRate">Maximum frame rate.</param>
+        /// <param name="maxUpdateRate">Maximum update rate.</param>
         public Game(IServiceProvider services, int maxDrawRate = 120, int maxUpdateRate = 120) // TODO make configurable at runtime
         {
             _services = services;
@@ -79,8 +91,16 @@ namespace Axolotl2D
             _window.Update += Update;
         }
 
+        /// <summary>
+        /// Gets the mouse input helper.
+        /// </summary>
+        /// <returns>Mouse input helper.</returns>
         public IMouse? GetMouse() => _input?.Mice[0];
 
+        /// <summary>
+        /// Gets the keyboard input helper.
+        /// </summary>
+        /// <returns>Keyboard input helper.</returns>
         public IKeyboard? GetKeyboard() => _input?.Keyboards[0];
 
         internal void Start()
@@ -176,6 +196,9 @@ namespace Axolotl2D
             _window.Title = $"{Title} | FPS: {Math.Round(CurrentFramerate)}";
         }
 
+        /// <summary>
+        /// Event that gets called when the game attempts to clean up.
+        /// </summary>
         public abstract void Cleanup();
 
         /// <summary>
@@ -189,6 +212,9 @@ namespace Axolotl2D
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// Finalizer for the game.
+        /// </summary>
         ~Game() => Dispose();
     }
 }

@@ -11,12 +11,24 @@ using System.Threading.Tasks;
 
 namespace Axolotl2D.Services
 {
+    /// <summary>
+    /// Represents a service that hosts the game using Scenes.
+    /// </summary>
+    /// <param name="game">Game to host</param>
+    /// <param name="_services">Services</param>
     public class SceneGameHost(Game game, IServiceProvider _services) : IGameHost
     {
         private BaseScene? _currentScene;
 
+        /// <summary>
+        /// Switches to a different scene.
+        /// </summary>
+        /// <typeparam name="T">Type of the Scene to switch to</typeparam>
         public void ChangeScene<T>() where T : BaseScene => ChangeScene(typeof(T));
 
+        /// <summary>
+        /// Starts the game.
+        /// </summary>
         public Task StartAsync(CancellationToken cancellationToken)
         {
             game.OnLoad += PreloadSceneManager;
@@ -45,6 +57,9 @@ namespace Axolotl2D.Services
             game.OnLoad -= PreloadSceneManager;
         }
 
+        /// <summary>
+        /// Stops the game.
+        /// </summary>
         public Task StopAsync(CancellationToken cancellationToken)
         {
             if (_currentScene != null)

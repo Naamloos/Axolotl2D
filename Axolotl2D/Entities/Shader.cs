@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 
 namespace Axolotl2D.Entities
 {
+    /// <summary>
+    /// Represents a shader in the game.
+    /// </summary>
     public class Shader
     {
         private string _source;
@@ -17,6 +20,12 @@ namespace Axolotl2D.Entities
         private ShaderType _shaderType;
         private Game _game;
 
+        /// <summary>
+        /// Initialize a new Shader object.
+        /// </summary>
+        /// <param name="shaderSource">GLSL code for this shader</param>
+        /// <param name="shaderType">Type of this shader</param>
+        /// <param name="game">Game to initialize shader on</param>
         public Shader(string shaderSource, ShaderType shaderType, Game game)
         {
             _source = shaderSource;
@@ -25,6 +34,10 @@ namespace Axolotl2D.Entities
             _game = game;
         }
 
+        /// <summary>
+        /// Compile the shader.
+        /// </summary>
+        /// <exception cref="ShaderCompileException">Shader failed to compile</exception>
         public void Compile()
         {
             uint shaderPointer = _gl.CreateShader(_shaderType);
@@ -33,12 +46,16 @@ namespace Axolotl2D.Entities
 
             _gl.GetShader(shaderPointer, ShaderParameterName.CompileStatus, out int vertexShaderStatus);
             if (vertexShaderStatus != (int)GLEnum.True)
-                throw new ShaderCompileException("Vertex shader failed to compile: " + _gl.GetShaderInfoLog(shaderPointer), this);
+                throw new ShaderCompileException("Shader failed to compile: " + _gl.GetShaderInfoLog(shaderPointer), this);
 
             compiled = true;
             _shaderPointer = shaderPointer;
         }
 
+        /// <summary>
+        /// Attach the shader to the program.
+        /// </summary>
+        /// <exception cref="ShaderNotCompiledException">Shader was not compiled yet</exception>
         public void AttachToProgram()
         {
             if (!compiled)
@@ -46,6 +63,10 @@ namespace Axolotl2D.Entities
             _gl.AttachShader(_game._shaderProgram, _shaderPointer);
         }
 
+        /// <summary>
+        /// Detach the shader from the program.
+        /// </summary>
+        /// <exception cref="ShaderNotCompiledException">Shader was not compiled yet</exception>
         public void DetachFromProgram()
         {
             if (!compiled)
@@ -55,8 +76,18 @@ namespace Axolotl2D.Entities
             compiled = false;
         }
 
+        /// <summary>
+        /// Get the pointer to the shader.
+        /// </summary>
+        /// <returns>Pointer to the shader</returns>
+        /// <exception cref="ShaderNotCompiledException">Shader was not compiled yet</exception>
         public uint GetPointer() => compiled? _shaderPointer : throw new ShaderNotCompiledException("Tried accessing the shader pointer to a shader that was not compiled yet!", this);
 
+        /// <summary>
+        /// Create a basic fragment shader.
+        /// </summary>
+        /// <param name="game">Game to create the shader on.</param>
+        /// <returns>A basic fragment shader</returns>
         public static Shader CreateBasicFragment(Game game)
         {
             // load from embedded resources as text
@@ -65,6 +96,11 @@ namespace Axolotl2D.Entities
             return new Shader(reader.ReadToEnd(), ShaderType.FragmentShader, game);
         }
 
+        /// <summary>
+        /// Create a basic vertex shader.
+        /// </summary>
+        /// <param name="game">Game to create the shader on.</param>
+        /// <returns>A basic vertex shader</returns>
         public static Shader CreateBasicVertex(Game game)
         {
             // load from embedded resources as text

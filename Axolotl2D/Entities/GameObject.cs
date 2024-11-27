@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Axolotl2D.Entities
 {
+    /// <summary>
+    /// WIP: Represents a game object in the game.
+    /// </summary>
     public abstract class GameObject
     {
         public virtual void Update() { }

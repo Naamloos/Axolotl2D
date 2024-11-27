@@ -9,8 +9,15 @@ using System.Threading.Tasks;
 
 namespace Axolotl2D.Drawable
 {
+    /// <summary>
+    /// Abstract class that represents a drawable object.
+    /// This can be a Sprite, Text, or any other drawable object.
+    /// </summary>
     public abstract class BaseDrawable : IDisposable
     {
+        /// <summary>
+        /// The current position of this drawable object.
+        /// </summary>
         public Vector2 Position
         {
             get => _position;
@@ -21,6 +28,10 @@ namespace Axolotl2D.Drawable
             }
         }
         private Vector2 _position;
+
+        /// <summary>
+        /// The current size of this drawable object.
+        /// </summary>
         public Vector2 Size
         {
             get => _size;
@@ -32,6 +43,10 @@ namespace Axolotl2D.Drawable
         }
         private Vector2 _size;
 
+        /// <summary>
+        /// The current rotation of this drawable object.
+        /// Objects are rotated around their center.
+        /// </summary>
         public float Rotation
         {
             get => _rotation;
@@ -45,6 +60,7 @@ namespace Axolotl2D.Drawable
 
         /// <summary>
         /// When updating both the position and size, use this property to update both at the same time.
+        /// This ensures drawable vertices don't get calculated twice.
         /// </summary>
         public (Vector2, Vector2) Bounds
         {
@@ -82,7 +98,7 @@ namespace Axolotl2D.Drawable
         }
 
         /// <summary>
-        /// Draws the drawable object with the current position and size.
+        /// Draws the drawable object with the currently defined position and size.
         /// </summary>
         public abstract void Draw();
 
@@ -100,7 +116,7 @@ namespace Axolotl2D.Drawable
         public abstract void Draw(Vector2 position, Vector2 size);
 
         /// <summary>
-        /// Disposes of the drawable object.
+        /// Disposes of this drawable object.
         /// </summary>
         public virtual void Dispose()
         {

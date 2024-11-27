@@ -9,11 +9,18 @@ using System.Threading.Tasks;
 
 namespace Axolotl2D.Cef
 {
+    /// <summary>
+    /// Manages CEF browsers.
+    /// </summary>
     public class CefBrowserManager
     {
         private readonly Dictionary<string, CefBrowser> _browsers = new();
         private readonly ILazyDependencyLoader<Game> _lazyGame;
 
+        /// <summary>
+        /// Creates a new instance of <see cref="CefBrowserManager"/>.
+        /// </summary>
+        /// <param name="game">Game to use for initialization</param>
         public CefBrowserManager(ILazyDependencyLoader<Game> game)
         {
             _lazyGame = game;
@@ -28,6 +35,11 @@ namespace Axolotl2D.Cef
             CefSharp.Cef.Initialize(cefSett, true, browserProcessHandler: null);
         }
 
+        /// <summary>
+        /// Registers a browser with the given key and base URL.
+        /// </summary>
+        /// <param name="key">Key to register browser under</param>
+        /// <param name="baseUrl">URL to register browser with</param>
         public void RegisterBrowser(string key, string baseUrl)
         {
             if (!_lazyGame.IsLoaded)
@@ -43,6 +55,12 @@ namespace Axolotl2D.Cef
             _browsers.Add(key, browser);
         }
 
+        /// <summary>
+        /// Tries to get a browser from the asset manager.
+        /// </summary>
+        /// <param name="key">Key of browser to get</param>
+        /// <param name="browser">a <see cref="CefBrowser"/></param>
+        /// <returns>Whether retrieving was succesful.</returns>
         public bool TryGetBrowser(string key, out CefBrowser? browser)
         {
             var success = _browsers.TryGetValue(key, out CefBrowser? output);

@@ -10,6 +10,10 @@ using System.Numerics;
 
 namespace Axolotl2D.Drawable
 {
+    /// <summary>
+    /// Represents an image that can be drawn to the screen.
+    /// Use <seealso cref="Axolotl2D.Services.AssetManager.LoadSprite(string, Stream)"/> to instantiate this class.
+    /// </summary>
     public class Sprite : BaseDrawable
     {
         private readonly uint _vbo;

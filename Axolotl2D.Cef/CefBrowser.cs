@@ -17,6 +17,10 @@ namespace Axolotl2D.Cef
 {
     // Requires setting a runtime identifier
     // <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+
+    /// <summary>
+    /// Represents a CefSharp browser in the game.
+    /// </summary>
     public class CefBrowser : BaseDrawable
     {
         private GL _gl;
@@ -33,7 +37,7 @@ namespace Axolotl2D.Cef
 
         private string _url = "https://www.google.com";
 
-        public CefBrowser(Game game, Vector2 position, Vector2 size, string url) : base(game, position, size)
+        internal CefBrowser(Game game, Vector2 position, Vector2 size, string url) : base(game, position, size)
         {
             _url = url;
 
@@ -47,6 +51,10 @@ namespace Axolotl2D.Cef
             _mouse!.Scroll += mouseScroll;
         }
 
+        /// <summary>
+        /// Enables the browser.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">Browser was already enabled!</exception>
         public void Enable()
         {
             if(!_initialized)
@@ -64,6 +72,10 @@ namespace Axolotl2D.Cef
             }
         }
 
+        /// <summary>
+        /// Disables the browser.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">Browser was already disabled!</exception>
         public void Disable()
         {
             if (_initialized)
@@ -79,6 +91,10 @@ namespace Axolotl2D.Cef
             }
         }
 
+        /// <summary>
+        /// Sets the URL of the browser.
+        /// </summary>
+        /// <param name="url">URL to set the browser to.</param>
         public void SetUrl(string url)
         {
             _url = url;

@@ -6,7 +6,14 @@ using System.Threading.Tasks;
 
 namespace Axolotl2D.Attributes
 {
+    /// <summary>
+    /// To be applied to a Scene class to mark it as the default scene.
+    /// This scene will be loaded when the Scene Manager is initialized.
+    /// </summary>
     public class DefaultSceneAttribute : Attribute
     {
+        public DefaultSceneAttribute()
+        {
+        }
     }
 }

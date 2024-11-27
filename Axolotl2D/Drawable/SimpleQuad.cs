@@ -9,6 +9,10 @@ using System.Threading.Tasks;
 
 namespace Axolotl2D.Drawable
 {
+    /// <summary>
+    /// Drawable class that draws a simple quad to the screen.
+    /// Generally you should only use this for testing purposes.
+    /// </summary>
     public class SimpleQuad : BaseDrawable
     {
         private readonly uint _vbo;
@@ -17,6 +21,12 @@ namespace Axolotl2D.Drawable
 
         private readonly GL _gl;
 
+        /// <summary>
+        /// Initialize a new SimpleQuad object.
+        /// </summary>
+        /// <param name="game">Game to initialize on</param>
+        /// <param name="position">Position to initialize at</param>
+        /// <param name="size">Size to initialize at</param>
         public unsafe SimpleQuad(Game game, Vector2 position, Vector2 size) : base(game, position, size)
         {
             _gl = game._openGL!;
