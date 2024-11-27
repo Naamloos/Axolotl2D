@@ -26,7 +26,7 @@
       }
     ],
     "output": "_site",
-    "template": ["default", "modern", "memberpage", "templates/material"],
+    "template": ["default", "modern", "templates/material"],
     "postProcessors": [
       "ExtractSearchIndex"
     ],
@@ -35,6 +35,7 @@
       "_appTitle": "Axolotl2D",
       "_appLogoPath": "images/logo_small.png",
       "_appFaviconPath": "images/favicon.ico",
+      "_appFooter": "© 2025 Ryan de Jonge (Naamloos)",
       "_enableSearch": true,
       "pdf": false
     }
