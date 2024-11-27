@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Axolotl2D.Exceptions
+﻿namespace Axolotl2D.Exceptions
 {
     /// <summary>
     /// Thrown when an action is performed that required the engine to be initialized, but it is not.

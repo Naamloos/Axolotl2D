@@ -3,11 +3,6 @@ using Axolotl2D.Drawable;
 using Axolotl2D.Helpers;
 using Axolotl2D.Scenes;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Axolotl2D
 {

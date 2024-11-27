@@ -1,10 +1,7 @@
 ﻿using Axolotl2D.Audio;
 using Axolotl2D.Cef;
 using Axolotl2D.Drawable;
-using Axolotl2D;
 using Microsoft.Extensions.Logging;
-using Silk.NET.Input;
-using System.Numerics;
 using System.Reflection;
 
 namespace Axolotl2D.Example

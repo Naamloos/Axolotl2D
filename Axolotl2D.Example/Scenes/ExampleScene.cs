@@ -2,12 +2,7 @@
 using Axolotl2D.Scenes;
 using Microsoft.Extensions.Logging;
 using Silk.NET.Input;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Axolotl2D.Example.Scenes
 {

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Axolotl2D
+﻿namespace Axolotl2D
 {
     /// <summary>
     /// Represents a color in the game.

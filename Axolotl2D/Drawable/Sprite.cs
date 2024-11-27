@@ -1,11 +1,5 @@
 ﻿using Silk.NET.OpenGL;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using StbImageSharp;
-using Silk.NET.Core.Native;
 using System.Numerics;
 
 namespace Axolotl2D.Drawable

@@ -1,13 +1,9 @@
 ﻿using Axolotl2D.Drawable;
-using Axolotl2D;
 using CefSharp;
 using CefSharp.OffScreen;
-using CefSharp.Structs;
 using Silk.NET.Input;
 using Silk.NET.OpenGL;
-using StbImageSharp;
 using System.Numerics;
-using System.Reflection;
 using System.Runtime.InteropServices;
 
 // https://github.com/cefsharp/CefSharp/wiki/General-Usage#need-to-knowlimitations

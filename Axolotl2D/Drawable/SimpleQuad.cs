@@ -1,11 +1,5 @@
-﻿using Axolotl2D;
-using Silk.NET.OpenGL;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Silk.NET.OpenGL;
 using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Axolotl2D.Drawable
 {

@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Hosting;
-using Axolotl2D;
 using Microsoft.Extensions.DependencyInjection;
 using Axolotl2D.Example.Scenes;
 using Axolotl2D.Cef;
