@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Axolotl2D.Entities
+namespace Axolotl2D
 {
     /// <summary>
     /// Represents a color in the game.
@@ -109,7 +109,7 @@ namespace Axolotl2D.Entities
         /// #FFFFFF
         /// </summary>
         public static Color White => new Color(1.0f, 1.0f, 1.0f, 1.0f);
-        
+
         /// <summary>
         /// #FFFF00
         /// </summary>
@@ -158,6 +158,6 @@ namespace Axolotl2D.Entities
         /// <summary>
         /// #0023FF
         /// </summary>
-        public static Color RamptoerismeBlue => Color.FromHTML("#0023FF");
+        public static Color RamptoerismeBlue => FromHTML("#0023FF");
     }
 }

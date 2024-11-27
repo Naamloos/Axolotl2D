@@ -1,5 +1,5 @@
 ﻿using Axolotl2D.Drawable;
-using Axolotl2D.Entities;
+using Axolotl2D;
 using CefSharp;
 using CefSharp.OffScreen;
 using CefSharp.Structs;

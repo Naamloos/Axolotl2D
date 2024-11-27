@@ -1,5 +1,4 @@
-﻿using Axolotl2D.Entities;
-using Axolotl2D.Exceptions;
+﻿using Axolotl2D.Exceptions;
 using Microsoft.Extensions.Hosting;
 using Silk.NET.Input;
 using Silk.NET.Maths;
@@ -57,8 +56,8 @@ namespace Axolotl2D
         internal readonly IWindow _window;
         internal IInputContext? _input;
 
-        private Entities.Shader? _basicVertexShader;
-        private Entities.Shader? _basicFragmentShader;
+        private Shaders.Shader? _basicVertexShader;
+        private Shaders.Shader? _basicFragmentShader;
 
         internal uint _shaderProgram;
 
@@ -138,8 +137,8 @@ namespace Axolotl2D
             _openGL.ClearColor(ClearColor.R, ClearColor.G, ClearColor.B, ClearColor.A);
 
             // Load basic shaders
-            _basicVertexShader = Entities.Shader.CreateBasicVertex(this);
-            _basicFragmentShader = Entities.Shader.CreateBasicFragment(this);
+            _basicVertexShader = Shaders.Shader.CreateBasicVertex(this);
+            _basicFragmentShader = Shaders.Shader.CreateBasicFragment(this);
 
             // Compile basic shaders
             _basicVertexShader.Compile();

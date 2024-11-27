@@ -1,16 +1,15 @@
-﻿using Axolotl2D.Drawable;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Axolotl2D.Services
+namespace Axolotl2D.Drawable
 {
     /// <summary>
     /// Manages assets for the game.
     /// </summary>
-    public class AssetManager(ILazyDependencyLoader<Game> lazyGame)
+    public class SpriteManager(ILazyDependencyLoader<Game> lazyGame)
     {
         private readonly Dictionary<string, Sprite> sprites = [];
         private readonly ILazyDependencyLoader<Game> _lazyGame = lazyGame;
@@ -23,11 +22,11 @@ namespace Axolotl2D.Services
         /// <exception cref="Exception"></exception>
         public void LoadSprite(string key, Stream assetStream)
         {
-            if(!_lazyGame.IsLoaded)
+            if (!_lazyGame.IsLoaded)
             {
                 throw new Exception("Attempted to load assets before game initialization!");
             }
-            if(sprites.ContainsKey(key))
+            if (sprites.ContainsKey(key))
             {
                 throw new Exception($"Sprite with key {key} already exists!");
             }

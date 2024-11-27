@@ -1,6 +1,7 @@
 ﻿using Axolotl2D.Audio;
-using Axolotl2D.Entities;
-using Axolotl2D.Services;
+using Axolotl2D.Drawable;
+using Axolotl2D.Scenes;
+using Axolotl2D.Scenes.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -62,7 +63,7 @@ namespace Axolotl2D
                 services.AddTransient(typeof(ILazyDependencyLoader<>), typeof(LazyDependencyLoader<>));
             }
 
-            services.AddSingleton<AssetManager>();
+            services.AddSingleton<SpriteManager>();
         }
 
         /// <summary>

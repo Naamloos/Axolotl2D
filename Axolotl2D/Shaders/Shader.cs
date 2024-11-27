@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Axolotl2D.Entities
+namespace Axolotl2D.Shaders
 {
     /// <summary>
     /// Represents a shader in the game.
@@ -81,7 +81,7 @@ namespace Axolotl2D.Entities
         /// </summary>
         /// <returns>Pointer to the shader</returns>
         /// <exception cref="ShaderNotCompiledException">Shader was not compiled yet</exception>
-        public uint GetPointer() => compiled? _shaderPointer : throw new ShaderNotCompiledException("Tried accessing the shader pointer to a shader that was not compiled yet!", this);
+        public uint GetPointer() => compiled ? _shaderPointer : throw new ShaderNotCompiledException("Tried accessing the shader pointer to a shader that was not compiled yet!", this);
 
         /// <summary>
         /// Create a basic fragment shader.

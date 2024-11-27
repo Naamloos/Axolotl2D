@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Axolotl2D.Attributes
+namespace Axolotl2D.Scenes.Attributes
 {
     /// <summary>
     /// To be applied to a Scene class to mark it as the default scene.

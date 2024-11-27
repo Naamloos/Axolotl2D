@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Axolotl2D.Services
+namespace Axolotl2D
 {
     /// <summary>
     /// Represents a service that simply hosts the game.

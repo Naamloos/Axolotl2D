@@ -1,8 +1,7 @@
 ﻿using Axolotl2D.Audio;
 using Axolotl2D.Cef;
 using Axolotl2D.Drawable;
-using Axolotl2D.Entities;
-using Axolotl2D.Services;
+using Axolotl2D;
 using Microsoft.Extensions.Logging;
 using Silk.NET.Input;
 using System.Numerics;
@@ -13,12 +12,12 @@ namespace Axolotl2D.Example
     public class ExampleGame : Game
     {
         private readonly ILogger<ExampleGame> _logger;
-        private readonly AssetManager _assetManager;
+        private readonly SpriteManager _assetManager;
         private readonly CefBrowserManager _cefBrowserManager;
 
         private readonly Song _song;
 
-        public ExampleGame(IServiceProvider services, ILogger<ExampleGame> logger, AssetManager assetManager, CefBrowserManager cefBrowserManager,
+        public ExampleGame(IServiceProvider services, ILogger<ExampleGame> logger, SpriteManager assetManager, CefBrowserManager cefBrowserManager,
             AudioPlayer audioPlayer) 
             : base(services, maxDrawRate: 240, maxUpdateRate: 240) // We want to pass the service provider to the game engine so it can utilize it.
         {

@@ -1,5 +1,5 @@
 ﻿using Axolotl2D.Cef;
-using Axolotl2D.Entities;
+using Axolotl2D.Scenes;
 using Microsoft.Extensions.Logging;
 using Silk.NET.Input;
 using System;

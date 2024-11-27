@@ -1,7 +1,6 @@
 ﻿using Axolotl2D.Attributes;
 using Axolotl2D.Drawable;
-using Axolotl2D.Entities;
-using Axolotl2D.Services;
+using Axolotl2D.Scenes;
 using Microsoft.Extensions.Logging;
 using Silk.NET.Input;
 using System;
@@ -33,9 +32,9 @@ namespace Axolotl2D.Example.Scenes
         private readonly ILogger<ExampleScene> _logger;
 
         private readonly ExampleGame _game;
-        private readonly AssetManager _assetManager;
+        private readonly SpriteManager _assetManager;
 
-        public ExampleScene(ExampleGame game, ILogger<ExampleScene> logger, AssetManager assetManager)
+        public ExampleScene(ExampleGame game, ILogger<ExampleScene> logger, SpriteManager assetManager)
         {
             this._game = game;
             this._keyboard = game.GetKeyboard()!;

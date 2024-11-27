@@ -1,6 +1,4 @@
-﻿using Axolotl2D.Attributes;
-using Axolotl2D.Entities;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
@@ -9,7 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Axolotl2D.Services
+namespace Axolotl2D.Scenes
 {
     /// <summary>
     /// Represents a service that hosts the game using Scenes.

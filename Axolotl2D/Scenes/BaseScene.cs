@@ -1,12 +1,11 @@
-﻿using Axolotl2D.Services;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Axolotl2D.Entities
+namespace Axolotl2D.Scenes
 {
     /// <summary>
     /// Represents a scene in the game.

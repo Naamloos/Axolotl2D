@@ -1,4 +1,4 @@
-﻿using Axolotl2D.Entities;
+﻿using Axolotl2D;
 using Silk.NET.OpenGL;
 using System;
 using System.Collections.Generic;
