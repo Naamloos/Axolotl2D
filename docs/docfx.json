@@ -10,7 +10,8 @@
         }
       ],
       "output": "api",
-      "memberLayout": "separatePages"
+      "memberLayout": "samePage",
+      "namespaceLayout": "nested"
     }
   ],
   "build": {
