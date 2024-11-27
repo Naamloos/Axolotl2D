@@ -19,7 +19,7 @@ namespace Axolotl2D.Cef
     // <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
 
     /// <summary>
-    /// Represents a CefSharp browser in the game.
+    /// Represents a CefSharp browser that can be drawn to the screen.
     /// </summary>
     public class CefBrowser : BaseDrawable
     {
