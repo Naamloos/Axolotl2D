@@ -9,16 +9,14 @@ namespace Axolotl2D.Example.Scenes
     [DefaultScene]
     public class ExampleScene : BaseScene
     {
-        private const int QUAD_COUNT = 9;
+        private const int QUAD_COUNT = 4;
         private const int MOVE_SPEED = 5;
 
         private float _currentXPos = 0;
         private bool _goesRight = true;
         private float _currentRotation = 0;
 
-        private BaseDrawable? _object1;
-        private BaseDrawable? _object2;
-        private BaseDrawable? _object3;
+        private BaseDrawable? _logo;
 
         private IMouse? _mouse;
         private IKeyboard? _keyboard;
@@ -42,22 +40,14 @@ namespace Axolotl2D.Example.Scenes
         {
             for (int i = 0; i < QUAD_COUNT; i++)
             {
-                BaseDrawable? thisSprite;
-                if (i % 3 == 0)
-                {
-                    thisSprite = _object1;
-                }
-                else if (i % 3 == 1)
-                {
-                    thisSprite = _object2;
-                }
-                else
-                {
-                    thisSprite = _object3;
-                }
-                thisSprite!.Rotation = _currentRotation;
-                thisSprite!.Draw(new Vector2(_currentXPos, i * 74), new Vector2(50, 50));
+                _logo!.Rotation = _currentRotation;
+                _logo!.Draw(new Vector2(_currentXPos, i * 150), new Vector2(160, 100));
             }
+
+            // Squish the width and height at random speeds
+            float squishWidth = 160 + (float)(Math.Sin(_currentRotation * 2) * 80);
+            float squishHeight = 100 + (float)(Math.Cos(_currentRotation * 3) * 50);
+            _logo!.Draw(new Vector2(300, 300), new Vector2(squishWidth, squishHeight));
         }
 
         public override void Load()
@@ -68,9 +58,7 @@ namespace Axolotl2D.Example.Scenes
 
             // It is not recommended to load Sprites any time a scene is initialized, as it can cause memory leaks.
             // At this moment it is not possible to do this any other way. This will be fixed in the future.
-            this._assetManager.TryGetSprite("mochicat", out _object1);
-            this._assetManager.TryGetSprite("rei", out _object2);
-            _object3 = new SimpleQuad(_game, new Vector2(0, 0), new Vector2(50, 50));
+            this._assetManager.TryGetSprite("logo", out _logo);
 
             _mouse = _game.GetMouse();
             _keyboard = _game.GetKeyboard();
@@ -92,7 +80,7 @@ namespace Axolotl2D.Example.Scenes
 
         public override void Update(double frameDelta)
         {
-            float maxX = _game.Viewport.X - 50;
+            float maxX = _game.Viewport.X - 160;
             float deltaPosition = MOVE_SPEED * ((float)frameDelta * 60);
             _currentXPos += _goesRight ? deltaPosition : -deltaPosition;
 
@@ -108,7 +96,7 @@ namespace Axolotl2D.Example.Scenes
             }
 
             if (_keyboard!.IsKeyPressed(Key.Space))
-                _game.ClearColor = Color.Red;
+                _game.ClearColor = Color.FromHTML("#00BBFF");
             else
                 _game.ClearColor = Color.FromHTML("#0088FF");
 

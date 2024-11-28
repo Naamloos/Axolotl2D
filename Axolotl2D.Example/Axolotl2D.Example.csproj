@@ -12,15 +12,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\Fonts\ComicMono.ttf" />
     <None Remove="Resources\Music\SpaceJazz.wav" />
-    <None Remove="Resources\Sprites\mochicat.png" />
-    <None Remove="Resources\Sprites\rei.png" />
+    <None Remove="Resources\Sprites\logo.png" />
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\Fonts\ComicMono.ttf" />
     <EmbeddedResource Include="Resources\Music\SpaceJazz.wav" />
-    <EmbeddedResource Include="Resources\Sprites\mochicat.png" />
-    <EmbeddedResource Include="Resources\Sprites\rei.png" />
+    <EmbeddedResource Include="Resources\Sprites\logo.png" />
   </ItemGroup>
 
   <ItemGroup>

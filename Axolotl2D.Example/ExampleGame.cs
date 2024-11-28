@@ -2,6 +2,7 @@
 using Axolotl2D.Cef;
 using Axolotl2D.Drawable;
 using Microsoft.Extensions.Logging;
+using System.Numerics;
 using System.Reflection;
 
 namespace Axolotl2D.Example
@@ -22,6 +23,8 @@ namespace Axolotl2D.Example
             // It is recommended to hook OnLoad to load assets
             OnLoad += Load;
 
+            OnDraw += Draw;
+
             this._logger = logger;
             this._assetManager = assetManager;
             this._cefBrowserManager = cefBrowserManager;
@@ -29,11 +32,15 @@ namespace Axolotl2D.Example
             _song = audioPlayer.LoadSong(Assembly.GetEntryAssembly()!.GetManifestResourceStream("Axolotl2D.Example.Resources.Music.SpaceJazz.wav")!);
         }
 
+        private void Draw(double frameDelta, double frameRate)
+        {
+
+        }
+
         public void Load()
         {
             // preload assets
-            _assetManager.LoadSprite("mochicat", Assembly.GetEntryAssembly()!.GetManifestResourceStream("Axolotl2D.Example.Resources.Sprites.mochicat.png")!);
-            _assetManager.LoadSprite("rei", Assembly.GetEntryAssembly()!.GetManifestResourceStream("Axolotl2D.Example.Resources.Sprites.rei.png")!);
+            _assetManager.LoadSprite("logo", Assembly.GetEntryAssembly()!.GetManifestResourceStream("Axolotl2D.Example.Resources.Sprites.logo.png")!);
 
             _cefBrowserManager.RegisterBrowser("github", "https://naamloos.github.io/Axolotl2D.Webtest/");
             _cefBrowserManager.RegisterBrowser("google", "https://google.com");
