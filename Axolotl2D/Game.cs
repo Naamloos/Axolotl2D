@@ -192,7 +192,7 @@ namespace Axolotl2D
         /// <summary>
         /// Event that gets called when the game attempts to clean up.
         /// </summary>
-        public abstract void Cleanup();
+        protected abstract void Cleanup();
 
         /// <summary>
         /// Disposes the game.

@@ -12,43 +12,41 @@ namespace Axolotl2D.Example.Scenes
         private const int QUAD_COUNT = 4;
         private const int MOVE_SPEED = 5;
 
-        private float _currentXPos = 0;
-        private bool _goesRight = true;
-        private float _currentRotation = 0;
+        private float currentXPosition = 0;
+        private bool movingRight = true;
+        private float currentRotation = 0;
 
-        private BaseDrawable? _logo;
-        private BaseDrawable? _simpleQuad;
+        private BaseDrawable? axolotlLogo;
 
-        private IKeyboard? _keyboard;
+        private IKeyboard? keyboard;
 
-        private readonly ILogger<ExampleScene> _logger;
+        private readonly ILogger<ExampleScene> logger;
 
-        private readonly ExampleGame _game;
-        private readonly SpriteManager _assetManager;
+        private readonly ExampleGame game;
+        private readonly SpriteManager assetManager;
 
         public ExampleScene(ExampleGame game, ILogger<ExampleScene> logger, SpriteManager assetManager)
         {
-            this._game = game;
-            this._keyboard = game.GetKeyboard()!;
-            this._game.Title = "Scene 1";
+            this.game = game;
+            this.keyboard = game.GetKeyboard()!;
+            this.game.Title = "Scene 1";
 
-            this._logger = logger;
-            this._assetManager = assetManager;
+            this.logger = logger;
+            this.assetManager = assetManager;
         }
 
         public override void Draw(double frameDelta, double frameRate)
         {
             for (int i = 0; i < QUAD_COUNT; i++)
             {
-                _logo!.Rotation = _currentRotation;
-                _logo!.Draw(new Vector2(_currentXPos, i * 150), new Vector2(160, 100));
+                axolotlLogo!.Rotation = currentRotation;
+                axolotlLogo!.Draw(new Vector2(currentXPosition, i * 150), new Vector2(160, 100));
             }
 
             // Squish the width and height at random speeds
-            float squishWidth = 160 + (float)(Math.Sin(_currentRotation * 2) * 80);
-            float squishHeight = 100 + (float)(Math.Cos(_currentRotation * 3) * 50);
-            _logo!.Draw(new Vector2(300, 300), new Vector2(squishWidth, squishHeight));
-            _simpleQuad!.Draw();
+            float squishWidth = 160 + (float)(Math.Sin(currentRotation * 2) * 80);
+            float squishHeight = 100 + (float)(Math.Cos(currentRotation * 3) * 50);
+            axolotlLogo!.Draw(new Vector2(300, 300), new Vector2(squishWidth, squishHeight));
         }
 
         public override void Load()
@@ -59,12 +57,11 @@ namespace Axolotl2D.Example.Scenes
 
             // It is not recommended to load Sprites any time a scene is initialized, as it can cause memory leaks.
             // At this moment it is not possible to do this any other way. This will be fixed in the future.
-            this._assetManager.TryGetSprite("logo", out _logo);
-            _simpleQuad = new SimpleQuad(this._game, new Vector2(160, 100), new Vector2(69, 69));
+            this.assetManager.TryGetSprite("logo", out axolotlLogo);
 
-            _keyboard = _game.GetKeyboard();
+            keyboard = game.GetKeyboard();
 
-            _logger.LogInformation("Loaded Example Scene");
+            logger.LogInformation("Loaded Example Scene");
         }
 
         public override void Resize(Vector2 size)
@@ -74,34 +71,34 @@ namespace Axolotl2D.Example.Scenes
 
         public override void Unload()
         {
-            _logger.LogInformation("Unloaded Example Scene");
+            logger.LogInformation("Unloaded Example Scene");
         }
 
         private bool? wasKeyPressed = null;
 
         public override void Update(double frameDelta)
         {
-            float maxX = _game.Viewport.X - 160;
+            float maxX = game.Viewport.X - 160;
             float deltaPosition = MOVE_SPEED * ((float)frameDelta * 60);
-            _currentXPos += _goesRight ? deltaPosition : -deltaPosition;
+            currentXPosition += movingRight ? deltaPosition : -deltaPosition;
 
-            _currentRotation += 0.01f;
+            currentRotation += 0.01f;
 
-            if (_currentXPos > maxX)
+            if (currentXPosition > maxX)
             {
-                _goesRight = false;
+                movingRight = false;
             }
-            else if (_currentXPos < 0)
+            else if (currentXPosition < 0)
             {
-                _goesRight = true;
+                movingRight = true;
             }
 
-            if (_keyboard!.IsKeyPressed(Key.Space))
-                _game.ClearColor = Color.FromHTML("#00BBFF");
+            if (keyboard!.IsKeyPressed(Key.Space))
+                game.ClearColor = Color.FromHTML("#00BBFF");
             else
-                _game.ClearColor = Color.FromHTML("#0088FF");
+                game.ClearColor = Color.FromHTML("#0088FF");
 
-            if (_keyboard!.IsKeyPressed(Key.Escape))
+            if (keyboard!.IsKeyPressed(Key.Escape))
             {
                 if (wasKeyPressed == false)
                 {

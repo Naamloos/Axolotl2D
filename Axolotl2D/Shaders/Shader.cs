@@ -5,6 +5,8 @@ namespace Axolotl2D.Shaders
 {
     /// <summary>
     /// Represents a shader in the game.
+    /// Do note that this class is not meant to be used directly.
+    /// This wil change in the future as I figure out how to implement userland shaders.
     /// </summary>
     public class Shader
     {

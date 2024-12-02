@@ -7,7 +7,7 @@ namespace Axolotl2D.Drawable
     /// Drawable class that draws a simple quad to the screen.
     /// Generally you should only use this for testing purposes.
     /// </summary>
-    public class SimpleQuad : BaseDrawable
+    internal class SimpleQuad : BaseDrawable
     {
         /// <summary>
         /// Initialize a new SimpleQuad object.

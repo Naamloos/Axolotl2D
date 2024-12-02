@@ -51,7 +51,7 @@ namespace Axolotl2D.Example
             _song.Play();
         }
 
-        public override void Cleanup()
+        protected override void Cleanup()
         {
             // unhook events
             OnLoad -= Load;
