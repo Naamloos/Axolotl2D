@@ -12,7 +12,7 @@ namespace Axolotl2D.Drawable
     {
         private readonly Stream imageFile;
 
-        internal unsafe Sprite(Game game, Stream imageFile) : base(game)
+        internal Sprite(Game game, Stream imageFile) : base(game)
         {
             this.imageFile = imageFile;
         }
@@ -22,7 +22,7 @@ namespace Axolotl2D.Drawable
         private int wrapMode = (int)TextureWrapMode.Repeat;
         private int minFilter = (int)TextureMinFilter.Nearest;
         private int magFilter = (int)TextureMagFilter.Nearest;
-        internal unsafe override void UpdateTexture()
+        internal override void UpdateTexture()
         {
             if (textureLoaded) // Ensure we don't load the texture on every tick.
                 return;
@@ -31,10 +31,9 @@ namespace Axolotl2D.Drawable
 
             ImageResult img = ImageResult.FromStream(imageFile, ColorComponents.RedGreenBlueAlpha);
 
-            fixed (byte* ptr = img.Data)
-                // Here we use "result.Width" and "result.Height" to tell OpenGL about how big our texture is.
-                openGL.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba, (uint)img.Width,
-                    (uint)img.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, ptr);
+            ReadOnlySpan<byte> imgDataSpan = img.Data.AsSpan();
+            openGL.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba, (uint)img.Width,
+                (uint)img.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, imgDataSpan);
 
             openGL.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapS, ref wrapMode);
             openGL.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapT, ref wrapMode);

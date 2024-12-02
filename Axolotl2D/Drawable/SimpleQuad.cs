@@ -9,55 +9,14 @@ namespace Axolotl2D.Drawable
     /// </summary>
     public class SimpleQuad : BaseDrawable
     {
-        private readonly uint _vbo;
-        private readonly uint _ebo;
-        private readonly uint _vao;
-
-        private readonly GL _gl;
-
         /// <summary>
         /// Initialize a new SimpleQuad object.
         /// </summary>
         /// <param name="game">Game to initialize on</param>
         /// <param name="position">Position to initialize at</param>
         /// <param name="size">Size to initialize at</param>
-        public unsafe SimpleQuad(Game game, Vector2 position, Vector2 size) : base(game)
-        {
-            _gl = game._openGL!;
+        public SimpleQuad(Game game, Vector2 position, Vector2 size) : base(game) { }
 
-            // Create a VAO.
-            _vao = _gl.GenVertexArray();
-            _gl.BindVertexArray(_vao);
-
-            // Create a VBO.
-            _vbo = _gl.GenBuffer();
-            _gl.BindBuffer(BufferTargetARB.ArrayBuffer, _vbo);
-
-            // fix vertices and buffer data
-            fixed (void* vertices = base.vertices)
-                _gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(base.vertices.Length * sizeof(float)), vertices, BufferUsageARB.StaticDraw);
-
-            // Create an EBO.
-            _ebo = _gl.GenBuffer();
-            _gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, _ebo);
-
-            fixed (void* indices = base.indices)
-                _gl.BufferData(BufferTargetARB.ElementArrayBuffer, (nuint)(base.indices.Length * sizeof(uint)), indices, BufferUsageARB.StaticDraw);
-
-            const uint positionLocation = 0;
-            _gl.EnableVertexAttribArray(positionLocation);
-            _gl.VertexAttribPointer(positionLocation, 3, VertexAttribPointerType.Float, false, 5 * sizeof(float), 0);
-
-            _gl.BindVertexArray(0);
-            _gl.BindBuffer(BufferTargetARB.ArrayBuffer, 0);
-            _gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, 0);
-        }
-
-        internal unsafe override void UpdateTexture()
-        {
-            const uint texCoordLoc = 1;
-            _gl.EnableVertexAttribArray(texCoordLoc);
-            _gl.VertexAttribPointer(texCoordLoc, 2, VertexAttribPointerType.Float, false, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-        }
+        internal override void UpdateTexture() { }
     }
 }

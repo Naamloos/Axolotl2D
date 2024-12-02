@@ -1,5 +1,6 @@
 ﻿using Silk.NET.OpenGL;
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 namespace Axolotl2D.Drawable
 {
@@ -87,7 +88,7 @@ namespace Axolotl2D.Drawable
 
         internal readonly GL openGL;
 
-        internal unsafe BaseDrawable(Game game)
+        internal BaseDrawable(Game game)
         {
             this.game = game;
             openGL = game._openGL!;
@@ -101,16 +102,14 @@ namespace Axolotl2D.Drawable
             openGL.BindBuffer(BufferTargetARB.ArrayBuffer, vboPointer);
 
             // fix vertices and buffer data
-            fixed (void* vertices = this.vertices)
-                openGL.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(this.vertices.Length * sizeof(float)), vertices, BufferUsageARB.StaticDraw);
+            openGL.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(vertices.Length * sizeof(float)), ref MemoryMarshal.GetReference(vertices.AsSpan()), BufferUsageARB.StaticDraw);
 
             // Create an EBO.
             eboPointer = openGL.GenBuffer();
             openGL.BindBuffer(BufferTargetARB.ElementArrayBuffer, eboPointer);
 
             // fix indices and buffer data
-            fixed (void* indices = this.indices)
-                openGL.BufferData(BufferTargetARB.ElementArrayBuffer, (nuint)(this.indices.Length * sizeof(uint)), indices, BufferUsageARB.StaticDraw);
+            openGL.BufferData(BufferTargetARB.ElementArrayBuffer, (nuint)(indices.Length * sizeof(uint)), ref MemoryMarshal.GetReference(indices.AsSpan()), BufferUsageARB.StaticDraw);
 
             // Set up vertex attributes.
             const uint positionLocation = 0;
@@ -142,20 +141,19 @@ namespace Axolotl2D.Drawable
         /// <summary>
         /// Draws the drawable object with the currently defined position and size.
         /// </summary>
-        public unsafe virtual void Draw()
+        public virtual void Draw()
         {
             UpdateTexture();
             openGL.BindBuffer(BufferTargetARB.ArrayBuffer, vboPointer);
 
             // fix vertices and buffer data
-            fixed (void* vertices = this.vertices)
-                openGL.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(this.vertices.Length * sizeof(float)), vertices, BufferUsageARB.StaticDraw);
+            openGL.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(vertices.Length * sizeof(float)), ref MemoryMarshal.GetReference(vertices.AsSpan()), BufferUsageARB.StaticDraw);
 
             openGL.BindBuffer(BufferTargetARB.ArrayBuffer, 0);
 
             openGL.BindVertexArray(vaoPointer);
             openGL.BindTexture(TextureTarget.Texture2D, texturePointer);
-            openGL.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, (void*)0);
+            openGL.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, ref MemoryMarshal.GetReference(Span<uint>.Empty));
             openGL.BindVertexArray(0);
         }
 

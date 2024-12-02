@@ -161,7 +161,7 @@ namespace Axolotl2D.Cef
         /// <summary>
         /// Draws the browser to the screen.
         /// </summary>
-        public unsafe override void Draw()
+        public override void Draw()
         {
             base.Draw();
 
@@ -239,7 +239,7 @@ namespace Axolotl2D.Cef
             base.vertices[19] = 1.0f;
         }
 
-        internal unsafe override void UpdateTexture()
+        internal override void UpdateTexture()
         {
             if (browserViewDirty)
             {
@@ -251,8 +251,7 @@ namespace Axolotl2D.Cef
                 openGL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
                 openGL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
 
-                fixed (byte* ptr = browserFrameBuffer)
-                    openGL.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba, (uint)renderedFrameSize.X, (uint)renderedFrameSize.Y, 0, PixelFormat.Bgra, PixelType.UnsignedByte, ptr);
+                openGL.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba, (uint)renderedFrameSize.X, (uint)renderedFrameSize.Y, 0, PixelFormat.Bgra, PixelType.UnsignedByte, ref MemoryMarshal.GetReference(browserFrameBuffer.AsSpan()));
 
                 int location = openGL.GetUniformLocation(game._shaderProgram, "uTexture");
                 openGL.Uniform1(location, 0);
