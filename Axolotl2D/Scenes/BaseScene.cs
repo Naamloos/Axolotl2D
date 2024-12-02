@@ -14,6 +14,12 @@ namespace Axolotl2D.Scenes
         internal SceneGameHost? _sceneGameHost;
 
         /// <summary>
+        /// Game that this scene is running on.
+        /// </summary>
+        protected Game Game { get => _game!; }
+        internal Game? _game;
+
+        /// <summary>
         /// Called when the scene draws.
         /// </summary>
         /// <param name="frameDelta">Current frame delta</param>

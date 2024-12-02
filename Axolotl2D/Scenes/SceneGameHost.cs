@@ -84,6 +84,7 @@ namespace Axolotl2D.Scenes
 
             _currentScene = newScene;
             _currentScene._sceneGameHost = this;
+            _currentScene._game = game;
 
             _currentScene.Load();
             game.OnUpdate += _currentScene.Update;

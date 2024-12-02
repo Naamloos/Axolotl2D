@@ -8,7 +8,6 @@ namespace Axolotl2D.Example.Scenes
 {
     public class ExampleScene2 : BaseScene
     {
-        private readonly ExampleGame _game;
         private IKeyboard? _keyboard;
         private readonly ILogger<ExampleScene2> _logger;
 
@@ -17,19 +16,17 @@ namespace Axolotl2D.Example.Scenes
         private CefBrowser? _cef2;
         private CefBrowser? _cef3;
 
-        public ExampleScene2(ExampleGame game, ILogger<ExampleScene2> logger, CefBrowserManager cefBrowserManager)
+        public ExampleScene2(ILogger<ExampleScene2> logger, CefBrowserManager cefBrowserManager)
         {
-            game.Title = "Scene 2";
-            game.ClearColor = Color.FromHTML("#FFaB6A");
-
-            _game = game;
             _logger = logger;
             _cefBrowserManager = cefBrowserManager;
         }
 
         public override void Load()
         {
-            _keyboard = _game.GetKeyboard()!;
+            Game.Title = "Scene 2";
+            Game.ClearColor = Color.RamptoerismeBlue;
+            _keyboard = Game.GetKeyboard()!;
             _logger.LogInformation("Loaded Example Scene 2");
 
             _cefBrowserManager.TryGetBrowser("github", out _cef1);
@@ -42,7 +39,7 @@ namespace Axolotl2D.Example.Scenes
                 return;
             }
 
-            Resize(_game.Viewport);
+            Resize(Game.Viewport);
 
             _cef1.Enable();
             _cef2.Enable();
