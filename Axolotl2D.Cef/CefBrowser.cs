@@ -134,7 +134,6 @@ namespace Axolotl2D.Cef
         private void BrowserInitialized(object? sender, EventArgs e)
         {
             _initialized = true;
-            cefBrowser.SetZoomLevel(0.25);
         }
 
         private void OnBrowserPaint(object? sender, OnPaintEventArgs e)
