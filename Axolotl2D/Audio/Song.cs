@@ -9,16 +9,16 @@ namespace Axolotl2D.Audio
     /// </summary>
     public class Song
     {
-        private readonly uint _buffer;
-        private readonly uint _source;
+        private readonly uint songBufferPointer;
+        private readonly uint sourcePointer;
 
-        private readonly ALContext _alContext;
-        private readonly AL _al;
+        private readonly ALContext alContext;
+        private readonly AL openAL;
 
         internal unsafe Song(Stream songStream, AL _al, ALContext _alContext)
         {
-            this._al = _al;
-            this._alContext = _alContext;
+            this.openAL = _al;
+            this.alContext = _alContext;
 
             ReadOnlySpan<byte> file = ReadStream(songStream);
             int index = 0;
@@ -42,9 +42,9 @@ namespace Axolotl2D.Audio
             short bitsPerSample = -1;
             BufferFormat format = 0;
 
-            _source = _al.GenSource();
-            _buffer = _al.GenBuffer();
-            _al.SetSourceProperty(_source, SourceBoolean.Looping, true);
+            sourcePointer = _al.GenSource();
+            songBufferPointer = _al.GenBuffer();
+            _al.SetSourceProperty(sourcePointer, SourceBoolean.Looping, true);
 
             while (index + 4 < file.Length)
             {
@@ -113,7 +113,7 @@ namespace Axolotl2D.Audio
                     index += size;
 
                     fixed (byte* pData = data)
-                        _al.BufferData(_buffer, format, pData, size, sampleRate);
+                        _al.BufferData(songBufferPointer, format, pData, size, sampleRate);
                     Console.WriteLine($"Read {size} bytes Data");
                 }
                 else if (identifier == "JUNK")
@@ -138,11 +138,9 @@ namespace Axolotl2D.Audio
 
         private byte[] ReadStream(Stream stream)
         {
-            using (MemoryStream ms = new MemoryStream())
-            {
-                stream.CopyTo(ms);
-                return ms.ToArray();
-            }
+            using MemoryStream ms = new MemoryStream();
+            stream.CopyTo(ms);
+            return ms.ToArray();
         }
 
         /// <summary>
@@ -150,8 +148,8 @@ namespace Axolotl2D.Audio
         /// </summary>
         public void Play()
         {
-            _al.SetSourceProperty(_source, SourceInteger.Buffer, _buffer);
-            _al.SourcePlay(_source);
+            openAL.SetSourceProperty(sourcePointer, SourceInteger.Buffer, songBufferPointer);
+            openAL.SourcePlay(sourcePointer);
         }
 
         /// <summary>
@@ -159,10 +157,10 @@ namespace Axolotl2D.Audio
         /// </summary>
         public void Stop()
         {
-            _al.SourceStop(_source);
+            openAL.SourceStop(sourcePointer);
 
-            _al.DeleteSource(_source);
-            _al.DeleteBuffer(_buffer);
+            openAL.DeleteSource(sourcePointer);
+            openAL.DeleteBuffer(songBufferPointer);
         }
     }
 }

@@ -15,8 +15,8 @@ namespace Axolotl2D.Helpers
         {
             get
             {
-                _value ??= _services.GetService<T>();
-                return _value != null;
+                value ??= serviceProvider.GetService<T>();
+                return value != null;
             }
         }
 
@@ -27,21 +27,21 @@ namespace Axolotl2D.Helpers
         {
             get
             {
-                _value ??= _services.GetService<T>();
-                return _value!;
+                value ??= serviceProvider.GetService<T>();
+                return value!;
             }
         }
 
-        private IServiceProvider _services;
-        private T? _value;
+        private IServiceProvider serviceProvider;
+        private T? value;
 
         /// <summary>
         /// Creates a new instance of the LazyDependencyLoader.
         /// </summary>
-        /// <param name="services"></param>
-        public LazyDependencyLoader(IServiceProvider services)
+        /// <param name="serviceProvider"></param>
+        public LazyDependencyLoader(IServiceProvider serviceProvider)
         {
-            _services = services;
+            this.serviceProvider = serviceProvider;
         }
     }
 

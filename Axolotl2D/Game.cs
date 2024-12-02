@@ -22,8 +22,8 @@ namespace Axolotl2D
         /// </summary>
         public Vector2 Viewport
         {
-            get => new(_window.Size.X, _window.Size.Y);
-            set => _window.Size = new Vector2D<int>((int)value.X, (int)value.Y);
+            get => new(window.Size.X, window.Size.Y);
+            set => window.Size = new Vector2D<int>((int)value.X, (int)value.Y);
         }
 
         /// <summary>
@@ -36,36 +36,36 @@ namespace Axolotl2D
         /// </summary>
         public Color ClearColor
         {
-            get => _clearColor;
+            get => clearColor;
             set
             {
-                _clearColor = value;
-                _openGL?.ClearColor(_clearColor.R, _clearColor.G, _clearColor.B, _clearColor.A);
+                clearColor = value;
+                openGL?.ClearColor(clearColor.R, clearColor.G, clearColor.B, clearColor.A);
             }
         }
 
-        private Color _clearColor = Color.Cyan;
+        private Color clearColor = Color.Cyan;
 
-        internal GL? _openGL;
-        internal readonly IWindow _window;
-        internal IInputContext? _input;
+        internal GL? openGL;
+        internal readonly IWindow window;
+        internal IInputContext? input;
 
-        private Shaders.Shader? _basicVertexShader;
-        private Shaders.Shader? _basicFragmentShader;
+        private Shaders.Shader? basicVertexShader;
+        private Shaders.Shader? basicFragmentShader;
 
-        internal uint _shaderProgram;
+        internal uint shaderProgramPointer;
 
-        internal IServiceProvider _services;
+        internal IServiceProvider serviceProvider;
 
         /// <summary>
         /// Construct a new game.
         /// </summary>
-        /// <param name="services">Service provider to relay.</param>
+        /// <param name="serviceProvider">Service provider to relay.</param>
         /// <param name="maxDrawRate">Maximum frame rate.</param>
         /// <param name="maxUpdateRate">Maximum update rate.</param>
-        public Game(IServiceProvider services, int maxDrawRate = 120, int maxUpdateRate = 120) // TODO make configurable at runtime
+        public Game(IServiceProvider serviceProvider, int maxDrawRate = 120, int maxUpdateRate = 120) // TODO make configurable at runtime
         {
-            _services = services;
+            this.serviceProvider = serviceProvider;
 
             var options = WindowOptions.Default;
             options.Size = new Vector2D<int>(1080, 720);
@@ -75,46 +75,46 @@ namespace Axolotl2D
             options.VSync = false;
             options.UpdatesPerSecond = maxUpdateRate;
 
-            _window = Window.Create(options);
+            window = Window.Create(options);
 
             // Hook window events
-            _window.Load += Load;
-            _window.Render += Draw;
-            _window.FramebufferResize += Resize;
-            _window.Update += Update;
+            window.Load += Load;
+            window.Render += Draw;
+            window.FramebufferResize += Resize;
+            window.Update += Update;
         }
 
         /// <summary>
         /// Gets the mouse input helper.
         /// </summary>
         /// <returns>Mouse input helper.</returns>
-        public IMouse? GetMouse() => _input?.Mice[0];
+        public IMouse? GetMouse() => input?.Mice[0];
 
         /// <summary>
         /// Gets the keyboard input helper.
         /// </summary>
         /// <returns>Keyboard input helper.</returns>
-        public IKeyboard? GetKeyboard() => _input?.Keyboards[0];
+        public IKeyboard? GetKeyboard() => input?.Keyboards[0];
 
         internal void Start()
         {
-            _window.Run();
+            window.Run();
         }
 
         internal void Stop()
         {
             // remove all events
-            _window.Load -= Load;
-            _window.Render -= Draw;
-            _window.FramebufferResize -= Resize;
-            _window.Update -= Update;
+            window.Load -= Load;
+            window.Render -= Draw;
+            window.FramebufferResize -= Resize;
+            window.Update -= Update;
 
-            _window.Close();
+            window.Close();
         }
 
         private void Update(double frameDelta)
         {
-            if (_openGL is null)
+            if (openGL is null)
                 return;
 
             OnUpdate?.Invoke(frameDelta);
@@ -126,67 +126,67 @@ namespace Axolotl2D
         private void Load()
         {
             // Prepare OpenGL context on load.
-            _openGL = _window.CreateOpenGL();
+            openGL = window.CreateOpenGL();
 
-            _openGL.ClearColor(ClearColor.R, ClearColor.G, ClearColor.B, ClearColor.A);
+            openGL.ClearColor(ClearColor.R, ClearColor.G, ClearColor.B, ClearColor.A);
 
             // Load basic shaders
-            _basicVertexShader = Shaders.Shader.CreateBasicVertex(this);
-            _basicFragmentShader = Shaders.Shader.CreateBasicFragment(this);
+            basicVertexShader = Shaders.Shader.CreateBasicVertex(this);
+            basicFragmentShader = Shaders.Shader.CreateBasicFragment(this);
 
             // Compile basic shaders
-            _basicVertexShader.Compile();
-            _basicFragmentShader.Compile();
+            basicVertexShader.Compile();
+            basicFragmentShader.Compile();
 
             // Create shader program
-            _shaderProgram = _openGL.CreateProgram();
+            shaderProgramPointer = openGL.CreateProgram();
 
             // Attach basic shaders to program
-            _basicVertexShader.AttachToProgram();
-            _basicFragmentShader.AttachToProgram();
+            basicVertexShader.AttachToProgram();
+            basicFragmentShader.AttachToProgram();
 
-            _openGL.LinkProgram(_shaderProgram);
+            openGL.LinkProgram(shaderProgramPointer);
 
-            _openGL.GetProgram(_shaderProgram, ProgramPropertyARB.LinkStatus, out int lStatus);
+            openGL.GetProgram(shaderProgramPointer, ProgramPropertyARB.LinkStatus, out int lStatus);
             if (lStatus != (int)GLEnum.True)
-                throw new Exception("Program failed to link: " + _openGL.GetProgramInfoLog(_shaderProgram));
+                throw new Exception("Program failed to link: " + openGL.GetProgramInfoLog(shaderProgramPointer));
 
-            _basicVertexShader.DetachFromProgram();
-            _basicFragmentShader.DetachFromProgram();
+            basicVertexShader.DetachFromProgram();
+            basicFragmentShader.DetachFromProgram();
 
-            _openGL.Enable(EnableCap.Blend);
-            _openGL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            openGL.Enable(EnableCap.Blend);
+            openGL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
-            _input = _window.CreateInput();
+            input = window.CreateInput();
 
             OnLoad?.Invoke();
         }
 
         private void Resize(Vector2D<int> size)
         {
-            if (_openGL is null)
+            if (openGL is null)
                 return;
 
             // Handle resizes in GL context when window resizes.
-            _openGL.Viewport(size);
+            openGL.Viewport(size);
 
             this.OnResize?.Invoke(new Vector2(size.X, size.Y));
         }
 
         private void Draw(double frameDelta)
         {
-            if(_openGL is null)
+            if(openGL is null)
                 return;
 
             CurrentFramerate = Math.Ceiling(1.0f / frameDelta);
 
-            _openGL.UseProgram(_shaderProgram);
+            openGL.UseProgram(shaderProgramPointer);
 
-            _openGL.Clear(ClearBufferMask.ColorBufferBit);
+            openGL.Clear(ClearBufferMask.ColorBufferBit);
 
             OnDraw?.Invoke(frameDelta, CurrentFramerate);
 
-            _window.Title = $"{Title} | FPS: {Math.Round(CurrentFramerate)}";
+            window.Title = $"{Title} | FPS: {Math.Round(CurrentFramerate)}";
         }
 
         /// <summary>
@@ -200,7 +200,7 @@ namespace Axolotl2D
         public void Dispose()
         {
             Cleanup();
-            _window.Dispose();
+            window.Dispose();
 
             GC.SuppressFinalize(this);
         }

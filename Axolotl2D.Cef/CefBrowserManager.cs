@@ -10,8 +10,8 @@ namespace Axolotl2D.Cef
     /// </summary>
     public class CefBrowserManager
     {
-        private readonly Dictionary<string, CefBrowser> _browsers = new();
-        private readonly ILazyDependencyLoader<Game> _lazyGame;
+        private readonly Dictionary<string, CefBrowser> registeredBrowsers = new();
+        private readonly ILazyDependencyLoader<Game> lazyLoadedGame;
 
         /// <summary>
         /// Creates a new instance of <see cref="CefBrowserManager"/>.
@@ -19,7 +19,7 @@ namespace Axolotl2D.Cef
         /// <param name="game">Game to use for initialization</param>
         public CefBrowserManager(ILazyDependencyLoader<Game> game)
         {
-            _lazyGame = game;
+            lazyLoadedGame = game;
 
             var cefSett = new CefSettings
             {
@@ -38,17 +38,17 @@ namespace Axolotl2D.Cef
         /// <param name="baseUrl">URL to register browser with</param>
         public void RegisterBrowser(string key, string baseUrl)
         {
-            if (!_lazyGame.IsLoaded)
+            if (!lazyLoadedGame.IsLoaded)
             {
                 throw new Exception("Attempted to load assets before game initialization!");
             }
-            if (_browsers.ContainsKey(key))
+            if (registeredBrowsers.ContainsKey(key))
             {
                 throw new Exception($"Browser with key {key} already exists!");
             }
-            var _game = _lazyGame.Value;
+            var _game = lazyLoadedGame.Value;
             var browser = new CefBrowser(_game, Vector2.Zero, Vector2.One, baseUrl);
-            _browsers.Add(key, browser);
+            registeredBrowsers.Add(key, browser);
         }
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace Axolotl2D.Cef
         /// <returns>Whether retrieving was succesful.</returns>
         public bool TryGetBrowser(string key, out CefBrowser? browser)
         {
-            var success = _browsers.TryGetValue(key, out CefBrowser? output);
+            var success = registeredBrowsers.TryGetValue(key, out CefBrowser? output);
             browser = output;
             return success;
         }

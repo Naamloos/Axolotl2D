@@ -7,10 +7,10 @@ namespace Axolotl2D.Audio
     /// </summary>
     public unsafe class AudioPlayer : IDisposable
     {
-        private readonly ALContext _alContext;
-        private readonly AL _al;
-        private readonly Device* _device;
-        private readonly Context* _context;
+        private readonly ALContext alContext;
+        private readonly AL openAL;
+        private readonly Device* devicePointer;
+        private readonly Context* contextPointer;
 
         /// <summary>
         /// Creates a new instance of the audio player.
@@ -18,18 +18,18 @@ namespace Axolotl2D.Audio
         /// <exception cref="Exception">Something went wrong initializing the audio player.</exception>
         public AudioPlayer()
         {
-            _alContext = ALContext.GetApi(true);
-            _al = AL.GetApi();
-            _device = _alContext.OpenDevice("");
-            if (_device == null)
+            alContext = ALContext.GetApi(true);
+            openAL = AL.GetApi();
+            devicePointer = alContext.OpenDevice("");
+            if (devicePointer == null)
             {
                 throw new Exception("Could not create device");
             }
 
-            _context = _alContext.CreateContext(_device, null);
-            _alContext.MakeContextCurrent(_context);
+            contextPointer = alContext.CreateContext(devicePointer, null);
+            alContext.MakeContextCurrent(contextPointer);
 
-            _al.GetError();
+            openAL.GetError();
         }
 
         /// <summary>
@@ -37,8 +37,8 @@ namespace Axolotl2D.Audio
         /// </summary>
         public void Dispose()
         {
-            _alContext.DestroyContext(_context);
-            _alContext.CloseDevice(_device);
+            alContext.DestroyContext(contextPointer);
+            alContext.CloseDevice(devicePointer);
         }
 
         /// <summary>
@@ -48,7 +48,7 @@ namespace Axolotl2D.Audio
         /// <returns>The loaded song</returns>
         public Song LoadSong(Stream songStream)
         {
-            return new Song(songStream, _al, _alContext);
+            return new Song(songStream, openAL, alContext);
         }
     }
 }

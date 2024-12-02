@@ -10,7 +10,7 @@ namespace Axolotl2D.Scenes
     /// <param name="_services">Services</param>
     public class SceneGameHost(Game game, IServiceProvider _services) : IGameHost
     {
-        private BaseScene? _currentScene;
+        private BaseScene? currentScene;
 
         /// <summary>
         /// Switches to a different scene.
@@ -54,11 +54,11 @@ namespace Axolotl2D.Scenes
         /// </summary>
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            if (_currentScene != null)
+            if (currentScene != null)
             {
-                game.OnUpdate -= _currentScene.Update;
-                game.OnDraw -= _currentScene.Draw;
-                game.OnResize -= _currentScene.Resize;
+                game.OnUpdate -= currentScene.Update;
+                game.OnDraw -= currentScene.Draw;
+                game.OnResize -= currentScene.Resize;
             }
 
             return Task.Run(() => game.Stop(), cancellationToken);
@@ -70,26 +70,26 @@ namespace Axolotl2D.Scenes
             {
                 throw new Exception("Tried switching to a scene that is not part of the service provider!");
             }
-            if (_currentScene != null)
+            if (currentScene != null)
             {
-                game.OnUpdate -= _currentScene.Update;
-                game.OnDraw -= _currentScene.Draw;
-                game.OnResize -= _currentScene.Resize;
+                game.OnUpdate -= currentScene.Update;
+                game.OnDraw -= currentScene.Draw;
+                game.OnResize -= currentScene.Resize;
 
-                _currentScene.Unload();
+                currentScene.Unload();
             }
 
             // GC collecting
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
 
-            _currentScene = newScene;
-            _currentScene._sceneGameHost = this;
-            _currentScene._game = game;
+            currentScene = newScene;
+            currentScene.sceneGameHost = this;
+            currentScene.game = game;
 
-            _currentScene.Load();
-            game.OnUpdate += _currentScene.Update;
-            game.OnDraw += _currentScene.Draw;
-            game.OnResize += _currentScene.Resize;
+            currentScene.Load();
+            game.OnUpdate += currentScene.Update;
+            game.OnDraw += currentScene.Draw;
+            game.OnResize += currentScene.Resize;
         }
     }
 }

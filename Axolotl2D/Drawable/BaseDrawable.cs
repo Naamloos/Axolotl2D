@@ -91,7 +91,7 @@ namespace Axolotl2D.Drawable
         internal BaseDrawable(Game game)
         {
             this.game = game;
-            openGL = game._openGL!;
+            openGL = game.openGL!;
 
             // Create a VAO.
             vaoPointer = openGL.GenVertexArray();

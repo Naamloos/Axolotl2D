@@ -40,7 +40,7 @@ namespace Axolotl2D.Drawable
             openGL.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMinFilter, ref minFilter);
             openGL.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMagFilter, ref magFilter);
 
-            int location = openGL.GetUniformLocation(game._shaderProgram, "uTexture");
+            int location = openGL.GetUniformLocation(game.shaderProgramPointer, "uTexture");
             openGL.Uniform1(location, 0);
 
             openGL.BindTexture(TextureTarget.Texture2D, 0);

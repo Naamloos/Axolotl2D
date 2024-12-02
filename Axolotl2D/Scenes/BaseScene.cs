@@ -10,14 +10,14 @@ namespace Axolotl2D.Scenes
         /// <summary>
         /// Scene Host. This can be used to switch to a different Scene when needed.
         /// </summary>
-        protected SceneGameHost SceneGameHost { get => _sceneGameHost!; }
-        internal SceneGameHost? _sceneGameHost;
+        protected SceneGameHost SceneGameHost { get => sceneGameHost!; }
+        internal SceneGameHost? sceneGameHost;
 
         /// <summary>
         /// Game that this scene is running on.
         /// </summary>
-        protected Game Game { get => _game!; }
-        internal Game? _game;
+        protected Game Game { get => game!; }
+        internal Game? game;
 
         /// <summary>
         /// Called when the scene draws.

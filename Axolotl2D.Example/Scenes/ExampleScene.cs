@@ -51,12 +51,6 @@ namespace Axolotl2D.Example.Scenes
 
         public override void Load()
         {
-            // get streams for resources
-            using var mochiCat = GetType().Assembly.GetManifestResourceStream("Axolotl2D.Example.Resources.Sprites.mochicat.png")!;
-            using var rei = GetType().Assembly.GetManifestResourceStream("Axolotl2D.Example.Resources.Sprites.rei.png")!;
-
-            // It is not recommended to load Sprites any time a scene is initialized, as it can cause memory leaks.
-            // At this moment it is not possible to do this any other way. This will be fixed in the future.
             this.assetManager.TryGetSprite("logo", out axolotlLogo);
 
             keyboard = game.GetKeyboard();

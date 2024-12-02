@@ -9,9 +9,9 @@ namespace Axolotl2D.Example
 {
     public class ExampleGame : Game
     {
-        private readonly ILogger<ExampleGame> _logger;
-        private readonly SpriteManager _assetManager;
-        private readonly CefBrowserManager _cefBrowserManager;
+        private readonly ILogger<ExampleGame> logger;
+        private readonly SpriteManager assetManager;
+        private readonly CefBrowserManager browserManager;
 
         private readonly Song _song;
 
@@ -23,30 +23,23 @@ namespace Axolotl2D.Example
             // It is recommended to hook OnLoad to load assets
             OnLoad += Load;
 
-            OnDraw += Draw;
-
-            this._logger = logger;
-            this._assetManager = assetManager;
-            this._cefBrowserManager = cefBrowserManager;
+            this.logger = logger;
+            this.assetManager = assetManager;
+            this.browserManager = cefBrowserManager;
 
             _song = audioPlayer.LoadSong(Assembly.GetEntryAssembly()!.GetManifestResourceStream("Axolotl2D.Example.Resources.Music.SpaceJazz.wav")!);
-        }
-
-        private void Draw(double frameDelta, double frameRate)
-        {
-
         }
 
         public void Load()
         {
             // preload assets
-            _assetManager.LoadSprite("logo", Assembly.GetEntryAssembly()!.GetManifestResourceStream("Axolotl2D.Example.Resources.Sprites.logo.png")!);
+            assetManager.LoadSprite("logo", Assembly.GetEntryAssembly()!.GetManifestResourceStream("Axolotl2D.Example.Resources.Sprites.logo.png")!);
 
-            _cefBrowserManager.RegisterBrowser("github", "https://naamloos.github.io/Axolotl2D.Webtest/");
-            _cefBrowserManager.RegisterBrowser("google", "https://google.com");
-            _cefBrowserManager.RegisterBrowser("discord", "https://discord.com/app");
+            browserManager.RegisterBrowser("github", "https://naamloos.github.io/Axolotl2D.Webtest/");
+            browserManager.RegisterBrowser("google", "https://google.com");
+            browserManager.RegisterBrowser("discord", "https://discord.com/app");
 
-            _logger.LogInformation("Loaded Game");
+            logger.LogInformation("Loaded Game");
 
             _song.Play();
         }
@@ -56,7 +49,7 @@ namespace Axolotl2D.Example
             // unhook events
             OnLoad -= Load;
 
-            _logger.LogInformation("Cleaned up events and unloading game...");
+            logger.LogInformation("Cleaned up events and unloading game...");
         }
     }
 }

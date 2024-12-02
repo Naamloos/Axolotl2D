@@ -253,7 +253,7 @@ namespace Axolotl2D.Cef
 
                 openGL.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba, (uint)renderedFrameSize.X, (uint)renderedFrameSize.Y, 0, PixelFormat.Bgra, PixelType.UnsignedByte, ref MemoryMarshal.GetReference(browserFrameBuffer.AsSpan()));
 
-                int location = openGL.GetUniformLocation(game._shaderProgram, "uTexture");
+                int location = openGL.GetUniformLocation(game.shaderProgramPointer, "uTexture");
                 openGL.Uniform1(location, 0);
 
                 openGL.BindTexture(TextureTarget.Texture2D, 0);
