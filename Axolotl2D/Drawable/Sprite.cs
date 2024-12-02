@@ -19,9 +19,6 @@ namespace Axolotl2D.Drawable
 
         private bool textureLoaded = false;
 
-        private int wrapMode = (int)TextureWrapMode.Repeat;
-        private int minFilter = (int)TextureMinFilter.Nearest;
-        private int magFilter = (int)TextureMagFilter.Nearest;
         internal override void UpdateTexture()
         {
             if (textureLoaded) // Ensure we don't load the texture on every tick.
@@ -35,10 +32,10 @@ namespace Axolotl2D.Drawable
             openGL.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba, (uint)img.Width,
                 (uint)img.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, imgDataSpan);
 
-            openGL.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapS, ref wrapMode);
-            openGL.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapT, ref wrapMode);
-            openGL.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMinFilter, ref minFilter);
-            openGL.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMagFilter, ref magFilter);
+            openGL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+            openGL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+            openGL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+            openGL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
 
             int location = openGL.GetUniformLocation(game.shaderProgramPointer, "uTexture");
             openGL.Uniform1(location, 0);
