@@ -17,8 +17,8 @@ namespace Axolotl2D.Example.Scenes
         private float _currentRotation = 0;
 
         private BaseDrawable? _logo;
+        private BaseDrawable? _simpleQuad;
 
-        private IMouse? _mouse;
         private IKeyboard? _keyboard;
 
         private readonly ILogger<ExampleScene> _logger;
@@ -48,6 +48,7 @@ namespace Axolotl2D.Example.Scenes
             float squishWidth = 160 + (float)(Math.Sin(_currentRotation * 2) * 80);
             float squishHeight = 100 + (float)(Math.Cos(_currentRotation * 3) * 50);
             _logo!.Draw(new Vector2(300, 300), new Vector2(squishWidth, squishHeight));
+            _simpleQuad!.Draw();
         }
 
         public override void Load()
@@ -59,8 +60,8 @@ namespace Axolotl2D.Example.Scenes
             // It is not recommended to load Sprites any time a scene is initialized, as it can cause memory leaks.
             // At this moment it is not possible to do this any other way. This will be fixed in the future.
             this._assetManager.TryGetSprite("logo", out _logo);
+            _simpleQuad = new SimpleQuad(this._game, new Vector2(160, 100), new Vector2(69, 69));
 
-            _mouse = _game.GetMouse();
             _keyboard = _game.GetKeyboard();
 
             _logger.LogInformation("Loaded Example Scene");

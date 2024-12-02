@@ -32,11 +32,6 @@ namespace Axolotl2D
         public double CurrentFramerate { get; private set; }
 
         /// <summary>
-        /// Represents the number of loaded sprites in the game.
-        /// </summary>
-        public int LoadedSprites { get; internal set; }
-
-        /// <summary>
         /// Represents the clear color of the game.
         /// </summary>
         public Color ClearColor

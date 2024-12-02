@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using Silk.NET.OpenGL;
+using System.Numerics;
 
 namespace Axolotl2D.Drawable
 {
@@ -13,28 +14,28 @@ namespace Axolotl2D.Drawable
         /// </summary>
         public Vector2 Position
         {
-            get => _position;
+            get => position;
             set
             {
-                _position = value;
-                onMove(value);
+                position = value;
+                OnMove(value);
             }
         }
-        private Vector2 _position;
+        internal Vector2 position = Vector2.Zero;
 
         /// <summary>
         /// The current size of this drawable object.
         /// </summary>
         public Vector2 Size
         {
-            get => _size;
+            get => size;
             set
             {
-                _size = value;
-                onResize(value);
+                size = value;
+                OnResize(value);
             }
         }
-        private Vector2 _size;
+        internal Vector2 size = Vector2.One;
 
         /// <summary>
         /// The current rotation of this drawable object.
@@ -42,14 +43,14 @@ namespace Axolotl2D.Drawable
         /// </summary>
         public float Rotation
         {
-            get => _rotation;
+            get => rotation;
             set
             {
-                _rotation = value;
-                onRotate(value);
+                rotation = value;
+                OnRotate(value);
             }
         }
-        private float _rotation;
+        internal float rotation = 0f;
 
         /// <summary>
         /// When updating both the position and size, use this property to update both at the same time.
@@ -62,92 +63,179 @@ namespace Axolotl2D.Drawable
             {
                 Position = value.Item1;
                 Size = value.Item2;
-                onBoundsUpdate(value.Item1, value.Item2);
+                OnBoundsUpdate(value.Item1, value.Item2);
             }
         }
 
         // These are the vertices that make up the quad. Each point has 3 values (x, y, z) and 2 values for the texture coordinates (u, v).
-        internal float[] _vertices = new float[20];
+        internal float[] vertices = new float[20];
+
         // These are the indices that make up the quad. So 3 points make up a triangle. These are drawn in order.
-        internal uint[] _indices =
+        internal uint[] indices =
         [
             0u, 1u, 3u,
             1u, 2u, 3u
         ];
 
-        internal Game _game;
-        internal Vector2 _cachedViewport;
+        internal Game game;
+        internal Vector2 cachedViewport;
+        internal readonly uint vboPointer;
+        internal readonly uint eboPointer;
+        internal readonly uint vaoPointer;
 
-        internal BaseDrawable(Game game, Vector2 position, Vector2 size)
+        internal readonly uint texturePointer;
+
+        internal readonly GL openGL;
+
+        internal unsafe BaseDrawable(Game game)
         {
-            Position = position;
-            Size = size;
-            _game = game;
-            _cachedViewport = game.Viewport;
+            this.game = game;
+            openGL = game._openGL!;
 
-            calculateVertices();
+            // Create a VAO.
+            vaoPointer = openGL.GenVertexArray();
+            openGL.BindVertexArray(vaoPointer);
 
-            _game.OnResize += resizeWindow;
+            // Create a VBO.
+            vboPointer = openGL.GenBuffer();
+            openGL.BindBuffer(BufferTargetARB.ArrayBuffer, vboPointer);
+
+            // fix vertices and buffer data
+            fixed (void* vertices = this.vertices)
+                openGL.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(this.vertices.Length * sizeof(float)), vertices, BufferUsageARB.StaticDraw);
+
+            // Create an EBO.
+            eboPointer = openGL.GenBuffer();
+            openGL.BindBuffer(BufferTargetARB.ElementArrayBuffer, eboPointer);
+
+            // fix indices and buffer data
+            fixed (void* indices = this.indices)
+                openGL.BufferData(BufferTargetARB.ElementArrayBuffer, (nuint)(this.indices.Length * sizeof(uint)), indices, BufferUsageARB.StaticDraw);
+
+            // Set up vertex attributes.
+            const uint positionLocation = 0;
+            openGL.EnableVertexAttribArray(positionLocation);
+            openGL.VertexAttribPointer(positionLocation, 3, VertexAttribPointerType.Float, false, 5 * sizeof(float), 0);
+
+            // Set up texture attributes.
+            const uint texCoordLocation = 1;
+            openGL.EnableVertexAttribArray(texCoordLocation);
+            openGL.VertexAttribPointer(texCoordLocation, 2, VertexAttribPointerType.Float, false, 5 * sizeof(float), 3 * sizeof(float));
+
+            // Unbind everything.
+            openGL.BindVertexArray(0);
+            openGL.BindBuffer(BufferTargetARB.ArrayBuffer, 0);
+            openGL.BindBuffer(BufferTargetARB.ElementArrayBuffer, 0);
+
+            // Generate a texture to draw to.
+            texturePointer = openGL.GenTexture();
+
+            cachedViewport = game.Viewport;
+            this.game.OnResize += OnResizeWindow;
         }
+
+        /// <summary>
+        /// Updates the texture of the drawable object.
+        /// </summary>
+        internal abstract void UpdateTexture();
 
         /// <summary>
         /// Draws the drawable object with the currently defined position and size.
         /// </summary>
-        public abstract void Draw();
+        public unsafe virtual void Draw()
+        {
+            UpdateTexture();
+            openGL.BindBuffer(BufferTargetARB.ArrayBuffer, vboPointer);
+
+            // fix vertices and buffer data
+            fixed (void* vertices = this.vertices)
+                openGL.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(this.vertices.Length * sizeof(float)), vertices, BufferUsageARB.StaticDraw);
+
+            openGL.BindBuffer(BufferTargetARB.ArrayBuffer, 0);
+
+            openGL.BindVertexArray(vaoPointer);
+            openGL.BindTexture(TextureTarget.Texture2D, texturePointer);
+            openGL.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, (void*)0);
+            openGL.BindVertexArray(0);
+        }
 
         /// <summary>
         /// Draws the drawable object with the given position. Updates the current position.
         /// </summary>
         /// <param name="position">Position to draw object at.</param>
-        public abstract void Draw(Vector2 position);
+        public virtual void Draw(Vector2 position)
+        {
+            Position = position;
+            Draw();
+        }
 
         /// <summary>
         /// Draws the drawable object with the given position and size. Updates the current position and size.
         /// </summary>
         /// <param name="position">Position to draw at</param>
         /// <param name="size">Size to draw at</param>
-        public abstract void Draw(Vector2 position, Vector2 size);
+        public virtual void Draw(Vector2 position, Vector2 size)
+        {
+            Bounds = (position, size);
+            Draw();
+        }
 
         /// <summary>
-        /// Disposes of this drawable object.
+        /// Called when the game window resizes.
         /// </summary>
-        public virtual void Dispose()
+        /// <param name="size">New game window size.</param>
+        private void OnResizeWindow(Vector2 size)
         {
-            _game.OnResize -= resizeWindow;
+            cachedViewport = size;
+            CalculateVertices();
         }
 
-        private void resizeWindow(Vector2 size)
+        /// <summary>
+        /// Called when the drawable object is resized.
+        /// </summary>
+        /// <param name="size">New size</param>
+        internal virtual void OnResize(Vector2 size)
         {
-            _cachedViewport = size;
-            calculateVertices();
+            CalculateVertices();
         }
 
-        internal virtual void onResize(Vector2 size)
+        /// <summary>
+        /// Called when the drawable object is moved.
+        /// </summary>
+        /// <param name="position">New position</param>
+        internal virtual void OnMove(Vector2 position)
         {
-            calculateVertices();
+            CalculateVertices();
         }
 
-        internal virtual void onMove(Vector2 position)
+        /// <summary>
+        /// Called when the drawable object's bounds are updated.
+        /// </summary>
+        /// <param name="position">New position</param>
+        /// <param name="size">New size</param>
+        internal virtual void OnBoundsUpdate(Vector2 position, Vector2 size)
         {
-            calculateVertices();
+            CalculateVertices();
         }
 
-        internal virtual void onBoundsUpdate(Vector2 position, Vector2 size)
+        /// <summary>
+        /// Called when the drawable object is rotated.
+        /// </summary>
+        /// <param name="rotation">New rotation</param>
+        internal virtual void OnRotate(float rotation)
         {
-            calculateVertices();
+            CalculateVertices();
         }
 
-        internal virtual void onRotate(float rotation)
+        /// <summary>
+        /// Calculates the vertices of the drawable object. Can be overridden when texture data is in a different format.
+        /// </summary>
+        internal virtual void CalculateVertices()
         {
-            calculateVertices();
-        }
-
-        internal virtual void calculateVertices()
-        {
-            float x1 = Position.X / _cachedViewport.X * 2 - 1;
-            float y1 = 1 - (Position.Y + Size.Y) / _cachedViewport.Y * 2;
-            float x2 = (Position.X + Size.X) / _cachedViewport.X * 2 - 1;
-            float y2 = 1 - Position.Y / _cachedViewport.Y * 2;
+            float x1 = Position.X / cachedViewport.X * 2 - 1;
+            float y1 = 1 - (Position.Y + Size.Y) / cachedViewport.Y * 2;
+            float x2 = (Position.X + Size.X) / cachedViewport.X * 2 - 1;
+            float y2 = 1 - Position.Y / cachedViewport.Y * 2;
 
             Vector2 center = new Vector2((x1 + x2) / 2, (y1 + y2) / 2);
 
@@ -162,7 +250,7 @@ namespace Axolotl2D.Drawable
             float cos = MathF.Cos(Rotation);
             float sin = MathF.Sin(Rotation);
 
-            float aspectRatio = _cachedViewport.X / _cachedViewport.Y;
+            float aspectRatio = cachedViewport.X / cachedViewport.Y;
 
             for (int i = 0; i < vertices.Length; i++)
             {
@@ -176,29 +264,43 @@ namespace Axolotl2D.Drawable
                 vertices[i] += center;
             }
 
-            _vertices[0] = vertices[0].X;
-            _vertices[1] = vertices[0].Y;
-            _vertices[2] = 0;
-            _vertices[3] = 1.0f;
-            _vertices[4] = 1.0f;
+            this.vertices[0] = vertices[0].X;
+            this.vertices[1] = vertices[0].Y;
+            this.vertices[2] = 0;
+            this.vertices[3] = 1.0f;
+            this.vertices[4] = 1.0f;
 
-            _vertices[5] = vertices[1].X;
-            _vertices[6] = vertices[1].Y;
-            _vertices[7] = 0;
-            _vertices[8] = 1.0f;
-            _vertices[9] = 0.0f;
+            this.vertices[5] = vertices[1].X;
+            this.vertices[6] = vertices[1].Y;
+            this.vertices[7] = 0;
+            this.vertices[8] = 1.0f;
+            this.vertices[9] = 0.0f;
 
-            _vertices[10] = vertices[2].X;
-            _vertices[11] = vertices[2].Y;
-            _vertices[12] = 0;
-            _vertices[13] = 0.0f;
-            _vertices[14] = 0.0f;
+            this.vertices[10] = vertices[2].X;
+            this.vertices[11] = vertices[2].Y;
+            this.vertices[12] = 0;
+            this.vertices[13] = 0.0f;
+            this.vertices[14] = 0.0f;
 
-            _vertices[15] = vertices[3].X;
-            _vertices[16] = vertices[3].Y;
-            _vertices[17] = 0;
-            _vertices[18] = 0.0f;
-            _vertices[19] = 1.0f;
+            this.vertices[15] = vertices[3].X;
+            this.vertices[16] = vertices[3].Y;
+            this.vertices[17] = 0;
+            this.vertices[18] = 0.0f;
+            this.vertices[19] = 1.0f;
         }
+
+
+        /// <summary>
+        /// Disposes of this drawable object.
+        /// </summary>
+        public virtual void Dispose()
+        {
+            game.OnResize -= OnResizeWindow;
+        }
+
+        /// <summary>
+        /// Finalizer for the drawable object.
+        /// </summary>
+        ~BaseDrawable() => Dispose();
     }
 }

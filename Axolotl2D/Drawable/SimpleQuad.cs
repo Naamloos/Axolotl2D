@@ -21,7 +21,7 @@ namespace Axolotl2D.Drawable
         /// <param name="game">Game to initialize on</param>
         /// <param name="position">Position to initialize at</param>
         /// <param name="size">Size to initialize at</param>
-        public unsafe SimpleQuad(Game game, Vector2 position, Vector2 size) : base(game, position, size)
+        public unsafe SimpleQuad(Game game, Vector2 position, Vector2 size) : base(game)
         {
             _gl = game._openGL!;
 
@@ -34,15 +34,15 @@ namespace Axolotl2D.Drawable
             _gl.BindBuffer(BufferTargetARB.ArrayBuffer, _vbo);
 
             // fix vertices and buffer data
-            fixed (void* vertices = _vertices)
-                _gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(_vertices.Length * sizeof(float)), vertices, BufferUsageARB.StaticDraw);
+            fixed (void* vertices = base.vertices)
+                _gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(base.vertices.Length * sizeof(float)), vertices, BufferUsageARB.StaticDraw);
 
             // Create an EBO.
             _ebo = _gl.GenBuffer();
             _gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, _ebo);
 
-            fixed (void* indices = _indices)
-                _gl.BufferData(BufferTargetARB.ElementArrayBuffer, (nuint)(_indices.Length * sizeof(uint)), indices, BufferUsageARB.StaticDraw);
+            fixed (void* indices = base.indices)
+                _gl.BufferData(BufferTargetARB.ElementArrayBuffer, (nuint)(base.indices.Length * sizeof(uint)), indices, BufferUsageARB.StaticDraw);
 
             const uint positionLocation = 0;
             _gl.EnableVertexAttribArray(positionLocation);
@@ -53,43 +53,11 @@ namespace Axolotl2D.Drawable
             _gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, 0);
         }
 
-        /// <summary>
-        /// Draw the quad to the screen.
-        /// </summary>
-        public unsafe override void Draw()
+        internal unsafe override void UpdateTexture()
         {
-            _gl.BindBuffer(BufferTargetARB.ArrayBuffer, _vbo);
-
-            // fix vertices and buffer data
-            fixed (void* vertices = _vertices)
-                _gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(_vertices.Length * sizeof(float)), vertices, BufferUsageARB.StaticDraw);
-
-            _gl.BindBuffer(BufferTargetARB.ArrayBuffer, 0);
-
-            _gl.BindVertexArray(_vao);
-            _gl.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, (void*) 0);
-            _gl.BindVertexArray(0);
-        }
-
-        /// <summary>
-        /// Draw the quad to the screen at the given position.
-        /// </summary>
-        /// <param name="position">Position to draw at.</param>
-        public override void Draw(Vector2 position)
-        {
-            Position = position;
-            Draw();
-        }
-
-        /// <summary>
-        /// Draw the quad to the screen at the given position and size.
-        /// </summary>
-        /// <param name="position">Position to draw at.</param>
-        /// <param name="size">Size to draw with.</param>
-        public override void Draw(Vector2 position, Vector2 size)
-        {
-            Bounds = (position, size);
-            Draw();
+            const uint texCoordLoc = 1;
+            _gl.EnableVertexAttribArray(texCoordLoc);
+            _gl.VertexAttribPointer(texCoordLoc, 2, VertexAttribPointerType.Float, false, 5 * sizeof(float), (void*)(3 * sizeof(float)));
         }
     }
 }
