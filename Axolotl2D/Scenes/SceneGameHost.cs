@@ -1,26 +1,49 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using System.Reflection;
 
 namespace Axolotl2D.Scenes;
 
 /// <summary>Hosts the game and owns the active scene DI scope.</summary>
-public sealed class SceneGameHost(Game game, IServiceScopeFactory scopeFactory) : IGameHost
+public sealed class SceneGameHost(
+    Game game,
+    IServiceScopeFactory scopeFactory,
+    IHostApplicationLifetime applicationLifetime) : IGameHost
 {
     private IServiceScope? currentScope;
+    private Task? gameLoop;
     public BaseScene? CurrentScene { get; private set; }
 
     public void ChangeScene<T>() where T : BaseScene => ChangeScene(typeof(T));
 
-    public Task StartAsync(CancellationToken cancellationToken)
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
         game.OnLoad += LoadDefaultScene;
-        return Task.Run(game.Start, cancellationToken);
+        try
+        {
+            await game.InitializeGameAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            game.OnLoad -= LoadDefaultScene;
+            throw;
+        }
+
+        gameLoop = Task.Run(game.Start, CancellationToken.None);
+        _ = gameLoop.ContinueWith(
+            _ => applicationLifetime.StopApplication(),
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
     }
 
-    public Task StopAsync(CancellationToken cancellationToken)
+    public async Task StopAsync(CancellationToken cancellationToken)
     {
+        game.OnLoad -= LoadDefaultScene;
         DisposeCurrentScene();
-        return Task.Run(game.Stop, cancellationToken);
+        game.Stop();
+        if (gameLoop is not null)
+            await gameLoop.WaitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private void LoadDefaultScene()

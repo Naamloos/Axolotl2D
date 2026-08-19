@@ -24,10 +24,12 @@ var host = Host.CreateDefaultBuilder(args)
     })
     .Build();
 
-host.Start();
+await host.RunAsync();
 ```
 
 `UseSceneManagerGameHost<TGame>()` calls `AddAxolotl2D()` and registers the game and scene host. `AddAxolotl2D()` provides the built-in asset loaders, asset manager, audio player, camera, rendering services, sprite batch, text renderer, and GameObject factory.
+
+The game host awaits `Game.InitializeAsync` before it starts the window and loads the default scene. Override that method for asset loading and pass its cancellation token to each loader.
 
 `UseSimpleGameHost<TGame>()` remains available for applications that want to work directly with the `Game` events and do not need scenes.
 

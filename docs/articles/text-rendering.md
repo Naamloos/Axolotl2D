@@ -4,11 +4,13 @@
 
 ## Load a font
 
-Load a font through `AssetManager`:
+Await font loading through `AssetManager` from `Game.InitializeAsync`:
 
 ```csharp
-assets.LoadFileAsync<FontAsset>("ui", "Assets/Inter-Regular.ttf")
-    .AsTask().GetAwaiter().GetResult();
+await assets.LoadFileAsync<FontAsset>(
+    "ui",
+    "Assets/Inter-Regular.ttf",
+    cancellationToken);
 ```
 
 `FontAssetLoader` supports TrueType, OpenType, WOFF, and WOFF2 input accepted by SixLabors.Fonts.

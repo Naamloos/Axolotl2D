@@ -39,7 +39,8 @@ namespace Axolotl2D
         public event UpdateDelegate? OnUpdate;
 
         /// <summary>
-        /// Called when the game loads.
+        /// Called after the window, renderer, and input initialize. Keep handlers synchronous;
+        /// override <see cref="Game.InitializeAsync"/> for awaited startup work.
         /// </summary>
         public event LoadDelegate? OnLoad;
 

@@ -4,16 +4,34 @@
     /// Represents a service that simply hosts the game.
     /// </summary>
     /// <param name="game">Game to host.</param>
-    internal class SimpleGameHost(Game game) : IGameHost
+    internal class SimpleGameHost(
+        Game game,
+        Microsoft.Extensions.Hosting.IHostApplicationLifetime applicationLifetime) : IGameHost
     {
+        private Task? gameLoop;
+
         /// <summary>
         /// Starts the game.
         /// </summary>
-        public Task StartAsync(CancellationToken cancellationToken) => Task.Run(() => game.Start(), cancellationToken);
+        public async Task StartAsync(CancellationToken cancellationToken)
+        {
+            await game.InitializeGameAsync(cancellationToken).ConfigureAwait(false);
+            gameLoop = Task.Run(game.Start, CancellationToken.None);
+            _ = gameLoop.ContinueWith(
+                _ => applicationLifetime.StopApplication(),
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+        }
 
         /// <summary>
         /// Stops the game.
         /// </summary>
-        public Task StopAsync(CancellationToken cancellationToken) => Task.Run(() => game.Stop(), cancellationToken);
+        public async Task StopAsync(CancellationToken cancellationToken)
+        {
+            game.Stop();
+            if (gameLoop is not null)
+                await gameLoop.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
     }
 }

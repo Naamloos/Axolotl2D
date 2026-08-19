@@ -12,6 +12,7 @@ public sealed class ExampleGame : Game
     private readonly AssetManager assets;
     private readonly AudioPlayer audio;
     private readonly ILogger<ExampleGame> logger;
+    private SoundAsset? musicAsset;
     private SoundPlayback? music;
 
     public ExampleGame(IServiceProvider services, AssetManager assets, AudioPlayer audio, ILogger<ExampleGame> logger)
@@ -20,22 +21,27 @@ public sealed class ExampleGame : Game
         this.assets = assets;
         this.audio = audio;
         this.logger = logger;
-        OnLoad += LoadAssets;
+        OnLoad += StartMusic;
     }
 
-    private void LoadAssets()
+    protected override async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
         var assembly = Assembly.GetExecutingAssembly();
-        assets.LoadEmbeddedAsync<Texture2D>("logo", assembly, $"{ResourcePrefix}.Sprites.logo.png").AsTask().GetAwaiter().GetResult();
-        assets.LoadEmbeddedAsync<FontAsset>("ui-font", assembly, $"{ResourcePrefix}.Fonts.ComicMono.ttf").AsTask().GetAwaiter().GetResult();
-        var song = assets.LoadEmbeddedAsync<SoundAsset>("music", assembly, $"{ResourcePrefix}.Music.SpaceJazz.wav").AsTask().GetAwaiter().GetResult();
-        music = audio.Play(song, loop: true, volume: 0.35f);
+        await assets.LoadEmbeddedAsync<Texture2D>(
+            "logo", assembly, $"{ResourcePrefix}.Sprites.logo.png", cancellationToken);
+        await assets.LoadEmbeddedAsync<FontAsset>(
+            "ui-font", assembly, $"{ResourcePrefix}.Fonts.ComicMono.ttf", cancellationToken);
+        musicAsset = await assets.LoadEmbeddedAsync<SoundAsset>(
+            "music", assembly, $"{ResourcePrefix}.Music.SpaceJazz.wav", cancellationToken);
         logger.LogInformation("Loaded typed texture, font, and sound assets");
     }
 
+    private void StartMusic() =>
+        music = audio.Play(musicAsset!, loop: true, volume: 0.35f);
+
     protected override void Cleanup()
     {
-        OnLoad -= LoadAssets;
+        OnLoad -= StartMusic;
         music?.Dispose();
         logger.LogInformation("Example game shut down");
     }

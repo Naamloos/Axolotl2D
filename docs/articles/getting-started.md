@@ -15,14 +15,14 @@ var host = Host.CreateDefaultBuilder(args)
     })
     .Build();
 
-host.Start();
+await host.RunAsync();
 ```
 
 `UseSceneManagerGameHost<T>()` installs assets, audio, rendering, `Camera2D`, `SpriteBatch`, text, and the GameObject factory. The host creates a DI scope for the active scene. Scenes and their components share scoped services until a scene transition disposes the scope.
 
 ## Load assets
 
-Load CPU assets during `Game.OnLoad`. The manager chooses the registered `IAssetLoader<T>` and caches the result by type and key.
+Load CPU assets in `Game.InitializeAsync`. The game host awaits this method before it starts the window and loads the default scene. The manager chooses the registered `IAssetLoader<T>` and caches the result by type and key.
 
 ```csharp
 public sealed class MyGame : Game
@@ -32,16 +32,18 @@ public sealed class MyGame : Game
     public MyGame(IServiceProvider services, AssetManager assets) : base(services)
     {
         this.assets = assets;
-        OnLoad += LoadAssets;
     }
 
-    private void LoadAssets()
+    protected override async Task InitializeAsync(
+        CancellationToken cancellationToken = default)
     {
-        assets.LoadFileAsync<Texture2D>("player", "Assets/player.png")
-            .AsTask().GetAwaiter().GetResult();
+        await assets.LoadFileAsync<Texture2D>(
+            "player",
+            "Assets/player.png",
+            cancellationToken);
     }
 
-    protected override void Cleanup() => OnLoad -= LoadAssets;
+    protected override void Cleanup() { }
 }
 ```
 

@@ -6,9 +6,9 @@ namespace Axolotl2D.Example;
 
 internal static class Program
 {
-    private static void Main(string[] args)
+    private static async Task Main(string[] args)
     {
-        var host = Host.CreateDefaultBuilder(args)
+        using var host = Host.CreateDefaultBuilder(args)
             .ConfigureServices(services =>
             {
                 // The game-host registration also installs Axolotl2D's DI services.
@@ -18,6 +18,6 @@ internal static class Program
             })
             .Build();
 
-        host.Start();
+        await host.RunAsync();
     }
 }

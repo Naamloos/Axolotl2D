@@ -28,9 +28,9 @@ var host = Host.CreateDefaultBuilder(args)
     })
     .Build();
 
-host.Start();
+await host.RunAsync();
 ```
 
-`UseSceneManagerGameHost<T>()` registers the standard Axolotl2D services. Register your own `IAssetLoader<T>`, component dependencies, or other game services before building the host; constructors receive them through normal Microsoft DI.
+`UseSceneManagerGameHost<T>()` registers the standard Axolotl2D services. Override `Game.InitializeAsync` to await asset loading before the window and first scene start. Register your own `IAssetLoader<T>`, component dependencies, or other game services before building the host; constructors receive them through normal Microsoft DI.
 
 See the [documentation](docs/index.md), [getting-started guide](docs/articles/getting-started.md), and [example project](Axolotl2D.Example) for asset loading, GameObjects, camera controls, sprite batching, animation, audio, and text.

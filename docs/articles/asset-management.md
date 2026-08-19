@@ -14,7 +14,7 @@ The built-in loaders are registered by `AddAxolotl2D()` and by both game-host re
 
 ## Load from files
 
-Load assets during `Game.OnLoad`, before the first scene uses them:
+Load assets in `Game.InitializeAsync`. The game host awaits initialization before the window and first scene start:
 
 ```csharp
 public sealed class MyGame : Game
@@ -24,20 +24,20 @@ public sealed class MyGame : Game
     public MyGame(IServiceProvider services, AssetManager assets) : base(services)
     {
         this.assets = assets;
-        OnLoad += LoadAssets;
     }
 
-    private void LoadAssets()
+    protected override async Task InitializeAsync(
+        CancellationToken cancellationToken = default)
     {
-        assets.LoadFileAsync<Texture2D>("player", "Assets/player.png")
-            .AsTask().GetAwaiter().GetResult();
-        assets.LoadFileAsync<SoundAsset>("jump", "Assets/jump.wav")
-            .AsTask().GetAwaiter().GetResult();
-        assets.LoadFileAsync<FontAsset>("ui", "Assets/Inter-Regular.ttf")
-            .AsTask().GetAwaiter().GetResult();
+        await assets.LoadFileAsync<Texture2D>(
+            "player", "Assets/player.png", cancellationToken);
+        await assets.LoadFileAsync<SoundAsset>(
+            "jump", "Assets/jump.wav", cancellationToken);
+        await assets.LoadFileAsync<FontAsset>(
+            "ui", "Assets/Inter-Regular.ttf", cancellationToken);
     }
 
-    protected override void Cleanup() => OnLoad -= LoadAssets;
+    protected override void Cleanup() { }
 }
 ```
 
@@ -51,7 +51,8 @@ Use `LoadAsync<T>()` when another system supplies a stream. The caller retains o
 await assets.LoadEmbeddedAsync<Texture2D>(
     "logo",
     typeof(MyGame).Assembly,
-    "MyGame.Assets.logo.png");
+    "MyGame.Assets.logo.png",
+    cancellationToken);
 ```
 
 ## Retrieve and unload

@@ -4,9 +4,13 @@ Axolotl2D loads PCM WAVE data into `SoundAsset` and plays it through the DI-regi
 
 ## Load a sound
 
+Await sound loading from `Game.InitializeAsync` and pass through its cancellation token:
+
 ```csharp
-assets.LoadFileAsync<SoundAsset>("jump", "Assets/jump.wav")
-    .AsTask().GetAwaiter().GetResult();
+await assets.LoadFileAsync<SoundAsset>(
+    "jump",
+    "Assets/jump.wav",
+    cancellationToken);
 ```
 
 The built-in loader accepts RIFF/WAVE PCM with one or two channels and 8-bit or 16-bit samples. Compressed formats such as MP3 and Ogg Vorbis need a custom asset loader or decoder.

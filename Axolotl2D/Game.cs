@@ -100,6 +100,20 @@ namespace Axolotl2D
         /// <returns>Keyboard input helper.</returns>
         public IKeyboard? GetKeyboard() => input?.Keyboards[0];
 
+        /// <summary>
+        /// Loads application resources before the window and scene start.
+        /// </summary>
+        /// <param name="cancellationToken">Stops startup resource loading.</param>
+        protected virtual Task InitializeAsync(CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        internal async Task InitializeGameAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await InitializeAsync(cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+        }
+
         internal void Start()
         {
             window.Run();
