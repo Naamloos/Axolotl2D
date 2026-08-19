@@ -6,7 +6,7 @@
         {
           "src": "../../",
           "files": ["**/*.csproj"],
-          "exclude": ["**/bin/**", "**/obj/**", "**/Axolotl2D.Example/**"]
+          "exclude": ["**/bin/**", "**/obj/**", "**/Axolotl2D.Example*/**"]
         }
       ],
       "output": "api",
