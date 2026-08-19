@@ -34,4 +34,4 @@ await host.RunAsync();
 
 `UseSceneManagerGameHost<T>()` registers the standard Axolotl2D services. Override `Game.InitializeAsync` to await asset loading before the window and first scene start. Register your own `IAssetLoader<T>`, component dependencies, or other game services before building the host; constructors receive them through normal Microsoft DI.
 
-See the [documentation](docs/index.md), [getting-started guide](docs/articles/getting-started.md), and [example project](Axolotl2D.Example) for assets, GameObjects, input actions, time control, rendering, shaders, animation, audio, and physics.
+See the [documentation](docs/index.md), [getting-started guide](docs/articles/getting-started.md), and [example project](Axolotl2D.Example) for assets, GameObjects, input actions, time control, rendering, shaders, animation, audio, and physics. [Bletris](Axolotl2D.Example.Bletris) is a playable falling-block example that colors copies of the logo with a custom shader.
