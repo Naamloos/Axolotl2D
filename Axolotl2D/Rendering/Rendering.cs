@@ -1,4 +1,5 @@
 using Silk.NET.OpenGL;
+using Axolotl2D.Shaders;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
@@ -57,23 +58,26 @@ public sealed unsafe class Rendering(Game game) : IRendering
         var ordered = commands.OrderBy(command => command.Depth).ThenBy(command => command.Order);
         var batch = new List<SpriteDrawCommand>();
         Texture2D? texture = null;
+        ShaderProgram? shader = null;
 
         foreach (var command in ordered)
         {
-            if (texture is not null && !ReferenceEquals(texture, command.Sprite.Texture))
+            if (texture is not null &&
+                (!ReferenceEquals(texture, command.Sprite.Texture) || !ReferenceEquals(shader, command.Shader)))
             {
-                Flush(texture, batch, camera);
+                Flush(texture, batch, camera, shader);
                 batch.Clear();
             }
             texture = command.Sprite.Texture;
+            shader = command.Shader;
             batch.Add(command);
         }
 
         if (texture is not null)
-            Flush(texture, batch, camera);
+            Flush(texture, batch, camera, shader);
     }
 
-    private void Flush(Texture2D texture, IReadOnlyList<SpriteDrawCommand> commands, Camera2D camera)
+    private void Flush(Texture2D texture, IReadOnlyList<SpriteDrawCommand> commands, Camera2D camera, ShaderProgram? shader)
     {
         var vertices = new float[commands.Count * 4 * 9];
         var indices = new uint[commands.Count * 6];
@@ -128,6 +132,11 @@ public sealed unsafe class Rendering(Game game) : IRendering
             indices[index + 5] = first + 3;
         }
 
+        if (shader is null)
+            openGL.UseProgram(game.shaderProgramPointer);
+        else
+            shader.Use();
+        openGL.Uniform1(openGL.GetUniformLocation(shader?.Handle ?? game.shaderProgramPointer, "uTexture"), 0);
         openGL.BindVertexArray(vertexArray);
         openGL.BindBuffer(BufferTargetARB.ArrayBuffer, vertexBuffer);
         openGL.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(vertices.Length * sizeof(float)),

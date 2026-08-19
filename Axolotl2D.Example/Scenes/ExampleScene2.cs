@@ -1,6 +1,7 @@
 using Axolotl2D.Animation;
 using Axolotl2D.Assets;
 using Axolotl2D.GameObjects;
+using Axolotl2D.Input;
 using Axolotl2D.Rendering;
 using Axolotl2D.Scenes;
 using Silk.NET.Input;
@@ -12,18 +13,18 @@ public sealed class ExampleScene2(
     AssetManager assets,
     Camera2D camera,
     SpriteBatch spriteBatch,
-    TextRenderer textRenderer) : BaseScene
+    TextRenderer textRenderer,
+    InputActionMap input) : BaseScene
 {
-    private IKeyboard keyboard = null!;
     private FontAsset font = null!;
-    private bool escapeWasDown;
+    private InputAction changeScene = null!;
 
     public override void Load()
     {
         Game.Title = "Sprite sheets and animation";
         Game.ClearColor = Color.FromHTML("#3A1734");
-        keyboard = Game.GetKeyboard()!;
         font = assets.Get<FontAsset>("ui-font");
+        changeScene = input.BindButton("Change scene", Key.Escape);
         camera.Position = Vector2.Zero;
         camera.Zoom = 1f;
 
@@ -44,9 +45,7 @@ public sealed class ExampleScene2(
 
     public override void Update(double frameDelta)
     {
-        var escapeIsDown = keyboard.IsKeyPressed(Key.Escape);
-        if (escapeIsDown && !escapeWasDown)
+        if (changeScene.WasPressedThisFrame)
             SceneGameHost.ChangeScene<ExampleScene>();
-        escapeWasDown = escapeIsDown;
     }
 }

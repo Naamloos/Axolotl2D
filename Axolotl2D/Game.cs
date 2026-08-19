@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Axolotl2D.Rendering;
+using Axolotl2D.Input;
+using Axolotl2D.Timing;
 using Microsoft.Extensions.DependencyInjection;
 using Silk.NET.Input;
 using Silk.NET.Maths;
@@ -58,6 +60,8 @@ namespace Axolotl2D
         internal uint shaderProgramPointer;
 
         private IRendering? rendering;
+        private InputActionSystem? inputActions;
+        private TimeService? time;
 
         internal IServiceProvider serviceProvider;
 
@@ -135,7 +139,9 @@ namespace Axolotl2D
             if (openGL is null)
                 return;
 
-            OnUpdate?.Invoke(frameDelta);
+            time!.BeginFrame(frameDelta);
+            inputActions!.Update();
+            OnUpdate?.Invoke(time.DeltaTime);
         }
 
         /// <summary>
@@ -179,6 +185,8 @@ namespace Axolotl2D
             rendering.Initialize();
 
             input = window.CreateInput();
+            time = serviceProvider.GetRequiredService<TimeService>();
+            inputActions = serviceProvider.GetRequiredService<InputActionSystem>();
 
             OnLoad?.Invoke();
         }

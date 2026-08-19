@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Box2D.NET" Version="3.1.654" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.0" />
     <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="3.0.0" />
     <PackageReference Include="Silk.NET.Core" Version="2.22.0" />

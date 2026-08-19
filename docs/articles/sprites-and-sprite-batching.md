@@ -94,6 +94,6 @@ Rotation values are in radians.
 
 ## Ordering and batching
 
-At `End`, commands are ordered by ascending `depth`, then by submission order. Adjacent commands that use the same `Texture2D` are submitted together. Grouping sprites from the same atlas at the same depth reduces texture changes while retaining stable order.
+At `End`, commands are ordered by ascending `depth`, then by submission order. Adjacent commands that use the same `Texture2D` and shader are submitted together. Grouping sprites from the same atlas and shader at the same depth reduces state changes while retaining stable order.
 
-See [Sprite Sheets and Animation](sprite-sheets-and-animation.md) for atlas slicing and [Camera and Coordinate Systems](camera-and-coordinate-systems.md) for world and screen drawing.
+See [Sprite Sheets and Animation](sprite-sheets-and-animation.md) for atlas slicing, [Camera and Coordinate Systems](camera-and-coordinate-systems.md) for world and screen drawing, and [Custom Shaders](custom-shaders.md) for shader scopes.

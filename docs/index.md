@@ -11,7 +11,7 @@ title: Axolotl2D Documentation
 
 Axolotl2D is a lightweight .NET 2D game framework built on [Silk.NET](https://github.com/dotnet/Silk.NET). It provides a Unity-like composition model without imposing an editor: scenes own GameObjects, GameObjects own components, and Microsoft dependency injection constructs the application.
 
-The framework includes scene-level DI scopes, runtime GameObject creation and deferred destruction, a complete component lifecycle, typed asset loading, sprite batching, cameras and coordinate conversion, transform hierarchies, sprite animation, font-based text rendering, and audio playback.
+The framework includes scene-level DI scopes, runtime GameObject creation and deferred destruction, input actions, scaled time and fixed updates, typed assets, sprite batching, scoped custom shaders, cameras, transform hierarchies, animation, text, audio, and Box2D physics.
 
 ## Where to begin
 
@@ -20,6 +20,9 @@ The framework includes scene-level DI scopes, runtime GameObject creation and de
 - [GameObjects and Components](articles/gameobjects-and-components.md)
 - [Asset Management](articles/asset-management.md)
 - [Sprites and Sprite Batching](articles/sprites-and-sprite-batching.md)
+- [Input Actions](articles/input-actions.md)
+- [Box2D Physics](articles/physics.md)
+- [Framework Roadmap](articles/framework-roadmap.md)
 - [API Reference](api/Axolotl2D.yml)
 
 ## Project links

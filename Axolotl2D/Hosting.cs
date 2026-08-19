@@ -1,8 +1,12 @@
 ﻿using Axolotl2D.Audio;
 using Axolotl2D.Assets;
 using Axolotl2D.GameObjects;
+using Axolotl2D.Input;
+using Axolotl2D.Physics;
 using Axolotl2D.Rendering;
 using Axolotl2D.Scenes;
+using Axolotl2D.Shaders;
+using Axolotl2D.Timing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -66,6 +70,11 @@ namespace Axolotl2D
             services.TryAddSingleton<IRendering>(provider => provider.GetRequiredService<Axolotl2D.Rendering.Rendering>());
             services.TryAddSingleton<SpriteBatch>();
             services.TryAddSingleton<TextRenderer>();
+            services.TryAddSingleton<InputActionSystem>();
+            services.TryAddScoped<InputActionMap>();
+            services.TryAddSingleton<TimeService>();
+            services.TryAddScoped<ShaderLibrary>();
+            services.TryAddScoped<PhysicsWorld>();
             services.TryAddScoped<IGameObjectFactory, GameObjectFactory>();
             services.TryAddSingleton<AudioPlayer>();
             return services;

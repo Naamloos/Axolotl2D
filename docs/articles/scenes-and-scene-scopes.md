@@ -66,7 +66,9 @@ public sealed class GameplayScene : BaseScene
 }
 ```
 
-Use fixed updates for deterministic-rate simulation such as movement integration or a future physics system. Use `Update` for input, animation, and frame-rate-dependent behavior. Use `LateUpdate` for work that must observe the final transforms from the current frame, such as a following camera.
+Use fixed updates for forces and simulation input. The scoped `PhysicsWorld` advances after component and scene fixed callbacks. Use `Update` for input actions and animation. Use `LateUpdate` for work that must observe the final transforms from the current frame, such as a following camera.
+
+`TimeService.TimeScale` controls how fast the accumulator fills. Paused scenes still receive `Update(0)` and render, which lets input actions resume the game.
 
 ## Scene-owned objects
 

@@ -27,7 +27,7 @@ var host = Host.CreateDefaultBuilder(args)
 await host.RunAsync();
 ```
 
-`UseSceneManagerGameHost<TGame>()` calls `AddAxolotl2D()` and registers the game and scene host. `AddAxolotl2D()` provides the built-in asset loaders, asset manager, audio player, camera, rendering services, sprite batch, text renderer, and GameObject factory.
+`UseSceneManagerGameHost<TGame>()` calls `AddAxolotl2D()` and registers the game and scene host. `AddAxolotl2D()` provides assets, audio, input actions, time, rendering, scoped shaders, physics, and the GameObject factory.
 
 The game host awaits `Game.InitializeAsync` before it starts the window and loads the default scene. Override that method for asset loading and pass its cancellation token to each loader.
 
@@ -39,11 +39,11 @@ Choose lifetimes according to ownership:
 
 | Lifetime | Good fit | Ends when |
 | --- | --- | --- |
-| Singleton | Configuration, save data, cross-scene state | The application stops |
-| Scoped | Level state, encounter state, scene-local registries | The active scene changes |
+| Singleton | Configuration, save data, `TimeService`, `InputActionSystem` | The application stops |
+| Scoped | Level state, `InputActionMap`, `ShaderLibrary`, `PhysicsWorld` | The active scene changes |
 | Transient | Small stateless collaborators | The consumer releases them |
 
-Axolotl2D registers scenes and `IGameObjectFactory` as scoped services. Rendering, assets, audio, the default camera, sprite batching, and text rendering are singleton services.
+Axolotl2D registers scenes, action maps, shader libraries, physics worlds, and `IGameObjectFactory` as scoped services. Rendering, assets, audio, time, the input device system, the default camera, sprite batching, and text rendering are singleton services.
 
 ## Constructor injection
 
@@ -107,6 +107,7 @@ Axolotl2D combines a small set of established patterns:
 | Template method | `BaseScene` and `Component` callbacks | The framework controls ordering while game code supplies behavior |
 | Command batching | `SpriteBatch` queues draw commands | Rendering can order work and reduce texture submissions |
 | Strategy | `IAssetLoader<TAsset>` | New asset formats plug in without changing `AssetManager` |
+| Adapter | `PhysicsWorld` and `PhysicsBody` wrap Box2D.NET | GameObjects use Box2D without losing access to raw handles |
 
 These patterns reinforce the same ownership model. A component declares what it needs, the current scene scope supplies it, the scene owns the resulting object, and the framework disposes the graph at a predictable boundary. That improves testability, makes scene transitions less prone to leaked state, and keeps rendering and asset code separate from gameplay behavior.
 

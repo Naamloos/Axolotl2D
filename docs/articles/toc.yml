@@ -16,6 +16,10 @@
     href: runtime-gameobjects.md
   - name: Component Lifecycle
     href: component-lifecycle.md
+  - name: Input Actions
+    href: input-actions.md
+  - name: Time and Fixed Updates
+    href: time-and-fixed-update.md
 - name: Content and Rendering
   items:
   - name: Asset Management
@@ -32,3 +36,13 @@
     href: text-rendering.md
   - name: Audio Playback
     href: audio.md
+  - name: Custom Shaders
+    href: custom-shaders.md
+- name: Simulation
+  items:
+  - name: Box2D Physics
+    href: physics.md
+- name: Project Direction
+  items:
+  - name: Framework Roadmap
+    href: framework-roadmap.md

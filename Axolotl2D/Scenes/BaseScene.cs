@@ -1,5 +1,7 @@
 using Axolotl2D.GameObjects;
+using Axolotl2D.Physics;
 using Axolotl2D.Rendering;
+using Axolotl2D.Timing;
 using System.Numerics;
 
 namespace Axolotl2D.Scenes;
@@ -11,6 +13,8 @@ public abstract class BaseScene
     private readonly HashSet<GameObject> pendingDestruction = [];
     private IGameObjectFactory objectFactory = null!;
     private SpriteBatch spriteBatch = null!;
+    private PhysicsWorld physics = null!;
+    private TimeService time = null!;
     private double fixedAccumulator;
     private bool acceptsObjects;
 
@@ -71,6 +75,10 @@ public abstract class BaseScene
             ?? throw new InvalidOperationException("IGameObjectFactory is not registered."));
         spriteBatch = (SpriteBatch)(services.GetService(typeof(SpriteBatch))
             ?? throw new InvalidOperationException("SpriteBatch is not registered."));
+        physics = (PhysicsWorld)(services.GetService(typeof(PhysicsWorld))
+            ?? throw new InvalidOperationException("PhysicsWorld is not registered."));
+        time = (TimeService)(services.GetService(typeof(TimeService))
+            ?? throw new InvalidOperationException("TimeService is not registered."));
     }
 
     internal void LoadScene()
@@ -93,9 +101,13 @@ public abstract class BaseScene
         var fixedSteps = 0;
         while (fixedAccumulator >= FixedTimeStep && fixedSteps++ < MaximumFixedStepsPerFrame && IsLoaded)
         {
+            time.BeginFixedStep(FixedTimeStep);
             foreach (var gameObject in gameObjects.ToArray())
                 gameObject.FixedUpdate(FixedTimeStep);
             FixedUpdate(FixedTimeStep);
+            FlushDestroyed();
+            if (IsLoaded)
+                physics.Step((float)FixedTimeStep);
             FlushDestroyed();
             fixedAccumulator -= FixedTimeStep;
         }
