@@ -1,9 +1,5 @@
 using Axolotl2D.Assets;
-using SixLabors.Fonts;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Drawing.Processing;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
+using SkiaSharp;
 using System.Numerics;
 
 namespace Axolotl2D.Rendering;
@@ -24,18 +20,44 @@ public sealed class TextRenderer
         if (cache.TryGetValue(key, out var cached))
             return cached;
 
-        var font = fontAsset.Family.CreateFont(fontSize);
-        var content = text.Length == 0 ? " " : text;
-        var bounds = TextMeasurer.MeasureRenderableBounds(content, new TextOptions(font));
-        var width = Math.Max(1, (int)MathF.Ceiling(bounds.Width));
-        var height = Math.Max(1, (int)MathF.Ceiling(bounds.Height));
-        using var image = new Image<Rgba32>(width, height);
-        var options = new RichTextOptions(font) { Origin = new PointF(-bounds.Left, -bounds.Top) };
-        image.Mutate(context => context.Paint(canvas =>
-            canvas.DrawText(options, text, Brushes.Solid(SixLabors.ImageSharp.Color.White), pen: null)));
+        using var font = new SKFont(fontAsset.Typeface, fontSize);
+        using var paint = new SKPaint { Color = SKColors.White, IsAntialias = true };
+        font.GetFontMetrics(out var metrics);
 
+        var lines = text.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+        var bounds = lines.Select(line =>
+        {
+            font.MeasureText(line, out var lineBounds, paint);
+            return lineBounds;
+        }).ToArray();
+        var left = MathF.Min(0, bounds.Min(bound => bound.Left));
+        var right = MathF.Max(1, bounds.Max(bound => bound.Right));
+        var lineHeight = MathF.Max(1, metrics.Descent - metrics.Ascent + metrics.Leading);
+        var width = Math.Max(1, (int)MathF.Ceiling(right - left));
+        var height = Math.Max(1, (int)MathF.Ceiling(lineHeight * lines.Length));
+
+        using var bitmap = new SKBitmap(new SKImageInfo(width, height, SKColorType.Alpha8, SKAlphaType.Premul));
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.Transparent);
+        for (var i = 0; i < lines.Length; i++)
+            canvas.DrawText(lines[i], -left, i * lineHeight - metrics.Ascent, SKTextAlign.Left, font, paint);
+        canvas.Flush();
+
+        var alpha = bitmap.GetPixelSpan();
         var pixels = new byte[width * height * 4];
-        image.CopyPixelDataTo(pixels);
+        for (var y = 0; y < height; y++)
+        {
+            var sourceRow = alpha.Slice(y * bitmap.RowBytes, width);
+            for (var x = 0; x < width; x++)
+            {
+                var pixel = (y * width + x) * 4;
+                pixels[pixel] = 255;
+                pixels[pixel + 1] = 255;
+                pixels[pixel + 2] = 255;
+                pixels[pixel + 3] = sourceRow[x];
+            }
+        }
+
         var texture = new Texture2D(width, height, pixels);
         cache.Add(key, texture);
         return texture;

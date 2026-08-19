@@ -19,6 +19,7 @@ public sealed class SceneGameHost(
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         game.OnLoad += LoadDefaultScene;
+        game.Closing += DisposeCurrentScene;
         try
         {
             await game.InitializeGameAsync(cancellationToken).ConfigureAwait(false);
@@ -26,6 +27,7 @@ public sealed class SceneGameHost(
         catch
         {
             game.OnLoad -= LoadDefaultScene;
+            game.Closing -= DisposeCurrentScene;
             throw;
         }
 
@@ -40,10 +42,11 @@ public sealed class SceneGameHost(
     public async Task StopAsync(CancellationToken cancellationToken)
     {
         game.OnLoad -= LoadDefaultScene;
-        DisposeCurrentScene();
         game.Stop();
         if (gameLoop is not null)
-            await gameLoop.WaitAsync(cancellationToken).ConfigureAwait(false);
+            await gameLoop.ConfigureAwait(false);
+        game.Closing -= DisposeCurrentScene;
+        DisposeCurrentScene();
     }
 
     private void LoadDefaultScene()

@@ -62,6 +62,7 @@ namespace Axolotl2D
         private IRendering? rendering;
         private InputActionSystem? inputActions;
         private TimeService? time;
+        private int disposed;
 
         internal IServiceProvider serviceProvider;
 
@@ -120,7 +121,23 @@ namespace Axolotl2D
 
         internal void Start()
         {
-            window.Run();
+            var completed = false;
+            try
+            {
+                window.Run();
+                completed = true;
+            }
+            finally
+            {
+                try
+                {
+                    Close();
+                }
+                finally
+                {
+                    Dispose(completed);
+                }
+            }
         }
 
         internal void Stop()
@@ -218,6 +235,18 @@ namespace Axolotl2D
             window.Title = $"{Title} | FPS: {Math.Round(CurrentFramerate)}";
         }
 
+        private void Close()
+        {
+            try
+            {
+                Closing?.Invoke();
+            }
+            finally
+            {
+                rendering?.Dispose();
+            }
+        }
+
         /// <summary>
         /// Event that gets called when the game attempts to clean up.
         /// </summary>
@@ -226,18 +255,22 @@ namespace Axolotl2D
         /// <summary>
         /// Disposes the game.
         /// </summary>
-        public void Dispose()
+        public void Dispose() => Dispose(true);
+
+        private void Dispose(bool disposeWindow)
         {
-            Cleanup();
-            rendering?.Dispose();
-            window.Dispose();
-
-            GC.SuppressFinalize(this);
+            if (Interlocked.Exchange(ref disposed, 1) != 0)
+                return;
+            try
+            {
+                Cleanup();
+            }
+            finally
+            {
+                if (disposeWindow)
+                    window.Dispose();
+                GC.SuppressFinalize(this);
+            }
         }
-
-        /// <summary>
-        /// Finalizer for the game.
-        /// </summary>
-        ~Game() => Dispose();
     }
 }

@@ -48,5 +48,7 @@ namespace Axolotl2D
         /// Called when the game window resizes.
         /// </summary>
         public event ResizeDelegate? OnResize;
+
+        internal event Action? Closing;
     }
 }

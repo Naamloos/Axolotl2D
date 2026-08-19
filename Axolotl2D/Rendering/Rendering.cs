@@ -113,7 +113,7 @@ public sealed unsafe class Rendering(Game game) : IRendering
 
                 vertices[vertexOffset++] = position.X;
                 vertices[vertexOffset++] = position.Y;
-                vertices[vertexOffset++] = command.Depth;
+                vertices[vertexOffset++] = 0f;
                 vertices[vertexOffset++] = textureCoordinates[corner].X;
                 vertices[vertexOffset++] = textureCoordinates[corner].Y;
                 vertices[vertexOffset++] = command.Tint.R;
@@ -158,7 +158,7 @@ public sealed unsafe class Rendering(Game game) : IRendering
         texture.Handle = openGL.GenTexture();
         openGL.BindTexture(TextureTarget.Texture2D, texture.Handle);
         openGL.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba, (uint)texture.Width, (uint)texture.Height,
-            0, PixelFormat.Rgba, PixelType.UnsignedByte, texture.Pixels.AsSpan());
+            0, PixelFormat.Rgba, PixelType.UnsignedByte, ref texture.Pixels[0]);
         openGL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
         openGL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
         openGL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);

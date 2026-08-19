@@ -13,7 +13,7 @@ await assets.LoadFileAsync<FontAsset>(
     cancellationToken);
 ```
 
-`FontAssetLoader` supports TrueType, OpenType, WOFF, and WOFF2 input accepted by SixLabors.Fonts.
+`FontAssetLoader` supports TrueType and OpenType input accepted by SkiaSharp.
 
 ## Draw text in a scene
 

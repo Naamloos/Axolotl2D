@@ -49,7 +49,7 @@ public sealed class ExampleScene(
         spawnPhysics = input.BindButton("Spawn physics", Key.B);
         destroy = input.BindButton("Destroy", Key.Backspace);
         pause = input.BindButton("Pause", Key.P);
-        changeScene = input.BindButton("Change scene", Key.Escape);
+        changeScene = input.BindButton("Change scene", Key.Tab);
         pulseShader = shaders.Create(PulseVertexShader, PulseFragmentShader);
 
         var ground = Instantiate("Physics ground");
@@ -68,8 +68,8 @@ public sealed class ExampleScene(
     public override void Draw(double frameDelta, double frameRate)
     {
         textRenderer.Draw(spriteBatch, font,
-            $"WASD pan | Q/E zoom | Space spawn | B physics | P pause ({time.IsPaused}) | Escape scene",
-            24, new Vector2(24, 24), Color.White, CoordinateSpace.Screen, depth: 10);
+            $"WASD pan | Q/E zoom | Space spawn | B physics | P pause ({time.IsPaused}) | Tab change scene",
+            14, new Vector2(24, 24), Color.White, CoordinateSpace.Screen, depth: 10);
         pulseShader.SetFloat("uTime", (float)time.UnscaledTotalTime);
         using (spriteBatch.UseShader(pulseShader))
             spriteBatch.Draw(logoSprite, new Vector2(80, 100), new Vector2(90, 60), space: CoordinateSpace.Screen, depth: 9);

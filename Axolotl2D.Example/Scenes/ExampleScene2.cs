@@ -28,20 +28,20 @@ public sealed class ExampleScene2(
         camera.Position = Vector2.Zero;
         camera.Zoom = 1f;
 
-        // Two 384x512 cells in the example texture demonstrate atlas slicing.
-        var sheet = new SpriteSheet(assets.Get<Texture2D>("logo"), 384, 512);
+        // Two 100x100 cells in the example texture demonstrate atlas slicing.
+        var sheet = new SpriteSheet(assets.Get<Texture2D>("run"), 255, 255);
         var gameObject = Instantiate("Animated atlas sprite");
         gameObject.Transform.LocalScale = new Vector2(0.7f);
         var renderer = gameObject.AddComponent<SpriteRenderer>();
         renderer.Sprite = sheet[0];
         var animator = gameObject.AddComponent<SpriteAnimator>();
-        animator.Add("blink", new SpriteAnimation(sheet.Sprites, 2f));
-        animator.Play("blink");
+        animator.Add("run", new SpriteAnimation(sheet.Sprites, 20f));
+        animator.Play("run");
     }
 
     public override void Draw(double frameDelta, double frameRate) =>
-        textRenderer.Draw(spriteBatch, font, "SpriteSheet + SpriteAnimator  |  Escape to return",
-            24, new Vector2(24, 24), Color.White, CoordinateSpace.Screen, depth: 10);
+        textRenderer.Draw(spriteBatch, font, "SpriteSheet + SpriteAnimator | Escape to return",
+            14, new Vector2(24, 24), Color.White, CoordinateSpace.Screen, depth: 10);
 
     public override void Update(double frameDelta)
     {

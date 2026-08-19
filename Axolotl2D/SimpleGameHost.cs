@@ -31,7 +31,7 @@
         {
             game.Stop();
             if (gameLoop is not null)
-                await gameLoop.WaitAsync(cancellationToken).ConfigureAwait(false);
+                await gameLoop.ConfigureAwait(false);
         }
     }
 }

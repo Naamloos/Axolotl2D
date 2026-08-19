@@ -33,6 +33,8 @@ public sealed class ExampleGame : Game
             "ui-font", assembly, $"{ResourcePrefix}.Fonts.ComicMono.ttf", cancellationToken);
         musicAsset = await assets.LoadEmbeddedAsync<SoundAsset>(
             "music", assembly, $"{ResourcePrefix}.Music.SpaceJazz.wav", cancellationToken);
+        await assets.LoadEmbeddedAsync<Texture2D>(
+            "run", assembly, $"{ResourcePrefix}.Sprites.RUN.png", cancellationToken);
         logger.LogInformation("Loaded typed texture, font, and sound assets");
     }
 

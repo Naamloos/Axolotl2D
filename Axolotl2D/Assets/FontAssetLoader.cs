@@ -1,31 +1,35 @@
-using SixLabors.Fonts;
+using SkiaSharp;
 
 namespace Axolotl2D.Assets;
 
-/// <summary>A loaded TrueType, OpenType, WOFF, or WOFF2 font family.</summary>
-public sealed class FontAsset
+/// <summary>A loaded TrueType or OpenType font family.</summary>
+public sealed class FontAsset : IDisposable
 {
-    internal FontCollection Collection { get; }
-    internal FontFamily Family { get; }
+    internal SKTypeface Typeface { get; }
 
-    internal FontAsset(FontCollection collection, FontFamily family)
+    internal FontAsset(SKTypeface typeface)
     {
-        Collection = collection;
-        Family = family;
+        Typeface = typeface;
     }
 
     /// <summary>The family name reported by the font.</summary>
-    public string Name => Family.Name;
+    public string Name => Typeface.FamilyName;
+
+    /// <inheritdoc />
+    public void Dispose() => Typeface.Dispose();
 }
 
 /// <summary>Loads scalable fonts for <see cref="Axolotl2D.Rendering.TextRenderer"/>.</summary>
 public sealed class FontAssetLoader : IAssetLoader<FontAsset>
 {
     /// <inheritdoc />
-    public ValueTask<FontAsset> LoadAsync(Stream stream, CancellationToken cancellationToken = default)
+    public async ValueTask<FontAsset> LoadAsync(Stream stream, CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        var collection = new FontCollection();
-        return ValueTask.FromResult(new FontAsset(collection, collection.Add(stream)));
+        using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
+        using var data = SKData.CreateCopy(buffer.ToArray());
+        var typeface = SKTypeface.FromData(data)
+            ?? throw new InvalidDataException("The stream does not contain a supported TrueType or OpenType font.");
+        return new FontAsset(typeface);
     }
 }

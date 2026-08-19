@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | `Texture2D` | `TextureAssetLoader` | PNG, JPEG, BMP, and other formats supported by stb_image |
 | `SoundAsset` | `SoundAssetLoader` | RIFF/WAVE PCM, mono or stereo, 8-bit or 16-bit |
-| `FontAsset` | `FontAssetLoader` | TrueType, OpenType, WOFF, and WOFF2 fonts supported by SixLabors.Fonts |
+| `FontAsset` | `FontAssetLoader` | TrueType and OpenType fonts supported by SkiaSharp |
 
 The built-in loaders are registered by `AddAxolotl2D()` and by both game-host registration methods.
 
