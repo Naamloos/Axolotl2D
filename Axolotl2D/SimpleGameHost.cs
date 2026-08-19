@@ -6,6 +6,7 @@
     /// <param name="game">Game to host.</param>
     internal class SimpleGameHost(
         Game game,
+        Debugging.DebugOverlay debugOverlay,
         Microsoft.Extensions.Hosting.IHostApplicationLifetime applicationLifetime) : IGameHost
     {
         private Task? gameLoop;
@@ -16,6 +17,7 @@
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             await game.InitializeGameAsync(cancellationToken).ConfigureAwait(false);
+            debugOverlay.AttachSimpleHost();
             gameLoop = Task.Run(game.Start, CancellationToken.None);
             _ = gameLoop.ContinueWith(
                 _ => applicationLifetime.StopApplication(),
@@ -32,6 +34,7 @@
             game.Stop();
             if (gameLoop is not null)
                 await gameLoop.ConfigureAwait(false);
+            debugOverlay.DetachSimpleHost();
         }
     }
 }

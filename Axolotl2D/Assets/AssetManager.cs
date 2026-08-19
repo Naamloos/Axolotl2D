@@ -75,6 +75,19 @@ public sealed class AssetManager(IServiceProvider services) : IDisposable
         return true;
     }
 
+    /// <summary>Returns a point-in-time view of cached and in-progress assets.</summary>
+    public IReadOnlyList<AssetInfo> GetLoadedAssets() => assets
+        .Select(entry => new AssetInfo(
+            entry.Key.Type,
+            entry.Key.Key,
+            !entry.Value.IsValueCreated ? AssetLoadState.Pending
+                : !entry.Value.Value.IsCompleted ? AssetLoadState.Loading
+                : entry.Value.Value.IsCompletedSuccessfully ? AssetLoadState.Loaded
+                : AssetLoadState.Faulted))
+        .OrderBy(info => info.Type.Name)
+        .ThenBy(info => info.Key, StringComparer.Ordinal)
+        .ToArray();
+
     private IAssetLoader<TAsset> GetLoader<TAsset>() where TAsset : class =>
         services.GetService(typeof(IAssetLoader<TAsset>)) as IAssetLoader<TAsset>
         ?? throw new InvalidOperationException($"No IAssetLoader<{typeof(TAsset).Name}> is registered.");
@@ -88,3 +101,15 @@ public sealed class AssetManager(IServiceProvider services) : IDisposable
         assets.Clear();
     }
 }
+
+/// <summary>The current state of a cached asset.</summary>
+public enum AssetLoadState
+{
+    Pending,
+    Loading,
+    Loaded,
+    Faulted
+}
+
+/// <summary>Identifies one entry in the asset cache.</summary>
+public readonly record struct AssetInfo(Type Type, string Key, AssetLoadState State);

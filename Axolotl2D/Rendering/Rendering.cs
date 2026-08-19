@@ -7,8 +7,14 @@ namespace Axolotl2D.Rendering;
 
 public interface IRendering : IDisposable
 {
+    RenderStatistics Statistics { get; }
     void Initialize();
+    void BeginFrame();
+    void EndFrame();
 }
+
+/// <summary>Counts rendering work submitted during the previous completed frame.</summary>
+public readonly record struct RenderStatistics(int DrawCommands, int DrawSubmissions, int Triangles, int UploadedTextures);
 
 /// <summary>Owns the shared GPU buffers and texture uploads used by sprite batches.</summary>
 public sealed unsafe class Rendering(Game game) : IRendering
@@ -19,9 +25,15 @@ public sealed unsafe class Rendering(Game game) : IRendering
     private uint vertexBuffer;
     private uint indexBuffer;
     private bool initialized;
+    private int frameCommands;
+    private int frameSubmissions;
+    private int disposed;
+
+    public RenderStatistics Statistics { get; private set; }
 
     public void Initialize()
     {
+        ObjectDisposedException.ThrowIf(disposed != 0, this);
         if (initialized)
             return;
 
@@ -55,6 +67,8 @@ public sealed unsafe class Rendering(Game game) : IRendering
         if (commands.Count == 0)
             return;
 
+        frameCommands += commands.Count;
+
         var ordered = commands.OrderBy(command => command.Depth).ThenBy(command => command.Order);
         var batch = new List<SpriteDrawCommand>();
         Texture2D? texture = null;
@@ -79,6 +93,7 @@ public sealed unsafe class Rendering(Game game) : IRendering
 
     private void Flush(Texture2D texture, IReadOnlyList<SpriteDrawCommand> commands, Camera2D camera, ShaderProgram? shader)
     {
+        frameSubmissions++;
         var vertices = new float[commands.Count * 4 * 9];
         var indices = new uint[commands.Count * 6];
         var vertexOffset = 0;
@@ -150,6 +165,18 @@ public sealed unsafe class Rendering(Game game) : IRendering
         openGL.BindVertexArray(0);
     }
 
+    public void BeginFrame()
+    {
+        frameCommands = 0;
+        frameSubmissions = 0;
+    }
+
+    public void EndFrame() => Statistics = new RenderStatistics(
+        frameCommands,
+        frameSubmissions,
+        frameCommands * 2,
+        uploadedTextures.Count);
+
     private uint GetTextureHandle(Texture2D texture)
     {
         if (texture.Handle != 0)
@@ -169,17 +196,21 @@ public sealed unsafe class Rendering(Game game) : IRendering
 
     public void Dispose()
     {
-        if (!initialized)
+        if (Interlocked.Exchange(ref disposed, 1) != 0 || !initialized)
             return;
-        foreach (var texture in uploadedTextures)
-        {
-            openGL.DeleteTexture(texture.Handle);
-            texture.Handle = 0;
-        }
-        openGL.DeleteBuffer(vertexBuffer);
-        openGL.DeleteBuffer(indexBuffer);
-        openGL.DeleteVertexArray(vertexArray);
-        uploadedTextures.Clear();
+
         initialized = false;
+        if (game.window.GLContext.IsCurrent)
+        {
+            foreach (var texture in uploadedTextures)
+                openGL.DeleteTexture(texture.Handle);
+            openGL.DeleteBuffer(vertexBuffer);
+            openGL.DeleteBuffer(indexBuffer);
+            openGL.DeleteVertexArray(vertexArray);
+        }
+
+        foreach (var texture in uploadedTextures)
+            texture.Handle = 0;
+        uploadedTextures.Clear();
     }
 }

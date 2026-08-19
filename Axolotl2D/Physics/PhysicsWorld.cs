@@ -15,6 +15,10 @@ public sealed class PhysicsWorld : IDisposable
 
     public B2WorldId WorldId { get; }
     public int SubStepCount { get; set; } = 4;
+    public IReadOnlyCollection<PhysicsBody> Bodies => bodies;
+
+    /// <summary>Returns Box2D's current world counters.</summary>
+    public B2Counters Counters => b2World_GetCounters(WorldId);
 
     public float PixelsPerMeter
     {

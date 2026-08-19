@@ -12,7 +12,7 @@ internal static class Program
             .ConfigureServices(services =>
             {
                 // The game-host registration also installs Axolotl2D's DI services.
-                services.UseSceneManagerGameHost<ExampleGame>();
+                services.UseSceneManagerGameHost<ExampleGame>(true);
                 services.AddScene<ExampleScene>();
                 services.AddScene<ExampleScene2>();
             })

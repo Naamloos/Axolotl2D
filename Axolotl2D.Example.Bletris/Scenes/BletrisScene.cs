@@ -1,6 +1,7 @@
 using Axolotl2D.Assets;
 using Axolotl2D.GameObjects;
 using Axolotl2D.Input;
+using Axolotl2D.Particles;
 using Axolotl2D.Rendering;
 using Axolotl2D.Scenes;
 using Axolotl2D.Shaders;
@@ -9,14 +10,23 @@ using System.Numerics;
 
 namespace Axolotl2D.Example.Bletris.Scenes;
 
-[DefaultScene]
 public sealed class BletrisScene : BaseScene
 {
+    private bool returnToMenu;
+
     public override void Load()
     {
         Game.ClearColor = Color.FromHTML("#111827");
         Instantiate("Bletris board").AddComponent<BletrisController>();
     }
+
+    public override void Update(double deltaTime)
+    {
+        if (returnToMenu)
+            SceneGameHost.ChangeScene<MainMenuScene>();
+    }
+
+    internal void RequestReturnToMenu() => returnToMenu = true;
 }
 
 public sealed class BletrisController(
@@ -48,6 +58,7 @@ public sealed class BletrisController(
 
     private readonly BletrisBoard board = new();
     private readonly BletrisBag bag = new();
+    private readonly List<int> clearedRows = new(4);
     private Sprite block = null!;
     private FontAsset font = null!;
     private ShaderProgram colorShader = null!;
@@ -57,6 +68,7 @@ public sealed class BletrisController(
     private InputAction rotate = null!;
     private InputAction hardDrop = null!;
     private InputAction restart = null!;
+    private InputAction menu = null!;
     private int kind;
     private int rotation;
     private int pieceX;
@@ -79,11 +91,17 @@ public sealed class BletrisController(
         rotate = input.BindButton("Rotate", Key.Up, Key.W, Key.X);
         hardDrop = input.BindButton("Hard drop", Key.Space);
         restart = input.BindButton("Restart", Key.R);
+        menu = input.BindButton("Main menu", Key.Escape);
         Reset();
     }
 
     public override void Update(double deltaTime)
     {
+        if (menu.WasPressedThisFrame)
+        {
+            ((BletrisScene)GameObject.Scene).RequestReturnToMenu();
+            return;
+        }
         if (restart.WasPressedThisFrame)
             Reset();
         if (gameOver)
@@ -119,14 +137,8 @@ public sealed class BletrisController(
 
     public override void Render()
     {
-        var availableBoardWidth = Math.Max(80f, game.Viewport.X - SidebarWidth - 40f);
-        var cellSize = Math.Max(8f, Math.Min(32f,
-            Math.Min(availableBoardWidth / BletrisBoard.Width,
-                (game.Viewport.Y - 40f) / BletrisBoard.Height)));
+        var (topLeft, cellSize) = GetBoardLayout();
         var boardSize = new Vector2(BletrisBoard.Width * cellSize, BletrisBoard.Height * cellSize);
-        var topLeft = new Vector2(
-            Math.Max(10f, (game.Viewport.X - boardSize.X - SidebarWidth) / 2f),
-            (game.Viewport.Y - boardSize.Y) / 2f);
         var sidebar = new Vector2(topLeft.X + boardSize.X + 32f, topLeft.Y);
         var drawSize = new Vector2(cellSize - 2f);
 
@@ -170,7 +182,7 @@ public sealed class BletrisController(
             textRenderer.Draw(spriteBatch, font, "GAME OVER\nR TO RESTART", 18f,
                 sidebar + new Vector2(0, 375f), GameOverColor);
         textRenderer.Draw(spriteBatch, font,
-            "MOVE      LEFT/RIGHT  A/D\nROTATE    UP  W/X\nSOFT DROP DOWN  S\nHARD DROP SPACE\nRESTART   R",
+            "MOVE      LEFT/RIGHT  A/D\nROTATE    UP  W/X\nSOFT DROP DOWN  S\nHARD DROP SPACE\nRESTART   R\nMENU      ESC",
             12f, sidebar + new Vector2(0, 455f), MutedColor);
 
         void DrawCell(int column, int row, Color color) =>
@@ -226,7 +238,9 @@ public sealed class BletrisController(
             return;
         }
 
-        var cleared = board.ClearFullRows();
+        var cleared = board.ClearFullRows(clearedRows);
+        foreach (var row in clearedRows)
+            SpawnRowClearParticles(row);
         score += LineScores[cleared] * (lines / 10 + 1);
         lines += cleared;
         SpawnPiece();
@@ -254,6 +268,48 @@ public sealed class BletrisController(
         bag.Reset();
         SpawnPiece();
         UpdateTitle();
+    }
+
+    private void SpawnRowClearParticles(int row)
+    {
+        var (topLeft, cellSize) = GetBoardLayout();
+        var effect = GameObject.Scene.Instantiate("Row clear particles");
+        effect.Transform.LocalPosition = topLeft + new Vector2(
+            BletrisBoard.Width * cellSize / 2f,
+            (row + 0.5f) * cellSize);
+
+        var emitter = effect.AddComponent<ParticleEmitter>();
+        emitter.Sprite = block;
+        emitter.Space = CoordinateSpace.Screen;
+        emitter.PlayOnStart = false;
+        emitter.MaxParticles = BletrisBoard.Width * 5;
+        emitter.Lifetime = 0.65f;
+        emitter.LifetimeVariation = 0.15f;
+        emitter.Speed = cellSize * 5f;
+        emitter.SpeedVariation = cellSize * 2f;
+        emitter.Direction = -MathF.PI / 2f;
+        emitter.Spread = MathF.PI * 0.9f;
+        emitter.Acceleration = new Vector2(0f, cellSize * 7f);
+        emitter.StartSize = cellSize * 0.55f;
+        emitter.EndSize = 1f;
+        emitter.StartColor = Color.Cyan;
+        emitter.EndColor = Color.Transparent;
+        emitter.SetRandomSeed(score + lines * 31 + row);
+        emitter.Emit(BletrisBoard.Width * 5);
+        effect.AddComponent<DestroyWhenParticlesFinish>().Emitter = emitter;
+    }
+
+    private (Vector2 TopLeft, float CellSize) GetBoardLayout()
+    {
+        var availableBoardWidth = Math.Max(80f, game.Viewport.X - SidebarWidth - 40f);
+        var cellSize = Math.Max(8f, Math.Min(32f,
+            Math.Min(availableBoardWidth / BletrisBoard.Width,
+                (game.Viewport.Y - 40f) / BletrisBoard.Height)));
+        var boardSize = new Vector2(BletrisBoard.Width * cellSize, BletrisBoard.Height * cellSize);
+        var topLeft = new Vector2(
+            Math.Max(10f, (game.Viewport.X - boardSize.X - SidebarWidth) / 2f),
+            (game.Viewport.Y - boardSize.Y) / 2f);
+        return (topLeft, cellSize);
     }
 
     private void UpdateTitle() => game.Title = gameOver ? "Bletris | Game over" : "Bletris";
@@ -284,4 +340,15 @@ public sealed class BletrisController(
             out_color = vec4(frag_color.rgb * detail, texel.a * frag_color.a);
         }
         """;
+}
+
+public sealed class DestroyWhenParticlesFinish(GameObject gameObject) : Component(gameObject)
+{
+    public ParticleEmitter Emitter { get; set; } = null!;
+
+    public override void Update(double deltaTime)
+    {
+        if (Emitter.HasStarted && Emitter.AliveCount == 0)
+            GameObject.Destroy();
+    }
 }

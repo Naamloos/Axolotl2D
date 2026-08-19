@@ -2,6 +2,7 @@ using Axolotl2D.GameObjects;
 using Axolotl2D.Physics;
 using Axolotl2D.Rendering;
 using Axolotl2D.Timing;
+using Axolotl2D.Debugging;
 using System.Numerics;
 
 namespace Axolotl2D.Scenes;
@@ -15,12 +16,14 @@ public abstract class BaseScene
     private SpriteBatch spriteBatch = null!;
     private PhysicsWorld physics = null!;
     private TimeService time = null!;
+    private DebugOverlay? debugOverlay;
     private double fixedAccumulator;
     private bool acceptsObjects;
 
     protected SceneGameHost SceneGameHost => sceneGameHost!;
     protected Game Game => game!;
     protected IServiceProvider Services { get; private set; } = null!;
+    internal IServiceProvider ScopeServices => Services;
     public IReadOnlyList<GameObject> GameObjects => gameObjects;
     public bool IsLoaded { get; private set; }
     public double FixedTimeStep { get; set; } = 1d / 60d;
@@ -79,6 +82,10 @@ public abstract class BaseScene
             ?? throw new InvalidOperationException("PhysicsWorld is not registered."));
         time = (TimeService)(services.GetService(typeof(TimeService))
             ?? throw new InvalidOperationException("TimeService is not registered."));
+        var debugOptions = services.GetService(typeof(DebugOverlayOptions)) as DebugOverlayOptions;
+        if (debugOptions?.Enabled == true)
+            debugOverlay = (DebugOverlay)(services.GetService(typeof(DebugOverlay))
+                ?? throw new InvalidOperationException("DebugOverlay is not registered."));
     }
 
     internal void LoadScene()
@@ -137,6 +144,7 @@ public abstract class BaseScene
             foreach (var gameObject in gameObjects.ToArray())
                 gameObject.Render();
             Draw(deltaTime, frameRate);
+            debugOverlay?.Render(this, physics, deltaTime, frameRate);
         }
         finally
         {
@@ -161,6 +169,7 @@ public abstract class BaseScene
         gameObjects.Clear();
         pendingDestruction.Clear();
         fixedAccumulator = 0;
+        debugOverlay = null;
     }
 
     private T Add<T>(T gameObject) where T : GameObject

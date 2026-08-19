@@ -20,6 +20,8 @@
     href: input-actions.md
   - name: Time and Fixed Updates
     href: time-and-fixed-update.md
+  - name: Debug Overlay and Inspection
+    href: debug-overlay.md
 - name: Content and Rendering
   items:
   - name: Asset Management
@@ -38,6 +40,10 @@
     href: audio.md
   - name: Custom Shaders
     href: custom-shaders.md
+  - name: Particle Emitters
+    href: particle-emitters.md
+  - name: User Interface
+    href: ui.md
 - name: Simulation
   items:
   - name: Box2D Physics

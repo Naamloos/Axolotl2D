@@ -111,4 +111,4 @@ var events = B2Worlds.b2World_GetContactEvents(worldId);
 
 The framework destroys component bodies before it disposes the scoped world. Do not retain body, shape, or world IDs after a scene transition.
 
-The first integration wraps boxes, circles, forces, impulses, velocity, transform synchronization, and contact begin/end events. Debug drawing, joint components, query helpers, filters, and sensor components remain direct Box2D.NET work for now. See the [Box2D simulation guide](https://github.com/erincatto/box2d/blob/main/docs/simulation.md) for the underlying model.
+The integration wraps boxes, circles, forces, impulses, velocity, transform synchronization, contact begin/end events, and host-enabled debug drawing with collision bounds. Joint components, query helpers, filters, and sensor components remain direct Box2D.NET work for now. See [Debug Overlay and Runtime Inspection](debug-overlay.md) for visualization and the [Box2D simulation guide](https://github.com/erincatto/box2d/blob/main/docs/simulation.md) for the underlying model.

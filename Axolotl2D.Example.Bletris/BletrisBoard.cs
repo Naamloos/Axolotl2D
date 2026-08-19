@@ -58,25 +58,30 @@ internal sealed class BletrisBoard
         return entirelyVisible;
     }
 
-    public int ClearFullRows()
+    public int ClearFullRows(ICollection<int>? clearedRows = null)
     {
-        var cleared = 0;
-        for (var row = Height - 1; row >= 0; row--)
+        clearedRows?.Clear();
+        var destination = Height - 1;
+        for (var source = Height - 1; source >= 0; source--)
         {
             var full = true;
             for (var column = 0; column < Width; column++)
-                full &= cells[column, row] != 0;
-            if (!full)
+                full &= cells[column, source] != 0;
+            if (full)
+            {
+                clearedRows?.Add(source);
                 continue;
+            }
 
-            cleared++;
-            for (var destination = row; destination > 0; destination--)
-                for (var column = 0; column < Width; column++)
-                    cells[column, destination] = cells[column, destination - 1];
             for (var column = 0; column < Width; column++)
-                cells[column, 0] = 0;
-            row++;
+                cells[column, destination] = cells[column, source];
+            destination--;
         }
+
+        var cleared = destination + 1;
+        for (; destination >= 0; destination--)
+            for (var column = 0; column < Width; column++)
+                cells[column, destination] = 0;
         return cleared;
     }
 

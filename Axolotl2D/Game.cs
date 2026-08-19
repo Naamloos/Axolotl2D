@@ -8,6 +8,7 @@ using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using Silk.NET.Windowing;
 using System.Numerics;
+using System.Diagnostics;
 
 namespace Axolotl2D
 {
@@ -34,6 +35,12 @@ namespace Axolotl2D
         /// Represents the current framerate of the game.
         /// </summary>
         public double CurrentFramerate { get; private set; }
+
+        /// <summary>Time spent in update callbacks during the previous update, in milliseconds.</summary>
+        public double LastUpdateMilliseconds { get; private set; }
+
+        /// <summary>Time spent producing the previous completed frame, in milliseconds.</summary>
+        public double LastDrawMilliseconds { get; private set; }
 
         /// <summary>
         /// Represents the clear color of the game.
@@ -158,9 +165,17 @@ namespace Axolotl2D
             if (openGL is null)
                 return;
 
-            time!.BeginFrame(frameDelta);
-            inputActions!.Update();
-            OnUpdate?.Invoke(time.DeltaTime);
+            var started = Stopwatch.GetTimestamp();
+            try
+            {
+                time!.BeginFrame(frameDelta);
+                inputActions!.Update();
+                OnUpdate?.Invoke(time.DeltaTime);
+            }
+            finally
+            {
+                LastUpdateMilliseconds = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
+            }
         }
 
         /// <summary>
@@ -226,13 +241,22 @@ namespace Axolotl2D
             if (openGL is null)
                 return;
 
-            CurrentFramerate = Math.Ceiling(1.0f / frameDelta);
+            var started = Stopwatch.GetTimestamp();
+            CurrentFramerate = frameDelta > 0d ? 1d / frameDelta : 0d;
 
             openGL.UseProgram(shaderProgramPointer);
 
             openGL.Clear(ClearBufferMask.ColorBufferBit);
-
-            OnDraw?.Invoke(frameDelta, CurrentFramerate);
+            rendering!.BeginFrame();
+            try
+            {
+                OnDraw?.Invoke(frameDelta, CurrentFramerate);
+            }
+            finally
+            {
+                rendering.EndFrame();
+                LastDrawMilliseconds = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
+            }
 
             window.Title = $"{Title} | FPS: {Math.Round(CurrentFramerate)}";
         }

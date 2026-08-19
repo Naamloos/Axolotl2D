@@ -27,7 +27,7 @@ var host = Host.CreateDefaultBuilder(args)
 await host.RunAsync();
 ```
 
-`UseSceneManagerGameHost<TGame>()` calls `AddAxolotl2D()` and registers the game and scene host. `AddAxolotl2D()` provides assets, audio, input actions, time, rendering, scoped shaders, physics, and the GameObject factory.
+`UseSceneManagerGameHost<TGame>()` calls `AddAxolotl2D()` and registers the game and scene host. `AddAxolotl2D()` provides assets, audio, input actions, time, sprite and primitive rendering, UI and particle component dependencies, scoped shaders, physics, optional runtime inspection, and the GameObject factory. Pass `enableDebugOverlay: true` to the host extension during development.
 
 The game host awaits `Game.InitializeAsync` before it starts the window and loads the default scene. Override that method for asset loading and pass its cancellation token to each loader.
 

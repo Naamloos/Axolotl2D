@@ -18,7 +18,7 @@ var host = Host.CreateDefaultBuilder(args)
 await host.RunAsync();
 ```
 
-`UseSceneManagerGameHost<T>()` installs assets, audio, rendering, `Camera2D`, `SpriteBatch`, text, and the GameObject factory. The host creates a DI scope for the active scene. Scenes and their components share scoped services until a scene transition disposes the scope.
+`UseSceneManagerGameHost<T>()` installs assets, audio, rendering, `Camera2D`, `SpriteBatch`, `PrimitiveBatch`, text, UI and particle dependencies, optional runtime inspection, and the GameObject factory. The host creates a DI scope for the active scene. Scenes and their components share scoped services until a scene transition disposes the scope. Pass `enableDebugOverlay: true` to inspect a development build in-game.
 
 ## Load assets
 

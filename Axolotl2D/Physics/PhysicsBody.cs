@@ -23,6 +23,7 @@ public sealed class PhysicsBody(GameObject gameObject, PhysicsWorld world) : Com
     public bool IsBullet { get; set; }
     public B2BodyId BodyId { get; private set; } = b2_nullBodyId;
     public bool HasBody => B2_IS_NON_NULL(BodyId);
+    public int ShapeCount => shapeIds.Count;
 
     public Vector2 LinearVelocity
     {

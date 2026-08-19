@@ -1,6 +1,7 @@
 ﻿using Axolotl2D.Audio;
 using Axolotl2D.Assets;
 using Axolotl2D.GameObjects;
+using Axolotl2D.Debugging;
 using Axolotl2D.Input;
 using Axolotl2D.Physics;
 using Axolotl2D.Rendering;
@@ -22,8 +23,9 @@ namespace Axolotl2D
         /// </summary>
         /// <typeparam name="T">Game to host</typeparam>
         /// <param name="services">Service Collection</param>
+        /// <param name="enableDebugOverlay">Whether to draw in-game runtime inspection.</param>
         /// <exception cref="InvalidOperationException">Can not register multiple IGameHost services.</exception>
-        public static void UseSimpleGameHost<T>(this IServiceCollection services) where T : Game
+        public static void UseSimpleGameHost<T>(this IServiceCollection services, bool enableDebugOverlay = false) where T : Game
         {
             if (services.Any(x => x.ImplementationType != null && x.ImplementationType.IsAssignableTo(typeof(IGameHost))))
             {
@@ -31,6 +33,7 @@ namespace Axolotl2D
             }
 
             services.AddAxolotl2D();
+            EnableDebugOverlay(services, enableDebugOverlay);
             services.AddSingleton<Game, T>();
             services.AddSingleton<T, T>(x => (x.GetRequiredService<Game>() as T)!);
             services.AddHostedService<SimpleGameHost>();
@@ -41,8 +44,9 @@ namespace Axolotl2D
         /// </summary>
         /// <typeparam name="T">Game to host</typeparam>
         /// <param name="services">Service Collection</param>
+        /// <param name="enableDebugOverlay">Whether to draw in-game runtime inspection.</param>
         /// <exception cref="InvalidOperationException">Can not register multiple IGameHost services.</exception>
-        public static void UseSceneManagerGameHost<T>(this IServiceCollection services) where T : Game
+        public static void UseSceneManagerGameHost<T>(this IServiceCollection services, bool enableDebugOverlay = false) where T : Game
         {
             if (services.Any(x => x.ImplementationType != null && x.ImplementationType.IsAssignableTo(typeof(IGameHost))))
             {
@@ -50,6 +54,7 @@ namespace Axolotl2D
             }
 
             services.AddAxolotl2D();
+            EnableDebugOverlay(services, enableDebugOverlay);
             services.AddSingleton<Game, T>();
             services.AddSingleton<T, T>(x => (x.GetRequiredService<Game>() as T)!);
             services.AddHostedService<SceneGameHost>();
@@ -69,7 +74,10 @@ namespace Axolotl2D
             services.TryAddSingleton<Axolotl2D.Rendering.Rendering>();
             services.TryAddSingleton<IRendering>(provider => provider.GetRequiredService<Axolotl2D.Rendering.Rendering>());
             services.TryAddSingleton<SpriteBatch>();
+            services.TryAddSingleton<PrimitiveBatch>();
             services.TryAddSingleton<TextRenderer>();
+            services.TryAddSingleton(_ => new DebugOverlayOptions());
+            services.TryAddSingleton<DebugOverlay>();
             services.TryAddSingleton<InputActionSystem>();
             services.TryAddScoped<InputActionMap>();
             services.TryAddSingleton<TimeService>();
@@ -78,6 +86,12 @@ namespace Axolotl2D
             services.TryAddScoped<IGameObjectFactory, GameObjectFactory>();
             services.TryAddSingleton<AudioPlayer>();
             return services;
+        }
+
+        private static void EnableDebugOverlay(IServiceCollection services, bool enabled)
+        {
+            if (enabled)
+                services.Replace(ServiceDescriptor.Singleton(new DebugOverlayOptions(true)));
         }
 
         /// <summary>Registers typed asset loading. Prefer <see cref="AddAxolotl2D"/> for new applications.</summary>
