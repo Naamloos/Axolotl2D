@@ -4,21 +4,28 @@ title: Axolotl2D Documentation
 ---
 
 > [!NOTE]
-> Axolotl2D is curently in early development, thus this documentation WILL be out-of-date quickly!
-> If you run into any issues during development, feel free to ask any questions on [Discord](https://discord.gg/hMRWUTa).
-> Do make sure to take a look at the [Example Project](https://github.com/Naamloos/Axolotl2D/tree/master/Axolotl2D.Example) as well, as this example is more likely to be up-to-date with the rest of the project!
+> Axolotl2D is in active development. The articles describe the API currently in this repository. If you run into a problem, ask on [Discord](https://discord.gg/hMRWUTa) or compare your code with the [example project](https://github.com/Naamloos/Axolotl2D/tree/master/Axolotl2D.Example).
 
-![medium sized logo](images/logo_mid.png)
+![Axolotl2D logo](images/logo_mid.png)
 # Axolotl2D
-Axolotl2D is a small lightweight 2D game engine based on [Silk.NET](https://github.com/dotnet/Silk.NET). 
 
-It was build as a personal practice project, intended for smaller indie games. 
+Axolotl2D is a lightweight .NET 2D game framework built on [Silk.NET](https://github.com/dotnet/Silk.NET). It provides a Unity-like composition model without imposing an editor: scenes own GameObjects, GameObjects own components, and Microsoft dependency injection constructs the application.
 
-It makes heavy use of Microsoft's hosting extensions and thus supports and makes heavy use of dependency injection.
+The framework includes scene-level DI scopes, runtime GameObject creation and deferred destruction, a complete component lifecycle, typed asset loading, sprite batching, cameras and coordinate conversion, transform hierarchies, sprite animation, font-based text rendering, and audio playback.
 
-## Useful links
-- [API Reference](api/Axolotl2D.yml)
+## Where to begin
+
 - [Getting Started](articles/getting-started.md)
-- [Github Repository](https://github.com/Naamloos/Axolotl2D)
-- [License Information](https://github.com/Naamloos/Axolotl2D/blob/master/LICENSE) (TBD: is GPLv3 really best?)
+- [Architecture and Dependency Injection](articles/architecture-and-dependency-injection.md)
+- [GameObjects and Components](articles/gameobjects-and-components.md)
+- [Asset Management](articles/asset-management.md)
+- [Sprites and Sprite Batching](articles/sprites-and-sprite-batching.md)
+- [API Reference](api/Axolotl2D.yml)
+
+## Project links
+
+- [Example Project](https://github.com/Naamloos/Axolotl2D/tree/master/Axolotl2D.Example)
+- [GitHub Repository](https://github.com/Naamloos/Axolotl2D)
+- [License](https://github.com/Naamloos/Axolotl2D/blob/master/LICENSE)
+- [Discord](https://discord.gg/hMRWUTa)
 - [Donate](https://ko-fi.com/naamloos)

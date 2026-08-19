@@ -1,95 +1,104 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 
-namespace Axolotl2D.Scenes
+namespace Axolotl2D.Scenes;
+
+/// <summary>Hosts the game and owns the active scene DI scope.</summary>
+public sealed class SceneGameHost(Game game, IServiceScopeFactory scopeFactory) : IGameHost
 {
-    /// <summary>
-    /// Represents a service that hosts the game using Scenes.
-    /// </summary>
-    /// <param name="game">Game to host</param>
-    /// <param name="_services">Services</param>
-    public class SceneGameHost(Game game, IServiceProvider _services) : IGameHost
+    private IServiceScope? currentScope;
+    public BaseScene? CurrentScene { get; private set; }
+
+    public void ChangeScene<T>() where T : BaseScene => ChangeScene(typeof(T));
+
+    public Task StartAsync(CancellationToken cancellationToken)
     {
-        private BaseScene? currentScene;
+        game.OnLoad += LoadDefaultScene;
+        return Task.Run(game.Start, cancellationToken);
+    }
 
-        /// <summary>
-        /// Switches to a different scene.
-        /// </summary>
-        /// <typeparam name="T">Type of the Scene to switch to</typeparam>
-        public void ChangeScene<T>() where T : BaseScene => ChangeScene(typeof(T));
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        DisposeCurrentScene();
+        return Task.Run(game.Stop, cancellationToken);
+    }
 
-        /// <summary>
-        /// Starts the game.
-        /// </summary>
-        public Task StartAsync(CancellationToken cancellationToken)
+    private void LoadDefaultScene()
+    {
+        var scenes = Assembly.GetEntryAssembly()!.GetTypes()
+            .Where(type => type.IsAssignableTo(typeof(BaseScene)) && type.GetCustomAttribute<DefaultSceneAttribute>() is not null)
+            .ToArray();
+
+        if (scenes.Length != 1)
+            throw new InvalidOperationException(scenes.Length == 0
+                ? "No scene has DefaultSceneAttribute."
+                : "Only one scene can have DefaultSceneAttribute.");
+
+        ChangeScene(scenes[0]);
+        game.OnLoad -= LoadDefaultScene;
+    }
+
+    private void ChangeScene(Type type)
+    {
+        var nextScope = scopeFactory.CreateScope();
+        BaseScene nextScene;
+        try
         {
-            game.OnLoad += PreloadSceneManager;
-
-            return Task.Run(() => game.Start(), cancellationToken);
+            nextScene = nextScope.ServiceProvider.GetRequiredService(type) as BaseScene
+                ?? throw new InvalidOperationException($"{type.Name} is not a registered scene.");
+        }
+        catch
+        {
+            nextScope.Dispose();
+            throw;
         }
 
-        private void PreloadSceneManager()
+        try
         {
-            // find IScene in executing assembly where the DefaultSceneAttribute is applied
-            var scenes = Assembly.
-                GetEntryAssembly()!
-                .GetTypes()
-                .Where(t => t.IsAssignableTo(typeof(BaseScene)) && t.GetCustomAttribute<DefaultSceneAttribute>() != null);
-
-            if (!scenes.Any())
-            {
-                throw new Exception("No scene found with DefaultSceneAttribute applied");
-            }
-            if (scenes.Count() > 1)
-            {
-                throw new Exception("Multiple scenes found with DefaultSceneAttribute applied");
-            }
-
-            ChangeScene(scenes.First());
-            game.OnLoad -= PreloadSceneManager;
+            DisposeCurrentScene();
         }
-
-        /// <summary>
-        /// Stops the game.
-        /// </summary>
-        public Task StopAsync(CancellationToken cancellationToken)
+        catch
         {
-            if (currentScene != null)
-            {
-                game.OnUpdate -= currentScene.Update;
-                game.OnDraw -= currentScene.Draw;
-                game.OnResize -= currentScene.Resize;
-            }
-
-            return Task.Run(() => game.Stop(), cancellationToken);
+            nextScope.Dispose();
+            throw;
         }
+        currentScope = nextScope;
+        CurrentScene = nextScene;
+        CurrentScene.sceneGameHost = this;
+        CurrentScene.game = game;
+        CurrentScene.Initialize(nextScope.ServiceProvider);
 
-        private void ChangeScene(Type t)
+        try
         {
-            if (_services.GetRequiredService(t) is not BaseScene newScene)
+            CurrentScene.LoadScene();
+            game.OnUpdate += CurrentScene.Tick;
+            game.OnDraw += CurrentScene.Render;
+            game.OnResize += CurrentScene.Resize;
+        }
+        catch
+        {
+            DisposeCurrentScene();
+            throw;
+        }
+    }
+
+    private void DisposeCurrentScene()
+    {
+        try
+        {
+            if (CurrentScene is not null)
             {
-                throw new Exception("Tried switching to a scene that is not part of the service provider!");
+                game.OnUpdate -= CurrentScene.Tick;
+                game.OnDraw -= CurrentScene.Render;
+                game.OnResize -= CurrentScene.Resize;
+                CurrentScene.UnloadScene();
             }
-            if (currentScene != null)
-            {
-                game.OnUpdate -= currentScene.Update;
-                game.OnDraw -= currentScene.Draw;
-                game.OnResize -= currentScene.Resize;
-
-                currentScene.Unload();
-            }
-
-            // GC collecting
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
-
-            currentScene = newScene;
-            currentScene.sceneGameHost = this;
-            currentScene.game = game;
-
-            currentScene.Load();
-            game.OnUpdate += currentScene.Update;
-            game.OnDraw += currentScene.Draw;
-            game.OnResize += currentScene.Resize;
+        }
+        finally
+        {
+            CurrentScene = null;
+            currentScope?.Dispose();
+            currentScope = null;
         }
     }
 }

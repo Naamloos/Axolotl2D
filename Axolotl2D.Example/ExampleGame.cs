@@ -1,55 +1,42 @@
-﻿using Axolotl2D.Audio;
-using Axolotl2D.Cef;
-using Axolotl2D.Drawable;
+using Axolotl2D.Assets;
+using Axolotl2D.Audio;
+using Axolotl2D.Rendering;
 using Microsoft.Extensions.Logging;
-using System.Numerics;
 using System.Reflection;
 
-namespace Axolotl2D.Example
+namespace Axolotl2D.Example;
+
+public sealed class ExampleGame : Game
 {
-    public class ExampleGame : Game
+    private const string ResourcePrefix = "Axolotl2D.Example.Resources";
+    private readonly AssetManager assets;
+    private readonly AudioPlayer audio;
+    private readonly ILogger<ExampleGame> logger;
+    private SoundPlayback? music;
+
+    public ExampleGame(IServiceProvider services, AssetManager assets, AudioPlayer audio, ILogger<ExampleGame> logger)
+        : base(services, maxDrawRate: 240, maxUpdateRate: 240)
     {
-        private readonly ILogger<ExampleGame> logger;
-        private readonly SpriteManager assetManager;
-        private readonly CefBrowserManager browserManager;
+        this.assets = assets;
+        this.audio = audio;
+        this.logger = logger;
+        OnLoad += LoadAssets;
+    }
 
-        private readonly Song _song;
+    private void LoadAssets()
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        assets.LoadEmbeddedAsync<Texture2D>("logo", assembly, $"{ResourcePrefix}.Sprites.logo.png").AsTask().GetAwaiter().GetResult();
+        assets.LoadEmbeddedAsync<FontAsset>("ui-font", assembly, $"{ResourcePrefix}.Fonts.ComicMono.ttf").AsTask().GetAwaiter().GetResult();
+        var song = assets.LoadEmbeddedAsync<SoundAsset>("music", assembly, $"{ResourcePrefix}.Music.SpaceJazz.wav").AsTask().GetAwaiter().GetResult();
+        music = audio.Play(song, loop: true, volume: 0.35f);
+        logger.LogInformation("Loaded typed texture, font, and sound assets");
+    }
 
-        public ExampleGame(IServiceProvider services, ILogger<ExampleGame> logger, SpriteManager assetManager, CefBrowserManager cefBrowserManager,
-            AudioPlayer audioPlayer) 
-            : base(services, maxDrawRate: 240, maxUpdateRate: 240) // We want to pass the service provider to the game engine so it can utilize it.
-        {
-            // Subscribe to game events, if needed outside of the Scene Manager
-            // It is recommended to hook OnLoad to load assets
-            OnLoad += Load;
-
-            this.logger = logger;
-            this.assetManager = assetManager;
-            this.browserManager = cefBrowserManager;
-
-            _song = audioPlayer.LoadSong(Assembly.GetEntryAssembly()!.GetManifestResourceStream("Axolotl2D.Example.Resources.Music.SpaceJazz.wav")!);
-        }
-
-        public void Load()
-        {
-            // preload assets
-            assetManager.LoadSprite("logo", Assembly.GetEntryAssembly()!.GetManifestResourceStream("Axolotl2D.Example.Resources.Sprites.logo.png")!);
-
-            browserManager.RegisterBrowser("github", "https://naamloos.github.io/Axolotl2D.Webtest/");
-            browserManager.RegisterBrowser("google", "https://google.com");
-            browserManager.RegisterBrowser("discord", "https://discord.com/app");
-
-            logger.LogInformation("Loaded Game");
-
-            _song.Play();
-        }
-
-        protected override void Cleanup()
-        {
-            // unhook events
-            OnLoad -= Load;
-
-            logger.LogInformation("Cleaned up events and unloading game...");
-        }
+    protected override void Cleanup()
+    {
+        OnLoad -= LoadAssets;
+        music?.Dispose();
+        logger.LogInformation("Example game shut down");
     }
 }

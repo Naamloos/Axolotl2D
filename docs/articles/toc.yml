@@ -1,4 +1,34 @@
-- name: Getting Started
-  href: getting-started.md
-- name: Drawing Your First Sprite
-  href: drawing-your-first-sprite.md
+- name: Start Here
+  items:
+  - name: Getting Started
+    href: getting-started.md
+  - name: Drawing Your First Sprite
+    href: drawing-your-first-sprite.md
+- name: Framework Design
+  items:
+  - name: Architecture and Dependency Injection
+    href: architecture-and-dependency-injection.md
+  - name: Scenes and Scene Scopes
+    href: scenes-and-scene-scopes.md
+  - name: GameObjects and Components
+    href: gameobjects-and-components.md
+  - name: Runtime GameObjects
+    href: runtime-gameobjects.md
+  - name: Component Lifecycle
+    href: component-lifecycle.md
+- name: Content and Rendering
+  items:
+  - name: Asset Management
+    href: asset-management.md
+  - name: Sprites and Sprite Batching
+    href: sprites-and-sprite-batching.md
+  - name: Camera and Coordinate Systems
+    href: camera-and-coordinate-systems.md
+  - name: Transforms and Hierarchies
+    href: transforms-and-hierarchies.md
+  - name: Sprite Sheets and Animation
+    href: sprite-sheets-and-animation.md
+  - name: Text Rendering
+    href: text-rendering.md
+  - name: Audio Playback
+    href: audio.md

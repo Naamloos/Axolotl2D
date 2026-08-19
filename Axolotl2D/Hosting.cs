@@ -1,8 +1,10 @@
 ﻿using Axolotl2D.Audio;
-using Axolotl2D.Drawable;
-using Axolotl2D.Helpers;
+using Axolotl2D.Assets;
+using Axolotl2D.GameObjects;
+using Axolotl2D.Rendering;
 using Axolotl2D.Scenes;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Axolotl2D
 {
@@ -24,6 +26,7 @@ namespace Axolotl2D
                 throw new InvalidOperationException("Cannot register multiple IGameHost services!");
             }
 
+            services.AddAxolotl2D();
             services.AddSingleton<Game, T>();
             services.AddSingleton<T, T>(x => (x.GetRequiredService<Game>() as T)!);
             services.AddHostedService<SimpleGameHost>();
@@ -42,6 +45,7 @@ namespace Axolotl2D
                 throw new InvalidOperationException("Cannot register multiple IGameHost services!");
             }
 
+            services.AddAxolotl2D();
             services.AddSingleton<Game, T>();
             services.AddSingleton<T, T>(x => (x.GetRequiredService<Game>() as T)!);
             services.AddHostedService<SceneGameHost>();
@@ -51,14 +55,26 @@ namespace Axolotl2D
         /// Registers the Asset Manager.
         /// </summary>
         /// <param name="services">Service Collection</param>
+        public static IServiceCollection AddAxolotl2D(this IServiceCollection services)
+        {
+            services.TryAddSingleton<AssetManager>();
+            services.TryAddSingleton<IAssetLoader<Texture2D>, TextureAssetLoader>();
+            services.TryAddSingleton<IAssetLoader<SoundAsset>, SoundAssetLoader>();
+            services.TryAddSingleton<IAssetLoader<FontAsset>, FontAssetLoader>();
+            services.TryAddSingleton<Camera2D>();
+            services.TryAddSingleton<Axolotl2D.Rendering.Rendering>();
+            services.TryAddSingleton<IRendering>(provider => provider.GetRequiredService<Axolotl2D.Rendering.Rendering>());
+            services.TryAddSingleton<SpriteBatch>();
+            services.TryAddSingleton<TextRenderer>();
+            services.TryAddScoped<IGameObjectFactory, GameObjectFactory>();
+            services.TryAddSingleton<AudioPlayer>();
+            return services;
+        }
+
+        /// <summary>Registers typed asset loading. Prefer <see cref="AddAxolotl2D"/> for new applications.</summary>
         public static void UseAssetManager(this IServiceCollection services)
         {
-            if (!services.Any(x => x.ServiceType == typeof(ILazyDependencyLoader<>)))
-            {
-                services.AddTransient(typeof(ILazyDependencyLoader<>), typeof(LazyDependencyLoader<>));
-            }
-
-            services.AddSingleton<SpriteManager>();
+            services.AddAxolotl2D();
         }
 
         /// <summary>
@@ -74,7 +90,7 @@ namespace Axolotl2D
                 throw new InvalidOperationException("Game scene " + typeof(T).Name + " must NOT be an abstract class!");
             }
 
-            services.AddTransient<T>();
+            services.AddScoped<T>();
         }
 
         /// <summary>
@@ -83,7 +99,7 @@ namespace Axolotl2D
         /// <param name="services">Service provider</param>
         public static void UseAudioPlayer(this IServiceCollection services)
         {
-            services.AddSingleton<AudioPlayer>();
+            services.AddAxolotl2D();
         }
     }
 }

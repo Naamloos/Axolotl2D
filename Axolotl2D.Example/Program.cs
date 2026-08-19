@@ -1,33 +1,23 @@
-﻿using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.DependencyInjection;
 using Axolotl2D.Example.Scenes;
-using Axolotl2D.Cef;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
-namespace Axolotl2D.Example
+namespace Axolotl2D.Example;
+
+internal static class Program
 {
-    internal class Program
+    private static void Main(string[] args)
     {
-        static void Main(string[] args)
-        {
-            var host = Host.CreateDefaultBuilder(args)
-                .ConfigureServices((hostContext, services) =>
-                {
-                    services.UseSceneManagerGameHost<ExampleGame>();
+        var host = Host.CreateDefaultBuilder(args)
+            .ConfigureServices(services =>
+            {
+                // The game-host registration also installs Axolotl2D's DI services.
+                services.UseSceneManagerGameHost<ExampleGame>();
+                services.AddScene<ExampleScene>();
+                services.AddScene<ExampleScene2>();
+            })
+            .Build();
 
-                    services.UseAssetManager();
-
-                    services.UseCefBrowserManager();
-
-                    services.UseAudioPlayer();
-
-                    services.AddScene<ExampleScene>();
-                    services.AddScene<ExampleScene2>();
-
-                    services.AddLogging();
-                })
-                .Build();
-
-            host.Start();
-        }
+        host.Start();
     }
 }

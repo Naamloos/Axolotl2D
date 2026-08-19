@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 // In SDK-style projects such as this one, several assembly attributes that were historically
@@ -16,5 +15,3 @@ using System.Runtime.InteropServices;
 // The following GUID is for the ID of the typelib if this project is exposed to COM.
 
 [assembly: Guid("435f41ef-794d-422b-8b51-a78d2782d3d8")]
-
-[assembly: InternalsVisibleTo("Axolotl2D.Cef")]

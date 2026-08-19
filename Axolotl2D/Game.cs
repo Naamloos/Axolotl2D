@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
+using Axolotl2D.Rendering;
+using Microsoft.Extensions.DependencyInjection;
 using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
@@ -54,6 +56,8 @@ namespace Axolotl2D
         private Shaders.Shader? basicFragmentShader;
 
         internal uint shaderProgramPointer;
+
+        private IRendering? rendering;
 
         internal IServiceProvider serviceProvider;
 
@@ -157,6 +161,9 @@ namespace Axolotl2D
             openGL.Enable(EnableCap.Blend);
             openGL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
+            rendering = serviceProvider.GetRequiredService<IRendering>();
+            rendering.Initialize();
+
             input = window.CreateInput();
 
             OnLoad?.Invoke();
@@ -200,6 +207,7 @@ namespace Axolotl2D
         public void Dispose()
         {
             Cleanup();
+            rendering?.Dispose();
             window.Dispose();
 
             GC.SuppressFinalize(this);
