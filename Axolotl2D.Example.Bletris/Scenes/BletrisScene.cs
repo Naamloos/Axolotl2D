@@ -1,4 +1,5 @@
 using Axolotl2D.Assets;
+using Axolotl2D.GameObjects;
 using Axolotl2D.Input;
 using Axolotl2D.Rendering;
 using Axolotl2D.Scenes;
@@ -9,11 +10,23 @@ using System.Numerics;
 namespace Axolotl2D.Example.Bletris.Scenes;
 
 [DefaultScene]
-public sealed class BletrisScene(
+public sealed class BletrisScene : BaseScene
+{
+    public override void Load()
+    {
+        Game.ClearColor = Color.FromHTML("#111827");
+        Instantiate("Bletris board").AddComponent<BletrisController>();
+    }
+}
+
+public sealed class BletrisController(
+    GameObject gameObject,
+    Game game,
     AssetManager assets,
     SpriteBatch spriteBatch,
+    TextRenderer textRenderer,
     InputActionMap input,
-    ShaderLibrary shaders) : BaseScene
+    ShaderLibrary shaders) : Component(gameObject)
 {
     private static readonly Color[] PieceColors =
     [
@@ -28,9 +41,15 @@ public sealed class BletrisScene(
     private static readonly int[] RotationKicks = [0, -1, 1, -2, 2];
     private static readonly int[] LineScores = [0, 100, 300, 500, 800];
     private static readonly Color EmptyColor = new(0.22f, 0.29f, 0.42f, 0.18f);
+    private static readonly Color MutedColor = Color.FromHTML("#94A3B8");
+    private static readonly Color GameOverColor = Color.FromHTML("#ED5D68");
+    private const double SoftDropInterval = 0.125;
+    private const float SidebarWidth = 240f;
 
     private readonly BletrisBoard board = new();
+    private readonly BletrisBag bag = new();
     private Sprite block = null!;
+    private FontAsset font = null!;
     private ShaderProgram colorShader = null!;
     private InputAction left = null!;
     private InputAction right = null!;
@@ -49,10 +68,10 @@ public sealed class BletrisScene(
     private double dropTimer;
     private bool gameOver;
 
-    public override void Load()
+    public override void Start()
     {
-        Game.ClearColor = Color.FromHTML("#111827");
         block = new Sprite(assets.Get<Texture2D>("block"));
+        font = assets.Get<FontAsset>("ui-font");
         colorShader = shaders.Create(VertexShader, ColorFragmentShader);
         left = input.BindButton("Move left", Key.Left, Key.A);
         right = input.BindButton("Move right", Key.Right, Key.D);
@@ -81,9 +100,11 @@ public sealed class BletrisScene(
             return;
         }
 
-        var interval = Math.Max(0.08, 0.65 - lines / 10 * 0.05);
-        if (down.IsPressed)
-            interval /= 12;
+        if (down.WasPressedThisFrame)
+            dropTimer = 0;
+        var interval = down.IsPressed
+            ? SoftDropInterval
+            : Math.Max(0.08, 0.65 - lines / 10 * 0.05);
         dropTimer += deltaTime;
         while (dropTimer >= interval && !gameOver)
         {
@@ -96,13 +117,17 @@ public sealed class BletrisScene(
         }
     }
 
-    public override void Draw(double frameDelta, double frameRate)
+    public override void Render()
     {
+        var availableBoardWidth = Math.Max(80f, game.Viewport.X - SidebarWidth - 40f);
         var cellSize = Math.Max(8f, Math.Min(32f,
-            Math.Min((Game.Viewport.X - 40f) / BletrisBoard.Width,
-                (Game.Viewport.Y - 40f) / BletrisBoard.Height)));
-        var topLeft = (Game.Viewport - new Vector2(
-            BletrisBoard.Width * cellSize, BletrisBoard.Height * cellSize)) / 2f;
+            Math.Min(availableBoardWidth / BletrisBoard.Width,
+                (game.Viewport.Y - 40f) / BletrisBoard.Height)));
+        var boardSize = new Vector2(BletrisBoard.Width * cellSize, BletrisBoard.Height * cellSize);
+        var topLeft = new Vector2(
+            Math.Max(10f, (game.Viewport.X - boardSize.X - SidebarWidth) / 2f),
+            (game.Viewport.Y - boardSize.Y) / 2f);
+        var sidebar = new Vector2(topLeft.X + boardSize.X + 32f, topLeft.Y);
         var drawSize = new Vector2(cellSize - 2f);
 
         using (spriteBatch.UseShader(colorShader))
@@ -118,7 +143,35 @@ public sealed class BletrisScene(
                 foreach (var (column, row) in board.PieceCells(kind, rotation, pieceX, pieceY))
                     if (row >= 0)
                         DrawCell(column, row, PieceColors[kind]);
+
+            var nextKind = bag.Next;
+            var previewCells = board.PieceCells(nextKind, 0, 0, 0).ToArray();
+            var minX = previewCells.Min(cell => cell.X);
+            var maxX = previewCells.Max(cell => cell.X);
+            var minY = previewCells.Min(cell => cell.Y);
+            var previewCellSize = Math.Min(26f, cellSize);
+            var previewLeft = sidebar.X + (180f - (maxX - minX + 1) * previewCellSize) / 2f;
+            foreach (var (column, row) in previewCells)
+                spriteBatch.Draw(block,
+                    new Vector2(
+                        previewLeft + (column - minX + 0.5f) * previewCellSize,
+                        sidebar.Y + 310f + (row - minY + 0.5f) * previewCellSize),
+                    new Vector2(previewCellSize - 2f), tint: PieceColors[nextKind],
+                    space: CoordinateSpace.Screen);
         }
+
+        textRenderer.Draw(spriteBatch, font, "BLETRIS", 30f, sidebar, Color.White);
+        textRenderer.Draw(spriteBatch, font,
+            $"SCORE\n{score:000000}\n\nLINES\n{lines}\n\nLEVEL\n{lines / 10 + 1}",
+            18f, sidebar + new Vector2(0, 48f), Color.White);
+        textRenderer.Draw(spriteBatch, font, "NEXT", 18f,
+            sidebar + new Vector2(0, 270f), MutedColor);
+        if (gameOver)
+            textRenderer.Draw(spriteBatch, font, "GAME OVER\nR TO RESTART", 18f,
+                sidebar + new Vector2(0, 375f), GameOverColor);
+        textRenderer.Draw(spriteBatch, font,
+            "MOVE      LEFT/RIGHT  A/D\nROTATE    UP  W/X\nSOFT DROP DOWN  S\nHARD DROP SPACE\nRESTART   R",
+            12f, sidebar + new Vector2(0, 455f), MutedColor);
 
         void DrawCell(int column, int row, Color color) =>
             spriteBatch.Draw(block,
@@ -182,7 +235,7 @@ public sealed class BletrisScene(
 
     private void SpawnPiece()
     {
-        kind = Random.Shared.Next(PieceColors.Length);
+        kind = bag.Take();
         rotation = 0;
         pieceX = BletrisBoard.Width / 2;
         pieceY = 0;
@@ -198,13 +251,12 @@ public sealed class BletrisScene(
         horizontalDirection = 0;
         horizontalRepeat = 0;
         gameOver = false;
+        bag.Reset();
         SpawnPiece();
         UpdateTitle();
     }
 
-    private void UpdateTitle() => Game.Title = gameOver
-        ? $"Bletris | Game over | Score {score} | R to restart"
-        : $"Bletris | Score {score} | Lines {lines} | Arrows/WASD, Space to drop";
+    private void UpdateTitle() => game.Title = gameOver ? "Bletris | Game over" : "Bletris";
 
     private const string VertexShader = """
         #version 330 core

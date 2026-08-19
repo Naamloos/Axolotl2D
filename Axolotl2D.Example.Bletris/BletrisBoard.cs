@@ -91,5 +91,70 @@ internal sealed class BletrisBoard
         board.cells[0, Height - 2] = 2;
         if (board.ClearFullRows() != 1 || board.cells[0, Height - 1] != 2)
             throw new InvalidOperationException("Line clearing check failed.");
+
+        var bag = new BletrisBag(new Random(7));
+        bag.Reset();
+        var previous = -1;
+        for (var group = 0; group < 4; group++)
+        {
+            var pieces = new HashSet<int>();
+            for (var index = 0; index < 7; index++)
+            {
+                var next = bag.Next;
+                var piece = bag.Take();
+                if (next != piece || piece == previous)
+                    throw new InvalidOperationException("Piece queue repeated unexpectedly.");
+                pieces.Add(piece);
+                previous = piece;
+            }
+            if (pieces.Count != 7)
+                throw new InvalidOperationException("Piece queue is not a seven-piece bag.");
+        }
+    }
+}
+
+internal sealed class BletrisBag(Random? random = null)
+{
+    private readonly Queue<int> pieces = new();
+    private readonly Random random = random ?? Random.Shared;
+
+    public int Next
+    {
+        get
+        {
+            EnsurePieces();
+            return pieces.Peek();
+        }
+    }
+
+    public int Take()
+    {
+        EnsurePieces();
+        var piece = pieces.Dequeue();
+        if (pieces.Count < 2)
+            AddBag();
+        return piece;
+    }
+
+    public void Reset()
+    {
+        pieces.Clear();
+        AddBag();
+    }
+
+    private void EnsurePieces()
+    {
+        if (pieces.Count == 0)
+            AddBag();
+    }
+
+    private void AddBag()
+    {
+        int[] bag = [0, 1, 2, 3, 4, 5, 6];
+        random.Shuffle(bag);
+        if (pieces.Count > 0 && bag[0] == pieces.Last())
+            (bag[0], bag[1]) = (bag[1], bag[0]);
+        foreach (var piece in bag)
+            pieces.Enqueue(piece);
     }
 }

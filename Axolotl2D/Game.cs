@@ -62,6 +62,7 @@ namespace Axolotl2D
         private IRendering? rendering;
         private InputActionSystem? inputActions;
         private TimeService? time;
+        private int closed;
         private int disposed;
 
         internal IServiceProvider serviceProvider;
@@ -91,6 +92,7 @@ namespace Axolotl2D
             window.Render += Draw;
             window.FramebufferResize += Resize;
             window.Update += Update;
+            window.Closing += Close;
         }
 
         /// <summary>
@@ -221,7 +223,7 @@ namespace Axolotl2D
 
         private void Draw(double frameDelta)
         {
-            if(openGL is null)
+            if (openGL is null)
                 return;
 
             CurrentFramerate = Math.Ceiling(1.0f / frameDelta);
@@ -237,6 +239,8 @@ namespace Axolotl2D
 
         private void Close()
         {
+            if (Interlocked.Exchange(ref closed, 1) != 0)
+                return;
             try
             {
                 Closing?.Invoke();
@@ -267,6 +271,7 @@ namespace Axolotl2D
             }
             finally
             {
+                window.Closing -= Close;
                 if (disposeWindow)
                     window.Dispose();
                 GC.SuppressFinalize(this);

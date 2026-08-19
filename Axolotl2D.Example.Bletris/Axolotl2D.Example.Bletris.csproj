@@ -8,7 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\Fonts\ComicMono.ttf" />
     <None Remove="Resources\Sprites\logo.png" />
+    <EmbeddedResource Include="Resources\Fonts\ComicMono.ttf" />
     <EmbeddedResource Include="Resources\Sprites\logo.png" />
   </ItemGroup>
 
