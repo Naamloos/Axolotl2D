@@ -52,6 +52,8 @@
     href: custom-shaders.md
   - name: Camera Post-Processing
     href: camera-post-processing.md
+  - name: Render Textures
+    href: render-textures.md
   - name: Particle Emitters
     href: particle-emitters.md
   - name: User Interface

@@ -18,6 +18,10 @@ public static class PrefabComponentIds
     public const string SpriteRenderer = "axolotl.sprite-renderer";
     public const string SpriteAnimator = "axolotl.sprite-animator";
     public const string PhysicsBody = "axolotl.physics-body";
+    public const string BoxCollider = "axolotl.box-collider";
+    public const string CircleCollider = "axolotl.circle-collider";
+    public const string DistanceJoint = "axolotl.distance-joint";
+    public const string RevoluteJoint = "axolotl.revolute-joint";
     public const string Light = "axolotl.light";
     public const string ShadowCaster = "axolotl.shadow-caster";
     public const string ParticleEmitter = "axolotl.particle-emitter";
@@ -40,6 +44,10 @@ internal static class BuiltInPrefabComponents
         PrefabComponentRegistration.Create<SpriteRenderer, SpriteRendererData>(PrefabComponentIds.SpriteRenderer, Load),
         PrefabComponentRegistration.Create<SpriteAnimator, SpriteAnimatorData>(PrefabComponentIds.SpriteAnimator, Load),
         PrefabComponentRegistration.Create<PhysicsBody, PhysicsBodyData>(PrefabComponentIds.PhysicsBody, Load),
+        PrefabComponentRegistration.Create<BoxCollider, BoxColliderData>(PrefabComponentIds.BoxCollider, Load),
+        PrefabComponentRegistration.Create<CircleCollider, CircleColliderData>(PrefabComponentIds.CircleCollider, Load),
+        PrefabComponentRegistration.Create<DistanceJoint, DistanceJointData>(PrefabComponentIds.DistanceJoint, Load),
+        PrefabComponentRegistration.Create<RevoluteJoint, RevoluteJointData>(PrefabComponentIds.RevoluteJoint, Load),
         PrefabComponentRegistration.Create<Light2D, LightData>(PrefabComponentIds.Light, Load),
         PrefabComponentRegistration.Create<ShadowCaster2D, ShadowCasterData>(PrefabComponentIds.ShadowCaster, Load),
         PrefabComponentRegistration.Create<ParticleEmitter, ParticleEmitterData>(PrefabComponentIds.ParticleEmitter, Load),
@@ -93,8 +101,7 @@ internal static class BuiltInPrefabComponents
         component.AngularDamping = data.AngularDamping;
         component.GravityScale = data.GravityScale;
         component.IsBullet = data.IsBullet;
-        if (data.Shapes is null || data.Shapes.Count == 0) throw new InvalidDataException("Physics body prefab data requires at least one shape.");
-        foreach (var shape in data.Shapes)
+        foreach (var shape in data.Shapes ?? [])
             switch (shape.Type)
             {
                 case PrefabPhysicsShapeType.Box:
@@ -106,6 +113,76 @@ internal static class BuiltInPrefabComponents
                     break;
                 default: throw new ArgumentOutOfRangeException(nameof(shape.Type));
             }
+    }
+
+    private static void Load(BoxCollider component, BoxColliderData data, PrefabLoadContext context)
+    {
+        component.Size = ReadVector(data.Size, "box collider size");
+        component.Offset = ReadVector(data.Offset ?? new(0f, 0f), "box collider offset");
+        LoadCollider(component, data);
+    }
+
+    private static void Load(CircleCollider component, CircleColliderData data, PrefabLoadContext context)
+    {
+        component.Radius = data.Radius;
+        component.Offset = ReadVector(data.Offset ?? new(0f, 0f), "circle collider offset");
+        LoadCollider(component, data);
+    }
+
+    private static void LoadCollider(PhysicsCollider component, ColliderData data)
+    {
+        component.Density = data.Density;
+        component.Friction = data.Friction;
+        component.Restitution = data.Restitution;
+        component.IsSensor = data.IsSensor;
+        component.CategoryBits = data.CategoryBits;
+        component.MaskBits = data.MaskBits;
+        component.GroupIndex = data.GroupIndex;
+    }
+
+    private static void Load(DistanceJoint component, DistanceJointData data, PrefabLoadContext context)
+    {
+        LoadJoint(component, data, context);
+        component.LocalAnchorA = ReadVector(data.AnchorA, "distance joint anchor A");
+        component.LocalAnchorB = ReadVector(data.AnchorB, "distance joint anchor B");
+        component.Length = data.Length;
+        component.EnableSpring = data.EnableSpring;
+        component.Hertz = data.Hertz;
+        component.DampingRatio = data.DampingRatio;
+        component.EnableLimit = data.EnableLimit;
+        component.MinimumLength = data.MinimumLength;
+        component.MaximumLength = data.MaximumLength;
+        component.EnableMotor = data.EnableMotor;
+        component.MaximumMotorForce = data.MaximumMotorForce;
+        component.MotorSpeed = data.MotorSpeed;
+    }
+
+    private static void Load(RevoluteJoint component, RevoluteJointData data, PrefabLoadContext context)
+    {
+        LoadJoint(component, data, context);
+        component.LocalAnchorA = ReadVector(data.AnchorA, "revolute joint anchor A");
+        component.LocalAnchorB = ReadVector(data.AnchorB, "revolute joint anchor B");
+        component.EnableSpring = data.EnableSpring;
+        component.Hertz = data.Hertz;
+        component.DampingRatio = data.DampingRatio;
+        component.EnableLimit = data.EnableLimit;
+        component.LowerAngle = data.LowerAngle;
+        component.UpperAngle = data.UpperAngle;
+        component.EnableMotor = data.EnableMotor;
+        component.MaximumMotorTorque = data.MaximumMotorTorque;
+        component.MotorSpeed = data.MotorSpeed;
+    }
+
+    private static void LoadJoint(PhysicsJoint component, JointData data, PrefabLoadContext context)
+    {
+        if (string.IsNullOrWhiteSpace(data.ConnectedBody))
+            throw new InvalidDataException("Physics joint prefab data requires a connected body object ID.");
+        component.CollideConnected = data.CollideConnected;
+        context.Defer(() =>
+        {
+            var connectedBody = context.GetComponent<PhysicsBody>(data.ConnectedBody);
+            component.ConnectedBody = connectedBody;
+        });
     }
 
     private static void Load(Light2D component, LightData data, PrefabLoadContext context)
@@ -309,6 +386,27 @@ internal static class BuiltInPrefabComponents
         IReadOnlyList<PhysicsShapeData>? Shapes = null);
     public sealed record PhysicsShapeData(PrefabPhysicsShapeType Type, VectorData? Size = null, float? Radius = null,
         float Density = 1f, float Friction = 0.6f, float Restitution = 0f);
+    public record ColliderData(float Density = 1f, float Friction = 0.6f, float Restitution = 0f,
+        bool IsSensor = false, ulong CategoryBits = 1, ulong MaskBits = ulong.MaxValue, int GroupIndex = 0);
+    public sealed record BoxColliderData(VectorData Size, VectorData? Offset = null, float Density = 1f,
+        float Friction = 0.6f, float Restitution = 0f, bool IsSensor = false,
+        ulong CategoryBits = 1, ulong MaskBits = ulong.MaxValue, int GroupIndex = 0)
+        : ColliderData(Density, Friction, Restitution, IsSensor, CategoryBits, MaskBits, GroupIndex);
+    public sealed record CircleColliderData(float Radius, VectorData? Offset = null, float Density = 1f,
+        float Friction = 0.6f, float Restitution = 0f, bool IsSensor = false,
+        ulong CategoryBits = 1, ulong MaskBits = ulong.MaxValue, int GroupIndex = 0)
+        : ColliderData(Density, Friction, Restitution, IsSensor, CategoryBits, MaskBits, GroupIndex);
+    public record JointData(string ConnectedBody, bool CollideConnected = false);
+    public sealed record DistanceJointData(string ConnectedBody, VectorData AnchorA, VectorData AnchorB,
+        float Length = 100f, bool CollideConnected = false, bool EnableSpring = false, float Hertz = 4f,
+        float DampingRatio = 0.7f, bool EnableLimit = false, float MinimumLength = 0f,
+        float MaximumLength = 100f, bool EnableMotor = false, float MaximumMotorForce = 0f,
+        float MotorSpeed = 0f) : JointData(ConnectedBody, CollideConnected);
+    public sealed record RevoluteJointData(string ConnectedBody, VectorData AnchorA, VectorData AnchorB,
+        bool CollideConnected = false, bool EnableSpring = false, float Hertz = 4f,
+        float DampingRatio = 0.7f, bool EnableLimit = false, float LowerAngle = 0f,
+        float UpperAngle = 0f, bool EnableMotor = false, float MaximumMotorTorque = 0f,
+        float MotorSpeed = 0f) : JointData(ConnectedBody, CollideConnected);
     public sealed record LightData(LightKind2D Kind = LightKind2D.Point, string? Color = null, float Intensity = 1f,
         float Radius = 300f, float Height = 80f, float Falloff = 1f, float SpotAngle = 1.0471976f,
         uint LayerMask = uint.MaxValue, bool CastShadows = true);

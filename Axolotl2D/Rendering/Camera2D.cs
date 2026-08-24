@@ -60,6 +60,8 @@ public sealed class Camera2D
     public float FollowSmoothing { get; set; }
     public Vector2 DeadZone { get; set; }
     public CameraBounds? Bounds { get; set; }
+    /// <summary>Optional off-screen destination. A targeted camera does not draw directly to the window.</summary>
+    public RenderTexture? RenderTarget { get; set; }
     public IReadOnlyList<PostProcessEffect> PostProcessEffects => postProcessEffects;
 
     public Vector2 Position

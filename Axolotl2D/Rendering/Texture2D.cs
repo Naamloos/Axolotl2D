@@ -3,11 +3,11 @@ namespace Axolotl2D.Rendering;
 /// <summary>An RGBA texture shared by every sprite that references it.</summary>
 public sealed class Texture2D
 {
-    internal byte[] Pixels { get; }
+    internal byte[]? Pixels { get; }
     internal uint Handle { get; set; }
 
-    public int Width { get; }
-    public int Height { get; }
+    public int Width { get; internal set; }
+    public int Height { get; internal set; }
 
     public Texture2D(int width, int height, byte[] rgbaPixels)
     {
@@ -19,6 +19,13 @@ public sealed class Texture2D
         Width = width;
         Height = height;
         Pixels = rgbaPixels;
+    }
+
+    internal Texture2D(int width, int height, uint handle)
+    {
+        Width = width;
+        Height = height;
+        Handle = handle;
     }
 }
 

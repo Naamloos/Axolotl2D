@@ -1,14 +1,14 @@
 # Framework Roadmap
 
-Axolotl2D now has the core runtime loop required for a small 2D game: scoped scenes, DI-created components, assets, data-authored prefabs, keyboard, mouse and gamepad input actions with runtime rebinding, scaled time, rendering, camera post-processing, custom shaders, audio, animation, particles, retained UI, Box2D physics, and runtime inspection.
+Axolotl2D has the core runtime required for a small 2D game: scoped scenes, DI-created components, assets, data-authored prefabs, input actions and persisted profiles, scaled time, rendering and public render textures, camera post-processing, custom shaders, audio, animation, particles, retained UI, Box2D physics tooling, and runtime inspection.
 
-The next additions should reduce repeated game code and expose runtime state during development.
+Versioned `.axprefab` assets cover reusable GameObject hierarchies through explicit, stable component registrations. Collider and joint components use the same GameObject, component lifecycle, prefab, and `.axpkg` paths as other built-in components. Full scene serialization and editor tooling remain optional authoring features rather than runtime requirements.
 
-Versioned `.axprefab` assets now cover reusable GameObject hierarchies through explicit, stable component registrations. Full scene serialization and editor tooling remain optional future authoring features rather than runtime requirements.
+The next additions should improve verification and content iteration.
 
 ## 1. Automated runtime checks
 
-Add tests for scene transitions, lifecycle order, action edges and rebinding, dead zones, time scaling, transform parenting, asset caching, shader-scope restoration, and physics cleanup. A headless simulation mode would let most component and physics tests run without creating an OpenGL window.
+Add tests for scene transitions, lifecycle order, action edges and rebinding, profile round trips, dead zones, time scaling, transform parenting, asset caching, render-target restoration, shader scopes, and physics cleanup. A headless simulation mode would let most component and physics tests run without creating an OpenGL window.
 
 The headless path would also make server-side simulation and deterministic replay easier to evaluate.
 
@@ -18,20 +18,10 @@ Add reference-counted asset handles or explicit content scopes before games begi
 
 `AssetManager` suits preload-and-keep workflows. Streaming needs ownership rules so one scene cannot unload content still used by another.
 
-## 3. Physics tooling
+## Delivered foundations
 
-Add collider components, sensors, collision layers, query helpers, and joint components over Box2D.NET. Keep `WorldId` and `BodyId` available so advanced projects can call the Box2D API.
+- Physics tooling includes box and circle collider components, sensors, 64-bit collision filters, ray and circle casts, box overlap queries, distance and revolute joints, and raw Box2D IDs for specialized work.
+- Input tooling includes binding descriptions, chords, keyboard/mouse/gamepad button capture, conflict detection, named control schemes, and versioned JSON profiles.
+- Public render textures support camera destinations, sprite sampling, resizing, nearest or linear filtering, and camera post-processing output.
 
-`PhysicsBody` already wraps boxes, circles, collision events, motion, and transform synchronization. Add joints, filters, sensors, casts, and query helpers when games need more physics without direct Box2D.NET calls.
-
-## 4. Input profiles and capture
-
-Add interactive "press any control" capture, binding descriptions, conflict detection, chords, control schemes, and JSON profile persistence.
-
-The current API supports gamepad buttons, sticks, triggers, per-binding dead zones, multiple device indices, and runtime programmatic rebinding. Persisted profiles matter once a game exposes a player settings screen.
-
-## 5. Public render targets
-
-Expose render textures only when games need minimaps, security cameras, portals, or fixed-resolution pixel-art composition. Camera post-processing already owns resize-aware internal render targets and does not require a material system.
-
-Keep `ShaderProgram` as the direct shader-and-uniform API. Introduce a material abstraction only if real per-sprite uniform-state duplication makes it necessary.
+Material state remains deliberately direct: keep `ShaderProgram` as the shader-and-uniform API and introduce a material abstraction only when real per-sprite uniform duplication makes it necessary.

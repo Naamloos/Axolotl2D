@@ -11,7 +11,7 @@ title: Axolotl2D Documentation
 
 Axolotl2D is a lightweight .NET 2D game framework built on [Silk.NET](https://github.com/dotnet/Silk.NET). It provides a Unity-like composition model without imposing an editor: scenes own GameObjects, GameObjects own components, and Microsoft dependency injection constructs the application.
 
-The framework includes scene-level DI scopes, runtime GameObject creation and deferred destruction, data-authored prefabs, rebindable keyboard, mouse and gamepad input actions, scaled time and fixed updates, typed assets, sprite batching, scoped custom shaders, per-camera post-processing, cameras, transform hierarchies, animation, particles, retained UI with texture or primitive visuals, text, audio, Box2D physics, and optional in-game inspection.
+The framework includes scene-level DI scopes, runtime GameObject creation and deferred destruction, data-authored prefabs, input profiles and capture, scaled time and fixed updates, typed assets, sprite batching, render textures, scoped custom shaders, per-camera post-processing, cameras, transform hierarchies, animation, particles, retained UI with texture or primitive visuals, text, audio, Box2D collider, sensor, query and joint tooling, and optional in-game inspection.
 
 ## Where to begin
 
@@ -22,6 +22,7 @@ The framework includes scene-level DI scopes, runtime GameObject creation and de
 - [Data Prefabs](articles/prefabs.md)
 - [Sprites and Sprite Batching](articles/sprites-and-sprite-batching.md)
 - [Camera Post-Processing](articles/camera-post-processing.md)
+- [Render Textures](articles/render-textures.md)
 - [Input Actions](articles/input-actions.md)
 - [Box2D Physics](articles/physics.md)
 - [Particle Emitters](articles/particle-emitters.md)

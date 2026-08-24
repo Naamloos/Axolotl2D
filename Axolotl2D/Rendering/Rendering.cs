@@ -23,6 +23,7 @@ public sealed unsafe class Rendering(Game game) : IRendering
     private const int VertexFloatCount = 17;
     private readonly HashSet<Texture2D> uploadedTextures = new(ReferenceEqualityComparer.Instance);
     private readonly Dictionary<Camera2D, CameraRenderTargets> cameraTargets = new(ReferenceEqualityComparer.Instance);
+    private readonly HashSet<RenderTexture> renderTextures = new(ReferenceEqualityComparer.Instance);
     private readonly Texture2D flatNormal = new(1, 1, [128, 128, 255, 255]);
     private GL openGL = null!;
     private uint vertexArray;
@@ -35,6 +36,21 @@ public sealed unsafe class Rendering(Game game) : IRendering
     private int disposed;
 
     public RenderStatistics Statistics { get; private set; }
+
+    /// <summary>Creates a fixed-size GPU texture suitable for a camera render target.</summary>
+    public RenderTexture CreateRenderTexture(int width, int height,
+        RenderTextureFilter filter = RenderTextureFilter.Linear)
+    {
+        ValidateTargetSize(width, height);
+        if (!Enum.IsDefined(filter)) throw new ArgumentOutOfRangeException(nameof(filter));
+        if (!initialized) Initialize();
+        var target = CreateRenderTarget(width, height);
+        var texture = new RenderTexture(this, width, height, target.Framebuffer, target.Texture, filter);
+        renderTextures.Add(texture);
+        SetFilter(texture, filter);
+        RestoreWindowTarget();
+        return texture;
+    }
 
     public void Initialize()
     {
@@ -67,15 +83,18 @@ public sealed unsafe class Rendering(Game game) : IRendering
             (command.LightingLayer & camera.CullingMask) != 0).ToArray();
         var screen = commands.Where(command => includeScreen && command.Space == CoordinateSpace.Screen).ToArray();
         var effects = camera.PostProcessEffects.Where(effect => effect.Enabled && !effect.IsDisposed).ToArray();
+        var output = GetOutput(camera);
 
         if (effects.Length == 0)
         {
             ReleaseTargets(camera);
-            DrawInternal([.. world, .. screen], camera, lighting);
+            if (output is not null) Clear(output);
+            DrawInternal([.. world, .. screen], camera, lighting, output);
+            if (output is not null) RestoreWindowTarget();
             return;
         }
 
-        DrawPostProcessed(world, camera, lighting, effects);
+        DrawPostProcessed(world, camera, lighting, effects, output);
         DrawInternal(screen, null, new(false, Vector3.One, [], []));
     }
 
@@ -228,11 +247,11 @@ public sealed unsafe class Rendering(Game game) : IRendering
     public void EndFrame() => Statistics = new(frameCommands, frameSubmissions, frameTriangles, uploadedTextures.Count);
 
     private void DrawPostProcessed(IReadOnlyList<SpriteDrawCommand> commands, Camera2D camera,
-        LightingSnapshot lighting, IReadOnlyList<PostProcessEffect> effects)
+        LightingSnapshot lighting, IReadOnlyList<PostProcessEffect> effects, RenderTarget? output)
     {
         if (!initialized) Initialize();
-        var width = Math.Max(1, (int)camera.PixelViewport.Size.X);
-        var height = Math.Max(1, (int)camera.PixelViewport.Size.Y);
+        var width = output?.Width ?? Math.Max(1, (int)camera.PixelViewport.Size.X);
+        var height = output?.Height ?? Math.Max(1, (int)camera.PixelViewport.Size.Y);
         var targets = GetTargets(camera, width, height);
 
         openGL.BindFramebuffer(FramebufferTarget.Framebuffer, targets.First.Framebuffer);
@@ -244,20 +263,26 @@ public sealed unsafe class Rendering(Game game) : IRendering
         openGL.BlendFuncSeparate(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha,
             BlendingFactor.One, BlendingFactor.OneMinusSrcAlpha);
         DrawInternal(commands, camera, lighting, targets.First);
+        if (output is not null) Clear(output);
 
         var source = targets.First;
         for (var index = 0; index < effects.Count; index++)
         {
             var last = index == effects.Count - 1;
             var destination = ReferenceEquals(source, targets.First) ? targets.Second : targets.First;
-            openGL.BindFramebuffer(FramebufferTarget.Framebuffer, last ? 0 : destination.Framebuffer);
+            openGL.BindFramebuffer(FramebufferTarget.Framebuffer, last ? output?.Framebuffer ?? 0 : destination.Framebuffer);
             if (last)
-                SetViewport(camera.PixelViewport, game.Viewport.Y);
+            {
+                if (output is null)
+                    SetViewport(camera.PixelViewport, game.Viewport.Y);
+                else
+                    openGL.Viewport(0, 0, (uint)width, (uint)height);
+            }
             else
                 openGL.Viewport(0, 0, (uint)width, (uint)height);
 
             openGL.Disable(EnableCap.ScissorTest);
-            if (last)
+            if (last && output is null)
             {
                 openGL.Enable(EnableCap.Blend);
                 openGL.BlendFunc(BlendingFactor.One, BlendingFactor.OneMinusSrcAlpha);
@@ -282,10 +307,7 @@ public sealed unsafe class Rendering(Game game) : IRendering
             source = destination;
         }
 
-        openGL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-        openGL.Enable(EnableCap.Blend);
-        openGL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-        openGL.ClearColor(game.ClearColor.R, game.ClearColor.G, game.ClearColor.B, game.ClearColor.A);
+        RestoreWindowTarget();
     }
 
     private CameraRenderTargets GetTargets(Camera2D camera, int width, int height)
@@ -346,13 +368,88 @@ public sealed unsafe class Rendering(Game game) : IRendering
         openGL.DeleteTexture(target.Texture);
     }
 
+    internal void Resize(RenderTexture texture, int width, int height)
+    {
+        ObjectDisposedException.ThrowIf(texture.IsDisposed, texture);
+        ValidateTargetSize(width, height);
+        if (!renderTextures.Contains(texture))
+            throw new InvalidOperationException("The render texture belongs to a different renderer.");
+        if (texture.Width == width && texture.Height == height) return;
+
+        var replacement = CreateRenderTarget(width, height);
+        var previous = new RenderTarget(texture.Framebuffer, texture.Texture.Handle, texture.Width, texture.Height);
+        texture.Replace(width, height, replacement.Framebuffer, replacement.Texture);
+        ApplyFilter(texture.Texture.Handle, texture.Filter);
+        Delete(previous);
+        RestoreWindowTarget();
+    }
+
+    internal void SetFilter(RenderTexture texture, RenderTextureFilter filter)
+    {
+        ObjectDisposedException.ThrowIf(texture.IsDisposed, texture);
+        if (!Enum.IsDefined(filter)) throw new ArgumentOutOfRangeException(nameof(filter));
+        if (!renderTextures.Contains(texture))
+            throw new InvalidOperationException("The render texture belongs to a different renderer.");
+        ApplyFilter(texture.Texture.Handle, filter);
+    }
+
+    internal void Release(RenderTexture texture)
+    {
+        if (!renderTextures.Remove(texture)) return;
+        Delete(new RenderTarget(texture.Framebuffer, texture.Texture.Handle, texture.Width, texture.Height));
+        texture.MarkDisposed();
+    }
+
+    private RenderTarget? GetOutput(Camera2D camera)
+    {
+        if (camera.RenderTarget is not { } texture) return null;
+        ObjectDisposedException.ThrowIf(texture.IsDisposed, texture);
+        if (!renderTextures.Contains(texture))
+            throw new InvalidOperationException("The camera render target belongs to a different renderer.");
+        return new(texture.Framebuffer, texture.Texture.Handle, texture.Width, texture.Height);
+    }
+
+    private void Clear(RenderTarget target)
+    {
+        openGL.BindFramebuffer(FramebufferTarget.Framebuffer, target.Framebuffer);
+        openGL.Viewport(0, 0, (uint)target.Width, (uint)target.Height);
+        openGL.Disable(EnableCap.ScissorTest);
+        openGL.ClearColor(0f, 0f, 0f, 0f);
+        openGL.Clear(ClearBufferMask.ColorBufferBit);
+    }
+
+    private void RestoreWindowTarget()
+    {
+        openGL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+        openGL.Enable(EnableCap.Blend);
+        openGL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+        openGL.ClearColor(game.ClearColor.R, game.ClearColor.G, game.ClearColor.B, game.ClearColor.A);
+    }
+
+    private static void ValidateTargetSize(int width, int height)
+    {
+        if (width <= 0 || height <= 0)
+            throw new ArgumentOutOfRangeException(nameof(width), "Render texture dimensions must be positive.");
+    }
+
+    private void ApplyFilter(uint texture, RenderTextureFilter filter)
+    {
+        openGL.BindTexture(TextureTarget.Texture2D, texture);
+        var min = filter == RenderTextureFilter.Nearest ? TextureMinFilter.Nearest : TextureMinFilter.Linear;
+        var mag = filter == RenderTextureFilter.Nearest ? TextureMagFilter.Nearest : TextureMagFilter.Linear;
+        openGL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)min);
+        openGL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)mag);
+    }
+
     private uint GetTextureHandle(Texture2D texture)
     {
         if (texture.Handle != 0) return texture.Handle;
+        var pixels = texture.Pixels ?? throw new ObjectDisposedException(nameof(Texture2D),
+            "The render texture backing this texture has been disposed.");
         texture.Handle = openGL.GenTexture();
         openGL.BindTexture(TextureTarget.Texture2D, texture.Handle);
         openGL.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba, (uint)texture.Width, (uint)texture.Height,
-            0, PixelFormat.Rgba, PixelType.UnsignedByte, ref texture.Pixels[0]);
+            0, PixelFormat.Rgba, PixelType.UnsignedByte, ref pixels[0]);
         openGL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
         openGL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
         openGL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
@@ -427,10 +524,14 @@ public sealed unsafe class Rendering(Game game) : IRendering
                 Delete(targets.First);
                 Delete(targets.Second);
             }
+            foreach (var texture in renderTextures)
+                Delete(new RenderTarget(texture.Framebuffer, texture.Texture.Handle, texture.Width, texture.Height));
             foreach (var texture in uploadedTextures) openGL.DeleteTexture(texture.Handle);
             openGL.DeleteBuffer(vertexBuffer); openGL.DeleteBuffer(indexBuffer); openGL.DeleteVertexArray(vertexArray);
         }
+        foreach (var texture in renderTextures) texture.MarkDisposed();
         foreach (var texture in uploadedTextures) texture.Handle = 0;
+        renderTextures.Clear();
         uploadedTextures.Clear();
         cameraTargets.Clear();
     }

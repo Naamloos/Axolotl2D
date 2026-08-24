@@ -18,6 +18,7 @@
     <AxolotlAsset Include="Assets\Fonts\ComicMono.ttf" Name="ui-font" />
     <AxolotlAsset Include="Assets\Music\SpaceJazz.wav" Name="music" />
     <AxolotlAsset Include="Assets\Prefabs\axolotl-cluster.axprefab" Name="prefabs/axolotl-cluster" />
+    <AxolotlAsset Include="Assets\Prefabs\physics-tooling.axprefab" Name="prefabs/physics-tooling" />
     <AxolotlAsset Include="Assets\Sprites\logo.png" Name="logo" />
     <AxolotlAsset Include="Assets\Sprites\RUN.png" Name="run" />
   </ItemGroup>

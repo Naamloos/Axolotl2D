@@ -187,6 +187,10 @@ Enums use camel-case names. Colors accept `#RRGGBB` and the built-in names `tran
 | `axolotl.sprite-renderer` | `SpriteRenderer` | `sprite`, `tint`, `space`, `depth`, `lightingLayer` |
 | `axolotl.sprite-animator` | `SpriteAnimator` | `texture`, `frameWidth`, `frameHeight`, `margin`, `spacing`, `animations`, `play` |
 | `axolotl.physics-body` | `PhysicsBody` | `bodyType`, damping, gravity, bullet flag, `shapes` |
+| `axolotl.box-collider` | `BoxCollider` | `size`, `offset`, material, sensor flag, category/mask/group filter |
+| `axolotl.circle-collider` | `CircleCollider` | `radius`, `offset`, material, sensor flag, category/mask/group filter |
+| `axolotl.distance-joint` | `DistanceJoint` | connected body ID, local anchors, length, spring, limits, motor |
+| `axolotl.revolute-joint` | `RevoluteJoint` | connected body ID, local anchors, spring, angular limits, motor |
 | `axolotl.light` | `Light2D` | kind, color, intensity, radius, height, falloff, spot angle, layers, shadows |
 | `axolotl.shadow-caster` | `ShadowCaster2D` | `points`, `layerMask` |
 | `axolotl.particle-emitter` | `ParticleEmitter` | The public emitter settings, optional `sprite`, and `randomSeed` |
@@ -228,6 +232,24 @@ Only `texture` is required.
 ```
 
 Each shape also accepts `density`, `friction`, and `restitution` with the same defaults and validation as `PhysicsBody`.
+
+`shapes` is optional when the GameObject also declares an `axolotl.box-collider` or `axolotl.circle-collider`. Separate collider components add offsets, sensor behavior, 64-bit `categoryBits` and `maskBits`, and `groupIndex` while keeping the legacy inline shape format compatible.
+
+Joint `connectedBody` values refer to a prefab object ID. `anchorA` is local to the joint's GameObject and `anchorB` is local to the connected body's GameObject. The loader resolves the body reference after the complete prefab hierarchy exists, so moving or rotating the instantiated prefab before `Start` preserves the joint geometry:
+
+```json
+{
+  "type": "axolotl.distance-joint",
+  "data": {
+    "connectedBody": "anchor",
+    "anchorA": { "x": 0, "y": 0 },
+    "anchorB": { "x": 0, "y": 0 },
+    "length": 180,
+    "maximumLength": 180,
+    "enableSpring": true
+  }
+}
+```
 
 ### Sprite animations
 

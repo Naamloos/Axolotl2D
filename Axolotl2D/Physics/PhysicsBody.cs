@@ -15,6 +15,7 @@ public sealed class PhysicsBody(GameObject gameObject, PhysicsWorld world) : Com
 {
     private readonly List<ShapeDefinition> shapes = [];
     private readonly List<B2ShapeId> shapeIds = [];
+    private readonly HashSet<PhysicsCollider> colliders = new(ReferenceEqualityComparer.Instance);
 
     public B2BodyType Type { get; set; } = B2BodyType.b2_dynamicBody;
     public float LinearDamping { get; set; }
@@ -24,6 +25,7 @@ public sealed class PhysicsBody(GameObject gameObject, PhysicsWorld world) : Com
     public B2BodyId BodyId { get; private set; } = b2_nullBodyId;
     public bool HasBody => B2_IS_NON_NULL(BodyId);
     public int ShapeCount => shapeIds.Count;
+    internal PhysicsWorld World => world;
 
     public Vector2 LinearVelocity
     {
@@ -62,8 +64,9 @@ public sealed class PhysicsBody(GameObject gameObject, PhysicsWorld world) : Com
 
     public override void Start()
     {
-        if (shapes.Count == 0)
-            throw new InvalidOperationException("PhysicsBody requires at least one box or circle shape before Start.");
+        var attachedColliders = GameObject.Components.OfType<PhysicsCollider>().ToArray();
+        if (shapes.Count == 0 && attachedColliders.Length == 0)
+            throw new InvalidOperationException("PhysicsBody requires an added shape or collider before Start.");
 
         var definition = b2DefaultBodyDef();
         definition.type = Type;
@@ -81,8 +84,11 @@ public sealed class PhysicsBody(GameObject gameObject, PhysicsWorld world) : Com
         {
             var shapeId = shape.Create(BodyId, world);
             shapeIds.Add(shapeId);
-            world.RegisterShape(shapeId, this);
+            world.RegisterShape(shapeId, this, null);
         }
+
+        foreach (var collider in attachedColliders.Where(value => value.IsActiveAndEnabled))
+            AttachCollider(collider);
     }
 
     public override void OnEnable()
@@ -134,11 +140,50 @@ public sealed class PhysicsBody(GameObject gameObject, PhysicsWorld world) : Com
             CollisionExited?.Invoke(other);
     }
 
+    internal void AttachCollider(PhysicsCollider collider)
+    {
+        EnsureBody();
+        if (!ReferenceEquals(collider.GameObject, GameObject))
+            throw new InvalidOperationException("A collider must share its PhysicsBody GameObject.");
+        if (!colliders.Add(collider)) return;
+        try
+        {
+            var shapeId = collider.Create(this);
+            shapeIds.Add(shapeId);
+            world.RegisterShape(shapeId, this, collider);
+        }
+        catch
+        {
+            colliders.Remove(collider);
+            if (collider.HasShape)
+            {
+                shapeIds.Remove(collider.ShapeId);
+                world.UnregisterShape(collider.ShapeId);
+                b2DestroyShape(collider.ShapeId, true);
+                collider.ReleaseShape();
+            }
+            throw;
+        }
+    }
+
+    internal void DetachCollider(PhysicsCollider collider)
+    {
+        if (!colliders.Remove(collider)) return;
+        var shapeId = collider.ShapeId;
+        shapeIds.Remove(shapeId);
+        world.UnregisterShape(shapeId);
+        if (HasBody && B2_IS_NON_NULL(shapeId))
+            b2DestroyShape(shapeId, true);
+        collider.ReleaseShape();
+    }
+
     public override void OnDestroy()
     {
         if (!HasBody)
             return;
         world.Unregister(this, shapeIds);
+        foreach (var collider in colliders) collider.ReleaseShape();
+        colliders.Clear();
         b2DestroyBody(BodyId);
         BodyId = b2_nullBodyId;
         shapeIds.Clear();

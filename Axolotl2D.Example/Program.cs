@@ -19,6 +19,7 @@ internal static class Program
                 services.AddScene<PhysicsScene>();
                 services.AddScene<LightingScene>();
                 services.AddScene<CameraScene>();
+                services.AddScene<RenderTargetScene>();
                 services.AddScene<InputScene>();
                 services.AddScene<ShaderScene>();
                 services.AddScene<PostProcessScene>();

@@ -74,6 +74,8 @@ Build tools place imported asset payloads under `$assets/` by convention. The ma
 
 Built-in `.axprefab` assets use content type `application/vnd.axolotl2d.prefab+json` and runtime type `Axolotl2D.Prefabs.PrefabAsset, Axolotl2D`. They remain ordinary manifest assets and do not alter the package binary format.
 
+New built-in prefab component IDs, including collider and joint components, are JSON payload data. They require no `.axpkg` format or manifest-version change.
+
 ## Manifest
 
 The version 1 writer emits compact UTF-8 JSON with camel-case property names. It emits properties in the order shown below and preserves dependency and asset declaration order.

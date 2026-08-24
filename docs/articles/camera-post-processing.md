@@ -41,6 +41,8 @@ void main()
 
 Render targets follow the camera viewport size and are recreated automatically after a window or viewport resize.
 
+Set `Camera2D.RenderTarget` to send the final effect output to a public render texture instead of the window. In that case, effect uniforms use the render texture dimensions. See [Render Textures](render-textures.md).
+
 ## Stack effects
 
 Effects run in creation order:

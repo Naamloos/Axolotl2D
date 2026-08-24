@@ -25,6 +25,8 @@ public enum GamepadStick
 public sealed class InputActionSystem(Game game)
 {
     private readonly List<InputActionMap> maps = [];
+    private readonly List<CaptureRegistration> captures = [];
+    private HashSet<InputControl> previousPressed = [];
 
     internal void Register(InputActionMap map) => maps.Add(map);
     internal void Unregister(InputActionMap map) => maps.Remove(map);
@@ -32,6 +34,32 @@ public sealed class InputActionSystem(Game game)
     internal bool IsPressed(MouseButton button) => game.GetMouse()?.IsButtonPressed(button) == true;
     internal bool IsPressed(int gamepadIndex, ButtonName button) =>
         game.GetGamepad(gamepadIndex)?.Buttons.FirstOrDefault(value => value.Name == button).Pressed == true;
+
+    internal bool IsPressed(InputControl control)
+    {
+        control.Validate(buttonOnly: true);
+        return control.Kind switch
+        {
+            InputControlKind.Key => IsPressed(Enum.Parse<Key>(control.Name)),
+            InputControlKind.MouseButton => IsPressed(Enum.Parse<MouseButton>(control.Name)),
+            InputControlKind.GamepadButton => IsPressed(control.GamepadIndex, Enum.Parse<ButtonName>(control.Name)),
+            _ => false
+        };
+    }
+
+    internal float ReadAxis(InputControl control, float deadZone)
+    {
+        if (control.Kind != InputControlKind.GamepadAxis)
+            throw new ArgumentException("The control must be a gamepad axis.", nameof(control));
+        return ReadAxis(control.GamepadIndex, Enum.Parse<GamepadAxis>(control.Name), deadZone);
+    }
+
+    internal Vector2 ReadStick(InputControl control, float deadZone)
+    {
+        if (control.Kind != InputControlKind.GamepadStick)
+            throw new ArgumentException("The control must be a gamepad stick.", nameof(control));
+        return ReadStick(control.GamepadIndex, Enum.Parse<GamepadStick>(control.Name), deadZone);
+    }
 
     internal float ReadAxis(int gamepadIndex, GamepadAxis axis, float deadZone)
     {
@@ -62,8 +90,32 @@ public sealed class InputActionSystem(Game game)
         return value / length * magnitude;
     }
 
+    internal void RegisterCapture(InputCapture capture, Func<InputControl, InputBinding> complete)
+    {
+        if (captures.Count == 0) previousPressed = ReadPressedControls();
+        captures.Add(new(capture, complete));
+    }
+
+    internal void CancelCapture(InputCapture capture) =>
+        captures.RemoveAll(registration => ReferenceEquals(registration.Capture, capture));
+
     internal void Update()
     {
+        if (captures.Count > 0)
+        {
+            var pressed = ReadPressedControls();
+            var newPress = pressed.FirstOrDefault(control => !previousPressed.Contains(control));
+            if (newPress != default)
+            {
+                foreach (var registration in captures.ToArray())
+                {
+                    captures.Remove(registration);
+                    registration.Capture.Complete(registration.Complete(newPress));
+                }
+            }
+            previousPressed = pressed;
+        }
+
         foreach (var map in maps.ToArray())
             map.Update();
     }
@@ -80,6 +132,29 @@ public sealed class InputActionSystem(Game game)
             throw new ArgumentOutOfRangeException(nameof(gamepadIndex), "A gamepad index cannot be negative.");
     }
 
+    private HashSet<InputControl> ReadPressedControls()
+    {
+        var pressed = new HashSet<InputControl>();
+        var keyboard = game.GetKeyboard();
+        if (keyboard is not null)
+            foreach (var key in Enum.GetValues<Key>().Distinct())
+                if (key != Key.Unknown && keyboard.IsKeyPressed(key))
+                    pressed.Add(InputControl.From(key));
+
+        var mouse = game.GetMouse();
+        if (mouse is not null)
+            foreach (var button in Enum.GetValues<MouseButton>().Distinct())
+                if (button != MouseButton.Unknown && mouse.IsButtonPressed(button))
+                    pressed.Add(InputControl.From(button));
+
+        if (game.input is not null)
+            foreach (var gamepad in game.input.Gamepads)
+                foreach (var button in gamepad.Buttons)
+                    if (button.Name != ButtonName.Unknown && button.Pressed)
+                        pressed.Add(InputControl.From(button.Name, gamepad.Index));
+        return pressed;
+    }
+
     private static Vector2 ReadStick(IGamepad gamepad, int index) =>
         index < gamepad.Thumbsticks.Count
             ? new Vector2(gamepad.Thumbsticks[index].X, gamepad.Thumbsticks[index].Y)
@@ -92,14 +167,29 @@ public sealed class InputActionSystem(Game game)
         MathF.Abs(value) <= deadZone
             ? 0f
             : MathF.CopySign((MathF.Abs(value) - deadZone) / (1f - deadZone), value);
+
+    private sealed record CaptureRegistration(InputCapture Capture, Func<InputControl, InputBinding> Complete);
 }
 
 /// <summary>A named input value with current and frame-transition state.</summary>
-public sealed class InputAction(string name, Func<Vector2> initialRead)
+public sealed class InputAction
 {
-    private Func<Vector2> read = initialRead;
+    private Func<Vector2> read;
 
-    public string Name { get; } = name;
+    public InputAction(string name, Func<Vector2> initialRead)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(initialRead);
+        Name = name;
+        read = initialRead;
+    }
+
+    internal InputAction(string name, InputBinding binding, InputActionSystem input)
+        : this(name, () => binding.Read(input)) => Binding = binding;
+
+    public string Name { get; }
+    public InputBinding? Binding { get; private set; }
+    public string? BindingDescription => Binding?.Description;
     public Vector2 Value { get; private set; }
     public float Scalar => Value.X;
     public bool IsPressed => Value != Vector2.Zero;
@@ -115,6 +205,12 @@ public sealed class InputAction(string name, Func<Vector2> initialRead)
     }
 
     internal void Rebind(Func<Vector2> replacement) => read = replacement;
+
+    internal void Rebind(InputBinding binding, InputActionSystem input)
+    {
+        Binding = binding;
+        read = () => binding.Read(input);
+    }
 }
 
 /// <summary>A scene-scoped collection of gameplay actions.</summary>
@@ -122,10 +218,13 @@ public sealed class InputActionMap : IDisposable
 {
     private readonly InputActionSystem input;
     private readonly Dictionary<string, InputAction> actions = new(StringComparer.Ordinal);
+    private readonly List<InputCapture> captures = [];
     private bool disposed;
 
     public bool Enabled { get; set; } = true;
     public IReadOnlyCollection<InputAction> Actions => actions.Values;
+    public InputProfile? ActiveProfile { get; private set; }
+    public string? ActiveControlScheme { get; private set; }
 
     public InputActionMap(InputActionSystem input)
     {
@@ -133,17 +232,13 @@ public sealed class InputActionMap : IDisposable
         input.Register(this);
     }
 
-    public InputAction BindButton(string name, Key key, params Key[] alternatives)
-    {
-        var keys = alternatives.Prepend(key).ToArray();
-        return Add(name, () => keys.Any(input.IsPressed) ? Vector2.UnitX : Vector2.Zero);
-    }
+    public InputAction Bind(string name, InputBinding binding) => Add(name, binding);
 
-    public InputAction BindButton(string name, MouseButton button, params MouseButton[] alternatives)
-    {
-        var buttons = alternatives.Prepend(button).ToArray();
-        return Add(name, () => buttons.Any(input.IsPressed) ? Vector2.UnitX : Vector2.Zero);
-    }
+    public InputAction BindButton(string name, Key key, params Key[] alternatives) =>
+        Add(name, InputBinding.Button(InputControl.From(key), alternatives.Select(InputControl.From).ToArray()));
+
+    public InputAction BindButton(string name, MouseButton button, params MouseButton[] alternatives) =>
+        Add(name, InputBinding.Button(InputControl.From(button), alternatives.Select(InputControl.From).ToArray()));
 
     public InputAction BindButton(string name, ButtonName button, params ButtonName[] alternatives) =>
         BindButton(name, 0, button, alternatives);
@@ -152,45 +247,33 @@ public sealed class InputActionMap : IDisposable
         params ButtonName[] alternatives)
     {
         InputActionSystem.ValidateGamepadIndex(gamepadIndex);
-        var buttons = alternatives.Prepend(button).ToArray();
-        return Add(name, ButtonReader(gamepadIndex, buttons));
+        return Add(name, InputBinding.Button(InputControl.From(button, gamepadIndex),
+            alternatives.Select(value => InputControl.From(value, gamepadIndex)).ToArray()));
     }
+
+    public InputAction BindChord(string name, InputControl first, InputControl second,
+        params InputControl[] additional) => Add(name, InputBinding.Chord(first, second, additional));
 
     public InputAction BindAxis(string name, Key negative, Key positive) =>
-        Add(name, () => new Vector2((input.IsPressed(positive) ? 1f : 0f) - (input.IsPressed(negative) ? 1f : 0f), 0f));
+        Add(name, InputBinding.Axis(InputControl.From(negative), InputControl.From(positive)));
 
     public InputAction BindVector2(string name, Key left, Key right, Key up, Key down) =>
-        Add(name, () => new Vector2(
-            (input.IsPressed(right) ? 1f : 0f) - (input.IsPressed(left) ? 1f : 0f),
-            (input.IsPressed(down) ? 1f : 0f) - (input.IsPressed(up) ? 1f : 0f)));
+        Add(name, InputBinding.Vector(InputControl.From(left), InputControl.From(right),
+            InputControl.From(up), InputControl.From(down)));
 
     public InputAction BindAxis(string name, GamepadAxis axis, float deadZone = 0.15f,
-        int gamepadIndex = 0)
-    {
-        InputActionSystem.ValidateDeadZone(deadZone);
-        InputActionSystem.ValidateGamepadIndex(gamepadIndex);
-        return Add(name, () => new Vector2(input.ReadAxis(gamepadIndex, axis, deadZone), 0f));
-    }
+        int gamepadIndex = 0) => Add(name, InputBinding.AnalogAxis(axis, deadZone, gamepadIndex));
 
     public InputAction BindVector2(string name, GamepadStick stick, float deadZone = 0.15f,
-        int gamepadIndex = 0)
-    {
-        InputActionSystem.ValidateDeadZone(deadZone);
-        InputActionSystem.ValidateGamepadIndex(gamepadIndex);
-        return Add(name, () => input.ReadStick(gamepadIndex, stick, deadZone));
-    }
+        int gamepadIndex = 0) => Add(name, InputBinding.Stick(stick, deadZone, gamepadIndex));
 
-    public InputAction RebindButton(string name, Key key, params Key[] alternatives)
-    {
-        var keys = alternatives.Prepend(key).ToArray();
-        return Rebind(name, () => keys.Any(input.IsPressed) ? Vector2.UnitX : Vector2.Zero);
-    }
+    public InputAction Rebind(string name, InputBinding binding) => RebindCore(name, binding);
 
-    public InputAction RebindButton(string name, MouseButton button, params MouseButton[] alternatives)
-    {
-        var buttons = alternatives.Prepend(button).ToArray();
-        return Rebind(name, () => buttons.Any(input.IsPressed) ? Vector2.UnitX : Vector2.Zero);
-    }
+    public InputAction RebindButton(string name, Key key, params Key[] alternatives) =>
+        RebindCore(name, InputBinding.Button(InputControl.From(key), alternatives.Select(InputControl.From).ToArray()));
+
+    public InputAction RebindButton(string name, MouseButton button, params MouseButton[] alternatives) =>
+        RebindCore(name, InputBinding.Button(InputControl.From(button), alternatives.Select(InputControl.From).ToArray()));
 
     public InputAction RebindButton(string name, ButtonName button, params ButtonName[] alternatives) =>
         RebindButton(name, 0, button, alternatives);
@@ -199,33 +282,79 @@ public sealed class InputActionMap : IDisposable
         params ButtonName[] alternatives)
     {
         InputActionSystem.ValidateGamepadIndex(gamepadIndex);
-        var buttons = alternatives.Prepend(button).ToArray();
-        return Rebind(name, ButtonReader(gamepadIndex, buttons));
+        return RebindCore(name, InputBinding.Button(InputControl.From(button, gamepadIndex),
+            alternatives.Select(value => InputControl.From(value, gamepadIndex)).ToArray()));
     }
+
+    public InputAction RebindChord(string name, InputControl first, InputControl second,
+        params InputControl[] additional) => RebindCore(name, InputBinding.Chord(first, second, additional));
 
     public InputAction RebindAxis(string name, Key negative, Key positive) =>
-        Rebind(name, () => new Vector2(
-            (input.IsPressed(positive) ? 1f : 0f) - (input.IsPressed(negative) ? 1f : 0f), 0f));
+        RebindCore(name, InputBinding.Axis(InputControl.From(negative), InputControl.From(positive)));
 
     public InputAction RebindAxis(string name, GamepadAxis axis, float deadZone = 0.15f,
-        int gamepadIndex = 0)
-    {
-        InputActionSystem.ValidateDeadZone(deadZone);
-        InputActionSystem.ValidateGamepadIndex(gamepadIndex);
-        return Rebind(name, () => new Vector2(input.ReadAxis(gamepadIndex, axis, deadZone), 0f));
-    }
+        int gamepadIndex = 0) => RebindCore(name, InputBinding.AnalogAxis(axis, deadZone, gamepadIndex));
 
     public InputAction RebindVector2(string name, Key left, Key right, Key up, Key down) =>
-        Rebind(name, () => new Vector2(
-            (input.IsPressed(right) ? 1f : 0f) - (input.IsPressed(left) ? 1f : 0f),
-            (input.IsPressed(down) ? 1f : 0f) - (input.IsPressed(up) ? 1f : 0f)));
+        RebindCore(name, InputBinding.Vector(InputControl.From(left), InputControl.From(right),
+            InputControl.From(up), InputControl.From(down)));
 
     public InputAction RebindVector2(string name, GamepadStick stick, float deadZone = 0.15f,
-        int gamepadIndex = 0)
+        int gamepadIndex = 0) => RebindCore(name, InputBinding.Stick(stick, deadZone, gamepadIndex));
+
+    /// <summary>Applies matching action bindings from a named profile scheme.</summary>
+    public void ApplyProfile(InputProfile profile, string scheme)
     {
-        InputActionSystem.ValidateDeadZone(deadZone);
-        InputActionSystem.ValidateGamepadIndex(gamepadIndex);
-        return Rebind(name, () => input.ReadStick(gamepadIndex, stick, deadZone));
+        ObjectDisposedException.ThrowIf(disposed, this);
+        ArgumentNullException.ThrowIfNull(profile);
+        var bindings = profile.GetScheme(scheme);
+        foreach (var (name, binding) in bindings)
+            if (actions.TryGetValue(name, out var action))
+                action.Rebind(binding, input);
+        ActiveProfile = profile;
+        ActiveControlScheme = scheme;
+    }
+
+    public void SwitchControlScheme(string scheme)
+    {
+        if (ActiveProfile is null)
+            throw new InvalidOperationException("Apply an input profile before switching control schemes.");
+        ApplyProfile(ActiveProfile, scheme);
+    }
+
+    public InputProfile CreateProfile(string scheme = "Default")
+    {
+        var profile = new InputProfile();
+        foreach (var action in actions.Values)
+            if (action.Binding is { } binding)
+                profile.SetBinding(scheme, action.Name, binding);
+        return profile;
+    }
+
+    public IReadOnlyList<InputBindingConflict> FindConflicts() => InputProfile.FindConflicts(
+        actions.Values.Where(action => action.Binding is not null)
+            .Select(action => KeyValuePair.Create(action.Name, action.Binding!)));
+
+    /// <summary>Captures the next keyboard, mouse, or gamepad button and rebinds the action.</summary>
+    public InputCapture CaptureButton(string name)
+    {
+        ObjectDisposedException.ThrowIf(disposed, this);
+        Get(name);
+        InputCapture? capture = null;
+        capture = new(name, value =>
+        {
+            input.CancelCapture(value);
+            captures.Remove(value);
+        });
+        capture.Completed += _ => captures.Remove(capture);
+        captures.Add(capture);
+        input.RegisterCapture(capture, control =>
+        {
+            var binding = InputBinding.Button(control);
+            RebindCore(name, binding);
+            return binding;
+        });
+        return capture;
     }
 
     public InputAction Get(string name) =>
@@ -234,27 +363,36 @@ public sealed class InputActionMap : IDisposable
             : throw new KeyNotFoundException($"Input action '{name}' is not bound.");
 
     public bool TryGet(string name, out InputAction? action) => actions.TryGetValue(name, out action);
-    public bool Remove(string name) => actions.Remove(name);
 
-    private InputAction Add(string name, Func<Vector2> read)
+    public bool Remove(string name)
+    {
+        foreach (var capture in captures.Where(value => value.ActionName == name).ToArray())
+            capture.Cancel();
+        return actions.Remove(name);
+    }
+
+    private InputAction Add(string name, InputBinding binding)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        var action = new InputAction(name, read);
+        ArgumentNullException.ThrowIfNull(binding);
+        binding.Validate();
+        var action = new InputAction(name, binding, input);
         actions.Add(name, action);
         return action;
     }
 
-    private InputAction Rebind(string name, Func<Vector2> read)
+    private InputAction RebindCore(string name, InputBinding binding)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
+        ArgumentNullException.ThrowIfNull(binding);
+        binding.Validate();
         var action = Get(name);
-        action.Rebind(read);
+        action.Rebind(binding, input);
+        if (ActiveProfile is not null && ActiveControlScheme is not null)
+            ActiveProfile.SetBinding(ActiveControlScheme, name, binding);
         return action;
     }
-
-    private Func<Vector2> ButtonReader(int gamepadIndex, IReadOnlyCollection<ButtonName> buttons) =>
-        () => buttons.Any(button => input.IsPressed(gamepadIndex, button)) ? Vector2.UnitX : Vector2.Zero;
 
     internal void Update()
     {
@@ -264,9 +402,9 @@ public sealed class InputActionMap : IDisposable
 
     public void Dispose()
     {
-        if (disposed)
-            return;
+        if (disposed) return;
         disposed = true;
+        foreach (var capture in captures.ToArray()) capture.Cancel();
         input.Unregister(this);
         actions.Clear();
         GC.SuppressFinalize(this);

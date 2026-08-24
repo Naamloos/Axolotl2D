@@ -1,0 +1,42 @@
+{
+  "formatVersion": 1,
+  "root": {
+    "id": "packaged-crate",
+    "name": "Packaged collider crate",
+    "active": true,
+    "tags": ["prefab", "physics"],
+    "transform": {
+      "position": { "x": 0, "y": 0 },
+      "rotation": 0,
+      "scale": { "x": 0.11, "y": 0.11 }
+    },
+    "components": [
+      {
+        "type": "axolotl.sprite-renderer",
+        "data": {
+          "sprite": { "texture": "logo" },
+          "tint": "#FFD166"
+        }
+      },
+      {
+        "type": "axolotl.physics-body",
+        "data": {
+          "bodyType": "dynamic",
+          "linearDamping": 0.05
+        }
+      },
+      {
+        "type": "axolotl.box-collider",
+        "data": {
+          "size": { "x": 92, "y": 62 },
+          "density": 1,
+          "friction": 0.6,
+          "restitution": 0.35,
+          "categoryBits": 1,
+          "maskBits": 7
+        }
+      }
+    ],
+    "children": []
+  }
+}

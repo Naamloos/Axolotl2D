@@ -38,6 +38,8 @@ public sealed class ExampleGame : Game
         await assets.LoadPackageAsync<Texture2D>("run", ExampleAssetPackage.Id, "run", cancellationToken);
         await assets.LoadPackageAsync<PrefabAsset>("axolotl-cluster", ExampleAssetPackage.Id,
             "prefabs/axolotl-cluster", cancellationToken);
+        await assets.LoadPackageAsync<PrefabAsset>("physics-tooling", ExampleAssetPackage.Id,
+            "prefabs/physics-tooling", cancellationToken);
         logger.LogInformation("Loaded typed texture, font, sound, and prefab assets");
     }
 

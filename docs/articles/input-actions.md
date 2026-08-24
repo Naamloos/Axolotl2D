@@ -114,6 +114,70 @@ var value = move.Value;
 
 Button and scalar-axis actions can likewise move between keyboard, mouse, and gamepad overloads. Rebinding takes effect on the next input update and retains normal pressed/released edge tracking.
 
+Every map-created action exposes its current `Binding` and human-readable `BindingDescription`. The existing typed overloads build serializable `InputBinding` values internally. Use `Bind` or `Rebind` directly when settings UI needs to work with binding data:
+
+```csharp
+input.Rebind("Jump", InputBinding.Button(InputControl.From(Key.J)));
+```
+
+## Bind chords
+
+A chord is pressed only while every listed button is held:
+
+```csharp
+var quickSave = input.BindChord(
+    "Quick save",
+    InputControl.From(Key.ControlLeft),
+    InputControl.From(Key.S));
+```
+
+Chord controls can mix keyboard, mouse, and gamepad buttons. `BindingDescription` formats alternatives with `/` and chord members with `+`.
+
+## Capture a button
+
+Start interactive capture from a settings screen:
+
+```csharp
+InputCapture capture = input.CaptureButton("Jump");
+capture.Completed += binding =>
+    logger.LogInformation("Jump is now {Binding}", binding.Description);
+```
+
+The next newly pressed keyboard key, mouse button, or gamepad button replaces the action's binding. Inspect `IsPending`, `IsCompleted`, `IsCanceled`, and `Binding`, or call `Cancel`. Active controls must be released and pressed again, preventing a button already held when capture starts from being selected accidentally.
+
+Capture currently targets button bindings. Axis, stick, vector, and chord bindings remain explicit because they require direction or grouping choices.
+
+## Save profiles and switch schemes
+
+`InputProfile` stores action bindings under named control schemes:
+
+```csharp
+var profile = input.CreateProfile("Keyboard & Mouse");
+profile.SetBinding("Gamepad", "Move",
+    InputBinding.Stick(GamepadStick.Left, deadZone: 0.2f));
+profile.SetBinding("Gamepad", "Jump",
+    InputBinding.Button(InputControl.From(ButtonName.A)));
+
+profile.Save("input-profile.json");
+var loaded = InputProfile.Load("input-profile.json");
+
+input.ApplyProfile(loaded, "Keyboard & Mouse");
+input.SwitchControlScheme("Gamepad");
+```
+
+`ToJson` and `FromJson` support stores other than files. Profile JSON is versioned, uses camel-case string enums, rejects unknown properties, and validates controls, dead zones, and binding shapes while loading.
+
+Applying a scheme updates only matching actions, so one profile can contain bindings for several scene maps. Manual rebinding and interactive capture update the active profile scheme.
+
+Detect duplicated physical controls before accepting a profile or binding:
+
+```csharp
+var profileConflicts = profile.FindConflicts("Keyboard & Mouse");
+var activeConflicts = input.FindConflicts();
+```
+
+Each `InputBindingConflict` identifies both action names and the shared control. Conflict detection reports overlap; the game decides whether to warn, reject, or allow it.
+
 ## Disable a map
 
 ```csharp
@@ -124,4 +188,4 @@ Disabling the map releases active actions on the next frame. This suits pause me
 
 `InputActionSystem` updates maps before scene and component `Update` callbacks. Game code does not need to poll `Game.GetKeyboard()` or track previous key state.
 
-The current action system supports keyboard, mouse, gamepad buttons, standard sticks and triggers, per-binding dead zones, and runtime rebinding. Interactive "press any control" capture, saved binding profiles, control schemes, conflict detection, and input consumption remain future additions. See the `INPUT` screen in `Axolotl2D.Example` and the [Framework Roadmap](framework-roadmap.md).
+The action system supports keyboard, mouse, gamepad buttons, standard sticks and triggers, per-binding dead zones, runtime rebinding, chords, capture, named schemes, conflict detection, and JSON profiles. Input consumption between overlapping maps remains game-defined. See the `INPUT` screen in `Axolotl2D.Example`.

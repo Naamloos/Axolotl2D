@@ -14,6 +14,7 @@ public abstract class ExampleSceneBase(AssetManager assets) : BaseScene
         ("PHYSICS", typeof(PhysicsScene)),
         ("LIGHTING", typeof(LightingScene)),
         ("CAMERAS", typeof(CameraScene)),
+        ("TARGETS", typeof(RenderTargetScene)),
         ("INPUT", typeof(InputScene)),
         ("SHADERS", typeof(ShaderScene)),
         ("POST FX", typeof(PostProcessScene)),
