@@ -18,6 +18,7 @@ public sealed class ParticleScene(
     private InputAction toggle = null!;
     private ParticleEmitter sparks = null!;
     private ParticleEmitter sprites = null!;
+    private ParticleEmitter rotating = null!;
 
     public override void Load()
     {
@@ -57,24 +58,40 @@ public sealed class ParticleScene(
         sprites.AngularVelocity = 2f;
         sprites.StartColor = Color.White;
         sprites.EndColor = Color.Transparent;
+
+        var rotatingObject = Instantiate("Rotating particle emitter");
+        rotatingObject.Transform.LocalPosition = new Vector2(0f, 100f);
+        rotating = rotatingObject.AddComponent<ParticleEmitter>();
+        rotating.EmissionRate = 55f;
+        rotating.Lifetime = 1.6f;
+        rotating.Speed = 130f;
+        rotating.SpeedVariation = 20f;
+        rotating.Direction = 0f;
+        rotating.Spread = 0.18f;
+        rotating.StartSize = 10f;
+        rotating.EndSize = 1f;
+        rotating.StartColor = Color.FromHTML("#45E6D0");
+        rotating.EndColor = Color.Transparent;
     }
 
     public override void Draw(double frameDelta, double frameRate) =>
         DrawText(spriteBatch, textRenderer,
-            $"Primitive and sprite particles | Space burst | P play/stop | Alive: {sparks.AliveCount + sprites.AliveCount}",
+            $"Primitive, sprite, and rotating emitters | Space burst | P play/stop | Alive: {sparks.AliveCount + sprites.AliveCount + rotating.AliveCount}",
             new Vector2(24f, 70f), 15f);
 
     protected override void UpdateExample(double deltaTime)
     {
+        rotating.Transform.Rotate(1.8f * (float)deltaTime);
         if (burst.WasPressedThisFrame)
         {
             sparks.Emit(80);
             sprites.Emit(18);
+            rotating.Emit(50);
         }
         if (toggle.WasPressedThisFrame)
         {
-            if (sparks.IsPlaying) { sparks.Stop(); sprites.Stop(); }
-            else { sparks.Play(); sprites.Play(); }
+            if (sparks.IsPlaying) { sparks.Stop(); sprites.Stop(); rotating.Stop(); }
+            else { sparks.Play(); sprites.Play(); rotating.Play(); }
         }
     }
 }
