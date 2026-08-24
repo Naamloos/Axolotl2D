@@ -72,6 +72,8 @@ The package contains its primary module assembly at the entry named by the manif
 
 Build tools place imported asset payloads under `$assets/` by convention. The manifest maps public asset names to those entries, so runtimes do not infer asset identity from the entry path.
 
+Built-in `.axprefab` assets use content type `application/vnd.axolotl2d.prefab+json` and runtime type `Axolotl2D.Prefabs.PrefabAsset, Axolotl2D`. They remain ordinary manifest assets and do not alter the package binary format.
+
 ## Manifest
 
 The version 1 writer emits compact UTF-8 JSON with camel-case property names. It emits properties in the order shown below and preserves dependency and asset declaration order.

@@ -26,6 +26,8 @@
   items:
   - name: Asset Management
     href: asset-management.md
+  - name: Data Prefabs
+    href: prefabs.md
   - name: Modules and Packages
     href: modules-and-packages.md
   - name: Package Use Cases
@@ -36,6 +38,8 @@
     href: sprites-and-sprite-batching.md
   - name: Camera and Coordinate Systems
     href: camera-and-coordinate-systems.md
+  - name: 2D Lighting
+    href: lighting-2d.md
   - name: Transforms and Hierarchies
     href: transforms-and-hierarchies.md
   - name: Sprite Sheets and Animation
@@ -46,10 +50,14 @@
     href: audio.md
   - name: Custom Shaders
     href: custom-shaders.md
+  - name: Camera Post-Processing
+    href: camera-post-processing.md
   - name: Particle Emitters
     href: particle-emitters.md
   - name: User Interface
     href: ui.md
+  - name: Save Games
+    href: save-games.md
 - name: Simulation
   items:
   - name: Box2D Physics

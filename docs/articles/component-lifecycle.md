@@ -62,6 +62,18 @@ public sealed class CameraFollower(GameObject gameObject, Camera2D camera)
 }
 ```
 
+Use the configuring overload when values must exist before `Awake` or the initial `OnEnable`:
+
+```csharp
+var health = player.AddComponent<Health>(component =>
+{
+    component.Maximum = 100;
+    component.Current = 100;
+});
+```
+
+Data prefab instantiation uses this path. It applies each component's data before attaching the component, then runs `Start` only after the complete prefab hierarchy exists.
+
 ## Activation and cleanup
 
 Set `Enabled` when one behavior should pause. Set `GameObject.Active` when every component on the object should pause. In both cases, inactive components skip fixed updates, updates, late updates, and rendering.

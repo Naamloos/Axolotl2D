@@ -3,6 +3,7 @@ using System.Runtime.Loader;
 using Axolotl2D.Assets;
 using Axolotl2D.GameObjects;
 using Axolotl2D.Scenes;
+using Axolotl2D.Prefabs;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Axolotl2D.Packages;
@@ -26,18 +27,21 @@ public sealed class AxolotlModuleContext
 {
     private readonly AssetLoaderRegistry loaders;
     private readonly AxolotlModuleRegistry modules;
+    private readonly PrefabComponentRegistry prefabs;
     private readonly List<(Type AssetType, object Loader)> registrations = [];
     private readonly List<(string Id, Type SceneType)> scenes = [];
     private readonly List<(string Id, AxolotlGameObjectFactory Factory)> gameObjects = [];
     private readonly List<(Type Contract, string Id, object Extension)> extensions = [];
+    private readonly List<PrefabComponentRegistration> prefabComponents = [];
     private bool committed;
 
     internal AxolotlModuleContext(AxolotlPackage package, AssetLoaderRegistry loaders,
-        AxolotlModuleRegistry modules, IServiceProvider services)
+        AxolotlModuleRegistry modules, PrefabComponentRegistry prefabs, IServiceProvider services)
     {
         Package = package;
         this.loaders = loaders;
         this.modules = modules;
+        this.prefabs = prefabs;
         Services = services;
     }
 
@@ -82,6 +86,14 @@ public sealed class AxolotlModuleContext
         gameObjects.Add((id, factory));
     }
 
+    /// <summary>Stages a trusted module component under a stable prefab ID.</summary>
+    public void RegisterPrefabComponent<TComponent>(string id)
+        where TComponent : Component, IPrefabDataReceiver
+    {
+        ValidateId(id);
+        prefabComponents.Add(PrefabComponentRegistration.Create<TComponent>(id));
+    }
+
     /// <summary>Stages an implementation of a game-defined extension contract.</summary>
     public void RegisterExtension<TContract>(string id, TContract extension) where TContract : class
     {
@@ -97,15 +109,19 @@ public sealed class AxolotlModuleContext
         try
         {
             modules.Register(Package.Manifest.Id, scenes, gameObjects, extensions);
+            prefabs.Register(Package.Manifest.Id, prefabComponents);
             RegisteredAssetTypes = registeredAssetTypes;
             committed = true;
             registrations.Clear();
             scenes.Clear();
             gameObjects.Clear();
             extensions.Clear();
+            prefabComponents.Clear();
         }
         catch
         {
+            modules.RemovePackage(Package.Manifest.Id);
+            prefabs.RemovePackage(Package.Manifest.Id);
             loaders.Unregister(registeredAssetTypes);
             registrations.Clear();
             throw;
@@ -117,6 +133,7 @@ public sealed class AxolotlModuleContext
         if (committed)
         {
             modules.RemovePackage(Package.Manifest.Id);
+            prefabs.RemovePackage(Package.Manifest.Id);
             loaders.Unregister(RegisteredAssetTypes);
             RegisteredAssetTypes = [];
             committed = false;
@@ -130,6 +147,7 @@ public sealed class AxolotlModuleContext
         scenes.Clear();
         gameObjects.Clear();
         extensions.Clear();
+        prefabComponents.Clear();
     }
 
     private static void ValidateId(string id) => ArgumentException.ThrowIfNullOrWhiteSpace(id);
@@ -139,7 +157,8 @@ public sealed class AxolotlModuleContext
 public sealed class AxolotlPackageManager(
     IServiceProvider services,
     AssetLoaderRegistry loaders,
-    AxolotlModuleRegistry modules) : IDisposable
+    AxolotlModuleRegistry modules,
+    PrefabComponentRegistry prefabs) : IDisposable
 {
     private readonly Dictionary<string, MountedAxolotlPackage> mounted = new(StringComparer.Ordinal);
     private bool disposed;
@@ -174,14 +193,14 @@ public sealed class AxolotlPackageManager(
                 loadContext = new ModuleLoadContext(package, ResolveDependencyAssembly);
                 using var assemblyStream = package.OpenEntry(package.Manifest.Assembly);
                 assembly = loadContext.LoadFromStream(assemblyStream);
-                context = new AxolotlModuleContext(package, loaders, modules, services);
+                context = new AxolotlModuleContext(package, loaders, modules, prefabs, services);
                 InitializeKnownType<IAxolotlModuleRegistration>(assembly, package.Manifest.RegistrationType, context);
                 InitializeKnownType<IAxolotlModule>(assembly, package.Manifest.Entrypoint, context);
                 context.Commit();
             }
 
             var result = new MountedAxolotlPackage(
-                package, assembly, loadContext, modules, loaders, context?.RegisteredAssetTypes ?? []);
+                package, assembly, loadContext, modules, loaders, prefabs, context?.RegisteredAssetTypes ?? []);
             mounted.Add(package.Manifest.Id, result);
             return ValueTask.FromResult(result);
         }
@@ -247,16 +266,19 @@ public sealed class MountedAxolotlPackage : IDisposable
     private readonly ModuleLoadContext? loadContext;
     private readonly AxolotlModuleRegistry modules;
     private readonly AssetLoaderRegistry loaders;
+    private readonly PrefabComponentRegistry prefabs;
     private readonly IReadOnlyList<Type> registeredAssetTypes;
     private bool disposed;
     internal MountedAxolotlPackage(AxolotlPackage package, Assembly? assembly, ModuleLoadContext? loadContext,
-        AxolotlModuleRegistry modules, AssetLoaderRegistry loaders, IReadOnlyList<Type> registeredAssetTypes)
+        AxolotlModuleRegistry modules, AssetLoaderRegistry loaders, PrefabComponentRegistry prefabs,
+        IReadOnlyList<Type> registeredAssetTypes)
     {
         Package = package;
         Assembly = assembly;
         this.loadContext = loadContext;
         this.modules = modules;
         this.loaders = loaders;
+        this.prefabs = prefabs;
         this.registeredAssetTypes = registeredAssetTypes;
     }
     /// <summary>The validated package index.</summary>
@@ -281,6 +303,7 @@ public sealed class MountedAxolotlPackage : IDisposable
         if (disposed) return;
         disposed = true;
         modules.RemovePackage(Manifest.Id);
+        prefabs.RemovePackage(Manifest.Id);
         loaders.Unregister(registeredAssetTypes);
         loadContext?.Unload();
         Package.Dispose();

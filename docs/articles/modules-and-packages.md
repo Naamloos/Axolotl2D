@@ -30,7 +30,7 @@ Reference `Axolotl2D` and the `Axolotl2D.MSBuild` project/package, enable the mo
 <Import Project="..\Axolotl2D.MSBuild\build\Axolotl2D.MSBuild.targets" />
 ```
 
-`dotnet build` imports changed source assets into `obj`, generates module registration C#, compiles the normal DLL, then creates `bin/.../MyModule.axpkg`. PNG, TTF, and WAV importers preserve their source representation for the built-in runtime loaders. Names use `/`, never platform-specific separators; duplicates fail the build.
+`dotnet build` imports changed source assets into `obj`, generates module registration C#, compiles the normal DLL, then creates `bin/.../MyModule.axpkg`. PNG, TTF, WAV, and `.axprefab` importers preserve their source representation for the built-in runtime loaders. The prefab importer also validates its versioned JSON structure. Names use `/`, never platform-specific separators; duplicates fail the build.
 
 ## Custom importers and loaders
 
@@ -100,6 +100,8 @@ public sealed class Module : IAxolotlModule
 }
 ```
 
-The game can change to the scene with `SceneGameHost.ChangeScene("my.dlc/challenge")`. An active scene can call `InstantiateRegistered("my.dlc/enemy")`. IDs share one game-wide namespace, so prefix them with the package ID.
+The game can change to the scene with `SceneGameHost.ChangeScene("my.dlc/challenge")`. An active scene can call `InstantiateRegistered("my.dlc/enemy")`. Trusted modules may also call `RegisterPrefabComponent<T>(id)` for components implementing `IPrefabDataReceiver`. Content-only packages can contain `.axprefab` assets but cannot register executable component types. IDs share one game-wide namespace, so prefix them with the package ID.
+
+See [Data Prefabs](prefabs.md) for packaging and instantiating pure-data GameObject hierarchies.
 
 The module context exposes the existing root `IServiceProvider` for resolving game services. It does not allow modules to mutate the built DI container. Use `RegisterExtension<TContract>` when a package needs to contribute behavior to a game-owned system. Declare extra module-local DLLs with `AxolotlModuleAssembly`.

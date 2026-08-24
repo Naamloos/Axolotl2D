@@ -6,6 +6,8 @@ namespace Axolotl2D.Rendering;
 public sealed class Sprite
 {
     public Texture2D Texture { get; }
+    /// <summary>An optional tangent-space normal map using the same dimensions and source region as the color texture.</summary>
+    public Texture2D? NormalMap { get; set; }
     public TextureRegion Source { get; }
     public Vector2 Origin { get; set; } = new(0.5f);
 

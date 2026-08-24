@@ -1,19 +1,24 @@
 #version 330 core
-
 layout (location = 0) in vec3 aPosition;
-// Add a new input attribute for the texture coordinates
 layout (location = 1) in vec2 aTextureCoord;
 layout (location = 2) in vec4 aColor;
-
-// Add an output variable to pass the texture coordinate to the fragment shader
-// This variable stores the data that we want to be received by the fragment
+layout (location = 3) in vec2 aWorldPosition;
+layout (location = 4) in vec2 aTangent;
+layout (location = 5) in vec2 aBitangent;
+layout (location = 6) in vec2 aNormalTextureCoord;
 out vec2 frag_texCoords;
 out vec4 frag_color;
-
+out vec2 frag_worldPosition;
+out vec2 frag_tangent;
+out vec2 frag_bitangent;
+out vec2 frag_normalTexCoords;
 void main()
 {
     gl_Position = vec4(aPosition, 1.0);
-    // Assigin the texture coordinates without any modification to be recived in the fragment
     frag_texCoords = aTextureCoord;
     frag_color = aColor;
+    frag_worldPosition = aWorldPosition;
+    frag_tangent = aTangent;
+    frag_bitangent = aBitangent;
+    frag_normalTexCoords = aNormalTextureCoord;
 }

@@ -10,12 +10,15 @@ Axolotl2D is a small 2D game framework built on Silk.NET and Microsoft.Extension
 - A Generic Host owns the game and engine services.
 - `SceneGameHost` creates one DI scope for each active scene and disposes it during a transition.
 - Each scene owns runtime-instantiated GameObjects. A GameObject owns a hierarchical `Transform` and DI-created components.
+- Versioned `.axprefab` JSON assets create reusable GameObject hierarchies through the same scene DI and lifecycle paths.
 - `AssetManager` selects `IAssetLoader<T>` implementations by asset type and caches each result by key.
 - `AxolotlPackageManager` validates and mounts explicitly selected `.axpkg` modules. Executable modules can register scenes, GameObject factories, asset loaders, and game-defined extensions.
 - `SpriteBatch` groups sprites that share a texture and shader. `PrimitiveBatch` supplies rectangles, lines, and circles. `Camera2D` maps world coordinates to top-left screen coordinates.
-- Scene scopes own input maps, custom shader libraries, and Box2D worlds. `TimeService` supplies scaled frame and fixed-step time.
+- `Lighting2D` supplies normal-mapped point and spot lights with polygon shadows. `CameraManager` handles follow targets, bounds, shake, and multiple viewports.
+- Scene scopes own rebindable keyboard, mouse and gamepad input maps, custom shader libraries, and Box2D worlds. `TimeService` supplies scaled frame and fixed-step time.
+- Scene-scoped tweens and coroutines drive sequences and transitions. `SaveGameManager` stores typed, versioned JSON slots with atomic replacement.
 
-The built-in loaders support textures, RIFF/WAVE PCM sounds, and scalable fonts. Rendering includes texture regions, sprite sheets, animation, particles, retained UI with textured or primitive visuals, text, custom GLSL programs, tinting, depth order, and world or screen coordinate spaces. Box2D.NET supplies rigid-body simulation, collision events, and optional debug drawing. A host flag enables in-game scene, lifecycle, rendering, asset, timing, and physics inspection.
+The built-in loaders support textures, RIFF/WAVE PCM sounds, scalable fonts, and validated data prefabs. Rendering includes texture regions, sprite sheets, animation, particles, normal-mapped lighting, custom GLSL programs, per-camera post-processing, and multiple cameras. Retained UI provides stretch or grouped layout, clipping, scrolling, routed input, focus navigation, and common controls. Box2D.NET supplies rigid-body simulation, collision events, and optional debug drawing. A host flag enables in-game scene, lifecycle, rendering, asset, timing, and physics inspection.
 
 Components support `Awake`, enable and disable notifications, `Start`, fixed and variable updates, late updates, rendering, and destruction. A scene defers GameObject disposal until the current update or render phase ends, so components can destroy objects during callbacks.
 
@@ -70,4 +73,6 @@ Axolotl2D loads packages only when the game supplies a path. Signed policies pro
 
 Read [Modules and Packages](docs/articles/modules-and-packages.md), [Package Use Cases](docs/articles/package-use-cases.md), and the [`.axpkg` File Format](docs/articles/axpkg-format.md).
 
-See the [documentation](docs/index.md), [getting-started guide](docs/articles/getting-started.md), and [example project](Axolotl2D.Example) for assets, GameObjects, input actions, time control, rendering, shaders, animation, particles, UI, audio, physics, and inspection. [Bletris](Axolotl2D.Example.Bletris) is a playable falling-block example with a retained-UI menu, music, row-clear particles, and custom-shader blocks.
+Read [Data Prefabs](docs/articles/prefabs.md) for authoring reusable JSON GameObject hierarchies, registering custom component data, and packaging `.axprefab` assets.
+
+See the [documentation](docs/index.md), [getting-started guide](docs/articles/getting-started.md), and [example project](Axolotl2D.Example) for assets, GameObjects, packaged data prefabs, rebindable gamepad input, time control, rendering, shaders, camera post-processing, animation, particles, UI, audio, physics, and inspection. [Bletris](Axolotl2D.Example.Bletris) is a playable falling-block example with a retained-UI menu, music, row-clear particles, and custom-shader blocks.

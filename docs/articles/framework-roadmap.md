@@ -1,41 +1,37 @@
 # Framework Roadmap
 
-Axolotl2D now has the core runtime loop required for a small 2D game: scoped scenes, DI-created components, assets, input actions, scaled time, rendering, custom shaders, audio, animation, particles, retained UI, Box2D physics, and runtime inspection.
+Axolotl2D now has the core runtime loop required for a small 2D game: scoped scenes, DI-created components, assets, data-authored prefabs, keyboard, mouse and gamepad input actions with runtime rebinding, scaled time, rendering, camera post-processing, custom shaders, audio, animation, particles, retained UI, Box2D physics, and runtime inspection.
 
 The next additions should reduce repeated game code and expose runtime state during development.
 
-## 1. Prefabs and scene serialization
+Versioned `.axprefab` assets now cover reusable GameObject hierarchies through explicit, stable component registrations. Full scene serialization and editor tooling remain optional future authoring features rather than runtime requirements.
 
-Runtime `Instantiate` calls build each object in C#. A prefab format should describe a GameObject, its transform, component types, and component data. Scene files can then reference prefab assets and overrides.
+## 1. Automated runtime checks
 
-This would provide the largest workflow improvement because it separates content data from construction code. Start with JSON and explicit component serializers. Avoid arbitrary reflection-based object graphs until the format has versioning and migration rules.
+Add tests for scene transitions, lifecycle order, action edges and rebinding, dead zones, time scaling, transform parenting, asset caching, shader-scope restoration, and physics cleanup. A headless simulation mode would let most component and physics tests run without creating an OpenGL window.
 
-## 2. Materials and render targets
+The headless path would also make server-side simulation and deterministic replay easier to evaluate.
 
-`ShaderProgram` provides program selection and shared uniforms. A `Material` should pair a shader with uniform values and textures, then snapshot that state into each draw command. Render targets would enable lighting, post-processing, minimaps, and pixel-art scaling.
+## 2. Asset lifetime and hot reload
 
-Add this after real games need different uniform values on sprites that share one shader. The current shader scope covers scene-wide and batch-wide effects.
-
-## 3. Full input rebinding
-
-Extend action bindings with gamepads, dead zones, chords, control schemes, and JSON persistence. Add conflict detection and display names for rebinding screens.
-
-The current keyboard and mouse map covers desktop prototypes. Saved profiles matter once a game exposes player settings.
-
-## 4. Physics tooling
-
-Add collider components, sensors, collision layers, query helpers, and joint components over Box2D.NET. Keep `WorldId` and `BodyId` available so advanced projects can call the Box2D API.
-
-The built-in debug overlay now exposes bodies, shapes, contacts, and collision bounds. Add authored collider and query APIs when games need to build more of their physics without direct Box2D.NET calls.
-
-## 5. Asset lifetime and hot reload
-
-Add reference-counted asset handles or explicit content scopes before games begin streaming levels. Watch shader, texture, and scene files in development builds and reload them without restarting the game.
+Add reference-counted asset handles or explicit content scopes before games begin streaming levels. Watch shader, texture, prefab, and scene files in development builds and reload them without restarting the game.
 
 `AssetManager` suits preload-and-keep workflows. Streaming needs ownership rules so one scene cannot unload content still used by another.
 
-## 6. Automated runtime checks
+## 3. Physics tooling
 
-Add tests for scene transitions, lifecycle order, action edges, time scaling, transform parenting, asset caching, shader-scope restoration, and physics cleanup. A headless simulation mode would let most component and physics tests run without creating an OpenGL window.
+Add collider components, sensors, collision layers, query helpers, and joint components over Box2D.NET. Keep `WorldId` and `BodyId` available so advanced projects can call the Box2D API.
 
-The headless path would also make server-side simulation and deterministic replay easier to evaluate.
+`PhysicsBody` already wraps boxes, circles, collision events, motion, and transform synchronization. Add joints, filters, sensors, casts, and query helpers when games need more physics without direct Box2D.NET calls.
+
+## 4. Input profiles and capture
+
+Add interactive "press any control" capture, binding descriptions, conflict detection, chords, control schemes, and JSON profile persistence.
+
+The current API supports gamepad buttons, sticks, triggers, per-binding dead zones, multiple device indices, and runtime programmatic rebinding. Persisted profiles matter once a game exposes a player settings screen.
+
+## 5. Public render targets
+
+Expose render textures only when games need minimaps, security cameras, portals, or fixed-resolution pixel-art composition. Camera post-processing already owns resize-aware internal render targets and does not require a material system.
+
+Keep `ShaderProgram` as the direct shader-and-uniform API. Introduce a material abstraction only if real per-sprite uniform-state duplication makes it necessary.

@@ -33,6 +33,7 @@ public sealed class UIText(
         if (string.IsNullOrEmpty(Text))
             return;
 
+        using var clip = transform.ResolveClip() is { } rectangle ? spriteBatch.PushClip(rectangle) : null;
         var texture = textRenderer.Render(Font!, Text, FontSize);
         var rect = transform.Rect;
         var position = rect.Position;

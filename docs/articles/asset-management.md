@@ -9,8 +9,11 @@
 | `Texture2D` | `TextureAssetLoader` | PNG, JPEG, BMP, and other formats supported by stb_image |
 | `SoundAsset` | `SoundAssetLoader` | RIFF/WAVE PCM, mono or stereo, 8-bit or 16-bit |
 | `FontAsset` | `FontAssetLoader` | TrueType and OpenType fonts supported by SkiaSharp |
+| `PrefabAsset` | `PrefabAssetLoader` | Versioned `.axprefab` JSON hierarchies |
 
 The built-in loaders are registered by `AddAxolotl2D()` and by both game-host registration methods.
+
+Prefab component asset references resolve through already loaded asset keys. See [Data Prefabs](prefabs.md) for authoring, component registration, and package integration.
 
 ## Load from files
 

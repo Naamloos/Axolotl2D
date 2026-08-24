@@ -4,6 +4,7 @@ using Axolotl2D.Rendering;
 using Microsoft.Extensions.Logging;
 using Axolotl2D.Example.Assets;
 using Axolotl2D.Packages;
+using Axolotl2D.Prefabs;
 
 namespace Axolotl2D.Example;
 
@@ -35,7 +36,9 @@ public sealed class ExampleGame : Game
         await assets.LoadPackageAsync<FontAsset>("ui-font", ExampleAssetPackage.Id, "ui-font", cancellationToken);
         musicAsset = await assets.LoadPackageAsync<SoundAsset>("music", ExampleAssetPackage.Id, "music", cancellationToken);
         await assets.LoadPackageAsync<Texture2D>("run", ExampleAssetPackage.Id, "run", cancellationToken);
-        logger.LogInformation("Loaded typed texture, font, and sound assets");
+        await assets.LoadPackageAsync<PrefabAsset>("axolotl-cluster", ExampleAssetPackage.Id,
+            "prefabs/axolotl-cluster", cancellationToken);
+        logger.LogInformation("Loaded typed texture, font, sound, and prefab assets");
     }
 
     private void StartMusic() =>

@@ -31,6 +31,12 @@ public sealed class EnemySpawner(GameObject gameObject, EnemyAssets enemyAssets)
 
 Configure newly added components before their first fixed update, update, or render. `Awake` and an initial `OnEnable` run when the component attaches; `Start` is deferred until the first active lifecycle pass.
 
+Use [data prefabs](prefabs.md) when the same hierarchy and component configuration should be instantiated repeatedly from JSON:
+
+```csharp
+var enemy = Instantiate(assets.Get<PrefabAsset>("enemy"));
+```
+
 ## Destroy safely
 
 Destroy through either the object or scene:

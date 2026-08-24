@@ -69,6 +69,7 @@ namespace Axolotl2D
         private IRendering? rendering;
         private InputActionSystem? inputActions;
         private TimeService? time;
+        private CameraManager? cameras;
         private int closed;
         private int disposed;
 
@@ -113,6 +114,13 @@ namespace Axolotl2D
         /// </summary>
         /// <returns>Keyboard input helper.</returns>
         public IKeyboard? GetKeyboard() => input?.Keyboards[0];
+
+        /// <summary>Gets the first connected gamepad, if present.</summary>
+        public IGamepad? GetGamepad() => input?.Gamepads.FirstOrDefault();
+
+        /// <summary>Gets a connected gamepad by device index, if present.</summary>
+        public IGamepad? GetGamepad(int index) =>
+            input?.Gamepads.FirstOrDefault(gamepad => gamepad.Index == index);
 
         /// <summary>
         /// Loads application resources before the window and scene start.
@@ -171,6 +179,7 @@ namespace Axolotl2D
                 time!.BeginFrame(frameDelta);
                 inputActions!.Update();
                 OnUpdate?.Invoke(time.DeltaTime);
+                cameras!.Update(time.DeltaTime);
             }
             finally
             {
@@ -221,6 +230,7 @@ namespace Axolotl2D
             input = window.CreateInput();
             time = serviceProvider.GetRequiredService<TimeService>();
             inputActions = serviceProvider.GetRequiredService<InputActionSystem>();
+            cameras = serviceProvider.GetRequiredService<CameraManager>();
 
             OnLoad?.Invoke();
         }

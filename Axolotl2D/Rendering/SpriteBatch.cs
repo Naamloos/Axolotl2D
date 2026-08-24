@@ -1,14 +1,18 @@
 using Axolotl2D.Shaders;
+using Axolotl2D.Lighting;
+using Axolotl2D.UI;
 using System.Numerics;
 
 namespace Axolotl2D.Rendering;
 
 /// <summary>Queues sprites and submits them in texture batches at the end of a scene frame.</summary>
-public sealed class SpriteBatch(Rendering rendering, Camera2D defaultCamera)
+public sealed class SpriteBatch(Rendering rendering, CameraManager cameras, Lighting2D lighting)
 {
     private readonly List<SpriteDrawCommand> commands = [];
     private Camera2D? camera;
     private ShaderProgram? shader;
+    private UIRect? clip;
+    private bool explicitCamera;
 
     public bool IsBegun { get; private set; }
 
@@ -17,9 +21,20 @@ public sealed class SpriteBatch(Rendering rendering, Camera2D defaultCamera)
         if (IsBegun)
             throw new InvalidOperationException("SpriteBatch.Begin cannot be called twice without End.");
         commands.Clear();
-        this.camera = camera ?? defaultCamera;
+        this.camera = camera;
+        explicitCamera = camera is not null;
         shader = null;
+        clip = null;
         IsBegun = true;
+    }
+
+    /// <summary>Clips subsequent draw commands to a top-left screen rectangle.</summary>
+    public IDisposable PushClip(UIRect rectangle)
+    {
+        EnsureBegun();
+        var previous = clip;
+        clip = previous is null ? rectangle : UIRect.Intersect(previous.Value, rectangle);
+        return new ShaderScope(() => clip = previous);
     }
 
     /// <summary>Selects a custom shader for draws submitted inside the returned scope.</summary>
@@ -32,33 +47,44 @@ public sealed class SpriteBatch(Rendering rendering, Camera2D defaultCamera)
         return new ShaderScope(() => shader = previous);
     }
 
-    public void Draw(Sprite sprite, Matrix3x2 transform, Color? tint = null, CoordinateSpace space = CoordinateSpace.World, float depth = 0f)
+    public void Draw(Sprite sprite, Matrix3x2 transform, Color? tint = null, CoordinateSpace space = CoordinateSpace.World,
+        float depth = 0f, uint lightingLayer = 1)
     {
         EnsureBegun();
-        commands.Add(new SpriteDrawCommand(sprite, transform, tint ?? Color.White, space, depth, commands.Count, shader));
+        commands.Add(new SpriteDrawCommand(sprite, transform, tint ?? Color.White, space, depth, commands.Count,
+            shader, lightingLayer, clip));
     }
 
     public void Draw(Sprite sprite, Vector2 position, Vector2? size = null, float rotation = 0f, Color? tint = null,
-        CoordinateSpace space = CoordinateSpace.World, float depth = 0f)
+        CoordinateSpace space = CoordinateSpace.World, float depth = 0f, uint lightingLayer = 1)
     {
         var drawSize = size ?? sprite.Size;
         var scale = drawSize / sprite.Size;
         var transform = Matrix3x2.CreateScale(scale) * Matrix3x2.CreateRotation(rotation) * Matrix3x2.CreateTranslation(position);
-        Draw(sprite, transform, tint, space, depth);
+        Draw(sprite, transform, tint, space, depth, lightingLayer);
     }
 
     public void Draw(Texture2D texture, Vector2 position, Vector2? size = null, Color? tint = null,
-        CoordinateSpace space = CoordinateSpace.World, float depth = 0f) =>
-        Draw(new Sprite(texture), position, size, 0f, tint, space, depth);
+        CoordinateSpace space = CoordinateSpace.World, float depth = 0f, uint lightingLayer = 1) =>
+        Draw(new Sprite(texture), position, size, 0f, tint, space, depth, lightingLayer);
 
     public void End()
     {
         EnsureBegun();
-        var activeCamera = camera!;
         IsBegun = false;
+        var snapshot = lighting.Snapshot();
+        if (explicitCamera)
+            rendering.Draw(commands, camera!, snapshot, includeWorld: true, includeScreen: true);
+        else
+        {
+            foreach (var activeCamera in cameras.ActiveCameras)
+                rendering.Draw(commands, activeCamera, snapshot, includeWorld: true, includeScreen: false);
+            rendering.DrawScreen(commands);
+        }
         camera = null;
+        explicitCamera = false;
         shader = null;
-        rendering.Draw(commands, activeCamera);
+        clip = null;
     }
 
     private void EnsureBegun()
@@ -82,4 +108,6 @@ internal readonly record struct SpriteDrawCommand(
     CoordinateSpace Space,
     float Depth,
     int Order,
-    ShaderProgram? Shader);
+    ShaderProgram? Shader,
+    uint LightingLayer,
+    UIRect? Clip);

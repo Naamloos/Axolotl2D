@@ -14,6 +14,7 @@ namespace Axolotl2D.Example.Bletris.Scenes;
 public sealed class MainMenuScene(
     AssetManager assets,
     InputActionMap input,
+    BletrisGame bletris,
     IHostApplicationLifetime applicationLifetime) : BaseScene
 {
     private InputAction play = null!;
@@ -51,8 +52,29 @@ public sealed class MainMenuScene(
         titleText.HorizontalAlignment = UIHorizontalAlignment.Center;
         titleText.VerticalAlignment = UIVerticalAlignment.Center;
 
-        AddButton("PLAY", 10f, () => playRequested = true);
-        AddButton("QUIT", 90f, () => quitRequested = true);
+        var buttonPanel = Instantiate("Menu button layout");
+        var buttonPanelLayout = buttonPanel.AddComponent<UITransform>();
+        buttonPanelLayout.Anchor = new Vector2(0.5f);
+        buttonPanelLayout.Pivot = new Vector2(0.5f);
+        buttonPanelLayout.AnchoredPosition = new Vector2(0f, 55f);
+        buttonPanelLayout.Size = new Vector2(260f, 136f);
+        var buttonLayout = buttonPanel.AddComponent<UILayoutGroup>();
+        buttonLayout.Direction = UILayoutDirection.Vertical;
+        buttonLayout.Spacing = 20f;
+        buttonLayout.ExpandChildren = true;
+
+        AddButton("PLAY", () => playRequested = true);
+        AddButton("QUIT", () => quitRequested = true);
+
+        var progressObject = Instantiate("High score progress");
+        var progressLayout = progressObject.AddComponent<UITransform>();
+        progressLayout.Anchor = new Vector2(0.5f);
+        progressLayout.Pivot = new Vector2(0.5f);
+        progressLayout.AnchoredPosition = new Vector2(0f, 145f);
+        progressLayout.Size = new Vector2(260f, 8f);
+        var progress = progressObject.AddComponent<UIProgressBar>();
+        progress.Value = Math.Clamp(bletris.HighScore / 10000f, 0f, 1f);
+        progress.FillColor = Color.FromHTML("#45D9E8");
 
         var hint = Instantiate("Menu hint");
         var hintLayout = hint.AddComponent<UITransform>();
@@ -62,19 +84,17 @@ public sealed class MainMenuScene(
         hintLayout.Size = new Vector2(420f, 40f);
         var hintText = hint.AddComponent<UIText>();
         hintText.Font = font;
-        hintText.Text = "ENTER / SPACE TO PLAY     ESC TO QUIT";
+        hintText.Text = $"HIGH SCORE {bletris.HighScore:000000}   |   ARROWS / ENTER / MOUSE";
         hintText.FontSize = 13f;
         hintText.Color = Color.FromHTML("#94A3B8");
         hintText.HorizontalAlignment = UIHorizontalAlignment.Center;
         hintText.VerticalAlignment = UIVerticalAlignment.Center;
 
-        void AddButton(string label, float y, Action clicked)
+        void AddButton(string label, Action clicked)
         {
             var gameObject = Instantiate($"{label} button");
             var layout = gameObject.AddComponent<UITransform>();
-            layout.Anchor = new Vector2(0.5f);
-            layout.Pivot = new Vector2(0.5f);
-            layout.AnchoredPosition = new Vector2(0f, y);
+            layout.SetParent(buttonPanelLayout, screenPositionStays: false);
             layout.Size = new Vector2(260f, 58f);
 
             var visual = gameObject.AddComponent<UIVisual>();
@@ -94,6 +114,8 @@ public sealed class MainMenuScene(
             button.PointerExited += () => visual.Color = Color.FromHTML("#1E3A5F");
             button.PressedChanged += pressed =>
                 visual.Color = pressed ? Color.FromHTML("#164E63") : Color.FromHTML("#256D85");
+            button.FocusChanged += focused =>
+                visual.Color = focused ? Color.FromHTML("#256D85") : Color.FromHTML("#1E3A5F");
             button.Clicked += clicked;
         }
     }

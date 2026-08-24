@@ -41,13 +41,15 @@ internal sealed class Box2DDebugRenderer(PrimitiveBatch primitives, Camera2D cam
 
     private B2AABB VisibleBounds(PhysicsWorld world)
     {
-        var viewport = camera.ViewportSize;
+        var viewport = camera.PixelViewport;
+        var minimumScreen = viewport.Position;
+        var maximumScreen = viewport.Position + viewport.Size;
         Span<Vector2> points =
         [
-            camera.ScreenToWorld(Vector2.Zero),
-            camera.ScreenToWorld(new Vector2(viewport.X, 0f)),
-            camera.ScreenToWorld(viewport),
-            camera.ScreenToWorld(new Vector2(0f, viewport.Y))
+            camera.ScreenToWorld(minimumScreen),
+            camera.ScreenToWorld(new Vector2(maximumScreen.X, minimumScreen.Y)),
+            camera.ScreenToWorld(maximumScreen),
+            camera.ScreenToWorld(new Vector2(minimumScreen.X, maximumScreen.Y))
         ];
         var minimum = points[0];
         var maximum = points[0];

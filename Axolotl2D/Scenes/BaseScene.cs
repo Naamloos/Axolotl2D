@@ -1,9 +1,12 @@
 using Axolotl2D.GameObjects;
+using Axolotl2D.Assets;
 using Axolotl2D.Physics;
 using Axolotl2D.Rendering;
 using Axolotl2D.Timing;
 using Axolotl2D.Debugging;
 using Axolotl2D.Packages;
+using Axolotl2D.UI;
+using Axolotl2D.Prefabs;
 using System.Numerics;
 
 namespace Axolotl2D.Scenes;
@@ -13,11 +16,19 @@ public abstract class BaseScene
 {
     private readonly List<GameObject> gameObjects = [];
     private readonly HashSet<GameObject> pendingDestruction = [];
+    private readonly Dictionary<string, List<GameObject>> objectsByName = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, List<GameObject>> objectsByTag = new(StringComparer.Ordinal);
+    private readonly Dictionary<Type, List<Component>> componentsByType = [];
     private IGameObjectFactory objectFactory = null!;
     private AxolotlModuleRegistry moduleRegistry = null!;
     private SpriteBatch spriteBatch = null!;
     private PhysicsWorld physics = null!;
     private TimeService time = null!;
+    private TweenService tweens = null!;
+    private CoroutineService coroutines = null!;
+    private UIEventSystem uiEvents = null!;
+    private PrefabComponentRegistry prefabComponents = null!;
+    private AssetManager assets = null!;
     private DebugOverlay? debugOverlay;
     private double fixedAccumulator;
     private bool acceptsObjects;
@@ -33,6 +44,42 @@ public abstract class BaseScene
 
     internal SceneGameHost? sceneGameHost;
     internal Game? game;
+
+    /// <summary>Finds the first live GameObject with an exact, case-sensitive name.</summary>
+    public GameObject? FindByName(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        return objectsByName.TryGetValue(name, out var objects) ? objects[0] : null;
+    }
+
+    /// <summary>Finds all live GameObjects with an exact, case-sensitive name.</summary>
+    public IReadOnlyList<GameObject> FindAllByName(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        return objectsByName.TryGetValue(name, out var objects) ? objects.ToArray() : [];
+    }
+
+    /// <summary>Finds the first live GameObject with a case-sensitive tag.</summary>
+    public GameObject? FindWithTag(string tag)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(tag);
+        return objectsByTag.TryGetValue(tag, out var objects) ? objects[0] : null;
+    }
+
+    /// <summary>Finds all live GameObjects with a case-sensitive tag.</summary>
+    public IReadOnlyList<GameObject> FindAllWithTag(string tag)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(tag);
+        return objectsByTag.TryGetValue(tag, out var objects) ? objects.ToArray() : [];
+    }
+
+    /// <summary>Finds the first live component assignable to a type.</summary>
+    public T? FindComponent<T>() where T : Component
+        => componentsByType.TryGetValue(typeof(T), out var components) ? (T)components[0] : null;
+
+    /// <summary>Finds all live components assignable to a type.</summary>
+    public IReadOnlyList<T> FindComponents<T>() where T : Component
+        => componentsByType.TryGetValue(typeof(T), out var components) ? components.Cast<T>().ToArray() : [];
 
     /// <summary>Creates a scene-owned GameObject. Runtime objects start after their components attach.</summary>
     public GameObject Instantiate(string name = "GameObject")
@@ -65,6 +112,39 @@ public abstract class BaseScene
         return Add(gameObject);
     }
 
+    /// <summary>Instantiates a data-authored prefab hierarchy through this scene's DI scope.</summary>
+    public GameObject Instantiate(PrefabAsset prefab, string? name = null)
+    {
+        ArgumentNullException.ThrowIfNull(prefab);
+        var created = new List<(GameObject GameObject, PrefabObject Definition)>();
+        var objectsById = new Dictionary<string, GameObject>(StringComparer.Ordinal);
+        try
+        {
+            var root = CreatePrefabObjects(prefab.Root, null, name, created, objectsById);
+            var context = new PrefabLoadContext(assets, objectsById);
+            foreach (var (gameObject, definition) in created)
+                foreach (var componentDefinition in definition.Components)
+                {
+                    var registration = prefabComponents.Get(componentDefinition.Type);
+                    gameObject.AddComponent(registration.ComponentType, component =>
+                    {
+                        component.Enabled = componentDefinition.Enabled;
+                        registration.Loader(component, componentDefinition.Data, context);
+                    });
+                }
+            context.Complete();
+            foreach (var (gameObject, definition) in created)
+                gameObject.Active = definition.Active;
+            return root;
+        }
+        catch
+        {
+            foreach (var (gameObject, _) in created)
+                if (!gameObject.IsDestroyed) Destroy(gameObject);
+            throw;
+        }
+    }
+
     /// <summary>Disables an object and schedules its disposal after the current scene phase.</summary>
     public bool Destroy(GameObject gameObject)
     {
@@ -72,6 +152,7 @@ public abstract class BaseScene
         if (!gameObjects.Contains(gameObject) || !pendingDestruction.Add(gameObject))
             return false;
         gameObject.Active = false;
+        UnindexObject(gameObject);
         return true;
     }
 
@@ -103,6 +184,16 @@ public abstract class BaseScene
             ?? throw new InvalidOperationException("PhysicsWorld is not registered."));
         time = (TimeService)(services.GetService(typeof(TimeService))
             ?? throw new InvalidOperationException("TimeService is not registered."));
+        tweens = (TweenService)(services.GetService(typeof(TweenService))
+            ?? throw new InvalidOperationException("TweenService is not registered."));
+        coroutines = (CoroutineService)(services.GetService(typeof(CoroutineService))
+            ?? throw new InvalidOperationException("CoroutineService is not registered."));
+        uiEvents = (UIEventSystem)(services.GetService(typeof(UIEventSystem))
+            ?? throw new InvalidOperationException("UIEventSystem is not registered."));
+        prefabComponents = (PrefabComponentRegistry)(services.GetService(typeof(PrefabComponentRegistry))
+            ?? throw new InvalidOperationException("PrefabComponentRegistry is not registered."));
+        assets = (AssetManager)(services.GetService(typeof(AssetManager))
+            ?? throw new InvalidOperationException("AssetManager is not registered."));
         var debugOptions = services.GetService(typeof(DebugOverlayOptions)) as DebugOverlayOptions;
         if (debugOptions?.Enabled == true)
             debugOverlay = (DebugOverlay)(services.GetService(typeof(DebugOverlay))
@@ -142,6 +233,9 @@ public abstract class BaseScene
 
         if (!IsLoaded)
             return;
+        tweens.Update(deltaTime, time.UnscaledDeltaTime);
+        coroutines.Update(deltaTime, time.UnscaledDeltaTime);
+        uiEvents.Update();
         foreach (var gameObject in gameObjects.ToArray())
             gameObject.Update(deltaTime);
         Update(deltaTime);
@@ -189,6 +283,9 @@ public abstract class BaseScene
             gameObjects[index].Dispose();
         gameObjects.Clear();
         pendingDestruction.Clear();
+        objectsByName.Clear();
+        objectsByTag.Clear();
+        componentsByType.Clear();
         fixedAccumulator = 0;
         debugOverlay = null;
     }
@@ -197,6 +294,7 @@ public abstract class BaseScene
     {
         gameObject.AssignTo(this);
         gameObjects.Add(gameObject);
+        IndexObject(gameObject);
         if (IsLoaded)
             gameObject.Start();
         return gameObject;
@@ -210,15 +308,103 @@ public abstract class BaseScene
             pendingDestruction.Clear();
             foreach (var gameObject in batch)
             {
-                gameObjects.Remove(gameObject);
                 gameObject.Dispose();
             }
         }
+    }
+
+    internal void OnNameChanged(GameObject gameObject, string previous)
+    {
+        Remove(objectsByName, previous, gameObject);
+        if (IsIndexed(gameObject)) Add(objectsByName, gameObject.Name, gameObject);
+    }
+
+    internal void OnTagAdded(GameObject gameObject, string tag)
+    {
+        if (IsIndexed(gameObject)) Add(objectsByTag, tag, gameObject);
+    }
+
+    internal void OnTagRemoved(GameObject gameObject, string tag) => Remove(objectsByTag, tag, gameObject);
+
+    internal void OnComponentAdded(GameObject gameObject, Component component)
+    {
+        if (IsIndexed(gameObject)) IndexComponent(component);
+    }
+
+    internal void OnComponentRemoved(Component component) => UnindexComponent(component);
+
+    internal void OnObjectDisposed(GameObject gameObject)
+    {
+        UnindexObject(gameObject);
+        pendingDestruction.Remove(gameObject);
+        gameObjects.Remove(gameObject);
+    }
+
+    private bool IsIndexed(GameObject gameObject)
+        => gameObjects.Contains(gameObject) && !pendingDestruction.Contains(gameObject);
+
+    private void IndexObject(GameObject gameObject)
+    {
+        Add(objectsByName, gameObject.Name, gameObject);
+        foreach (var tag in gameObject.Tags) Add(objectsByTag, tag, gameObject);
+        foreach (var component in gameObject.Components) IndexComponent(component);
+    }
+
+    private void UnindexObject(GameObject gameObject)
+    {
+        Remove(objectsByName, gameObject.Name, gameObject);
+        foreach (var tag in gameObject.Tags) Remove(objectsByTag, tag, gameObject);
+        foreach (var component in gameObject.Components) UnindexComponent(component);
+    }
+
+    private void IndexComponent(Component component)
+    {
+        for (var type = component.GetType(); type is not null && type.IsAssignableTo(typeof(Component)); type = type.BaseType)
+            Add(componentsByType, type, component);
+    }
+
+    private void UnindexComponent(Component component)
+    {
+        for (var type = component.GetType(); type is not null && type.IsAssignableTo(typeof(Component)); type = type.BaseType)
+            Remove(componentsByType, type, component);
+    }
+
+    private static void Add<TKey, TValue>(Dictionary<TKey, List<TValue>> index, TKey key, TValue value)
+        where TKey : notnull
+    {
+        if (!index.TryGetValue(key, out var values)) index.Add(key, values = []);
+        values.Add(value);
+    }
+
+    private static void Remove<TKey, TValue>(Dictionary<TKey, List<TValue>> index, TKey key, TValue value)
+        where TKey : notnull
+    {
+        if (!index.TryGetValue(key, out var values)) return;
+        values.Remove(value);
+        if (values.Count == 0) index.Remove(key);
     }
 
     private void EnsureAcceptsObjects()
     {
         if (!acceptsObjects)
             throw new InvalidOperationException("GameObjects can only be instantiated while the scene is loading or active.");
+    }
+
+    private GameObject CreatePrefabObjects(PrefabObject definition, Transform? parent, string? rootName,
+        List<(GameObject GameObject, PrefabObject Definition)> created,
+        Dictionary<string, GameObject> objectsById)
+    {
+        var gameObject = Instantiate(rootName ?? definition.Name);
+        created.Add((gameObject, definition));
+        if (definition.Id is not null) objectsById.Add(definition.Id, gameObject);
+        gameObject.Active = false;
+        foreach (var tag in definition.Tags) gameObject.AddTag(tag);
+        gameObject.Transform.SetParent(parent, worldPositionStays: false);
+        gameObject.Transform.LocalPosition = definition.Transform.Position;
+        gameObject.Transform.LocalRotation = definition.Transform.Rotation;
+        gameObject.Transform.LocalScale = definition.Transform.Scale;
+        foreach (var child in definition.Children)
+            CreatePrefabObjects(child, gameObject.Transform, null, created, objectsById);
+        return gameObject;
     }
 }

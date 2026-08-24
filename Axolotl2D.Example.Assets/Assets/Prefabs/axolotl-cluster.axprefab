@@ -1,0 +1,67 @@
+{
+  "formatVersion": 1,
+  "root": {
+    "id": "cluster",
+    "name": "Axolotl cluster",
+    "active": true,
+    "tags": ["prefab", "cluster"],
+    "transform": {
+      "position": { "x": 0, "y": 0 },
+      "rotation": 0,
+      "scale": { "x": 0.22, "y": 0.22 }
+    },
+    "components": [
+      {
+        "type": "axolotl.sprite-renderer",
+        "data": {
+          "sprite": { "texture": "logo" },
+          "tint": "#FFFFFF"
+        }
+      },
+      {
+        "type": "example.spinner",
+        "data": { "speed": 0.65 }
+      },
+      {
+        "type": "axolotl.particle-emitter",
+        "data": {
+          "emissionRate": 12,
+          "lifetime": 1.4,
+          "speed": 85,
+          "speedVariation": 30,
+          "spread": 6.2831855,
+          "acceleration": { "x": 0, "y": 35 },
+          "startSize": 30,
+          "endSize": 2,
+          "startColor": "#69D2FF",
+          "endColor": "transparent"
+        }
+      }
+    ],
+    "children": [
+      {
+        "id": "satellite",
+        "name": "Axolotl satellite",
+        "transform": {
+          "position": { "x": 260, "y": 0 },
+          "rotation": 0,
+          "scale": { "x": 0.55, "y": 0.55 }
+        },
+        "components": [
+          {
+            "type": "axolotl.sprite-renderer",
+            "data": {
+              "sprite": { "texture": "logo" },
+              "tint": "#FFD166"
+            }
+          },
+          {
+            "type": "example.spinner",
+            "data": { "speed": -2.2 }
+          }
+        ],
+        "children": []
+      }
+    ]
+  }
+}

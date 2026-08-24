@@ -36,7 +36,8 @@ public sealed class BletrisController(
     SpriteBatch spriteBatch,
     TextRenderer textRenderer,
     InputActionMap input,
-    ShaderLibrary shaders) : Component(gameObject)
+    ShaderLibrary shaders,
+    BletrisGame bletris) : Component(gameObject)
 {
     private static readonly Color[] PieceColors =
     [
@@ -174,7 +175,7 @@ public sealed class BletrisController(
 
         textRenderer.Draw(spriteBatch, font, "BLETRIS", 30f, sidebar, Color.White);
         textRenderer.Draw(spriteBatch, font,
-            $"SCORE\n{score:000000}\n\nLINES\n{lines}\n\nLEVEL\n{lines / 10 + 1}",
+            $"SCORE\n{score:000000}\n\nBEST\n{bletris.HighScore:000000}\n\nLINES\n{lines}\n\nLEVEL\n{lines / 10 + 1}",
             18f, sidebar + new Vector2(0, 48f), Color.White);
         textRenderer.Draw(spriteBatch, font, "NEXT", 18f,
             sidebar + new Vector2(0, 270f), MutedColor);
@@ -242,6 +243,7 @@ public sealed class BletrisController(
         foreach (var row in clearedRows)
             SpawnRowClearParticles(row);
         score += LineScores[cleared] * (lines / 10 + 1);
+        bletris.RecordScore(score);
         lines += cleared;
         SpawnPiece();
         UpdateTitle();

@@ -14,7 +14,7 @@ Axolotl2D exposes world, screen, and normalized-device coordinates explicitly. `
 
 ## Camera position, pan, and zoom
 
-`Camera2D.Position` is the world point shown at the viewport center. The camera follows game-window resize events and keeps `ViewportSize` current.
+`Camera2D.Position` is the world point shown at the viewport center. `ViewportSize` reflects the camera's part of the current game window.
 
 ```csharp
 public sealed class CameraController(
@@ -84,3 +84,42 @@ Most game code should remain in world or screen coordinates. Keep conversions at
 ## Use a different camera for a batch
 
 `SpriteBatch.Begin(camera)` accepts a camera override. Scene rendering uses the DI-registered default camera. A manually managed batch can select another camera for a minimap or alternate view.
+
+## Follow a target and constrain movement
+
+```csharp
+camera.FollowTarget = player.Transform;
+camera.FollowOffset = new Vector2(0, -40);
+camera.FollowSmoothing = 7f;
+camera.DeadZone = new Vector2(120, 70);
+camera.Bounds = new CameraBounds(
+    new Vector2(0, 0),
+    new Vector2(4096, 2048));
+```
+
+The camera updates after scene components finish their frame update. A smoothing value of zero snaps to the target. Positive values use frame-rate-independent exponential smoothing. The dead zone lets the target move around the current center before the camera follows. Bounds clamp the visible rectangle inside the supplied world area.
+
+Start a decaying shake without changing the tracked camera position:
+
+```csharp
+camera.Shake(amplitude: 18f, duration: 0.35f, frequency: 28f);
+```
+
+## Render multiple cameras
+
+Inject `CameraManager` and create a split-screen or inset camera:
+
+```csharp
+var minimap = cameras.Create("Minimap");
+minimap.Viewport = new CameraViewport(0.72f, 0.04f, 0.25f, 0.28f);
+minimap.Zoom = 0.25f;
+minimap.Priority = 10;
+```
+
+The scene records its draw commands once. Axolotl2D submits world-space commands through each enabled camera in priority order, then submits screen-space commands once over the full window. `CullingMask` selects world commands by their `lightingLayer` or `SpriteRenderer.LightingLayer` bit.
+
+Remove scene-owned cameras during unload:
+
+```csharp
+public override void Unload() => cameras.Remove(minimap);
+```

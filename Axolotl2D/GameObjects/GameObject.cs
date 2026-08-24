@@ -8,13 +8,28 @@ public class GameObject : IDisposable
 {
     private readonly IServiceProvider services;
     private readonly List<Component> components = [];
+    private readonly HashSet<string> tags = new(StringComparer.Ordinal);
     private BaseScene? scene;
+    private string name;
     private bool active = true;
     private bool disposed;
 
-    public string Name { get; set; }
+    public string Name
+    {
+        get => name;
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            if (name == value) return;
+            var previous = name;
+            name = value;
+            scene?.OnNameChanged(this, previous);
+        }
+    }
     public Transform Transform { get; } = new();
     public IReadOnlyList<Component> Components => components;
+    /// <summary>The object's case-sensitive tags.</summary>
+    public IReadOnlyCollection<string> Tags => tags;
     public BaseScene Scene => scene ?? throw new InvalidOperationException("The GameObject does not belong to a scene.");
     public bool IsDestroyed => disposed;
     internal bool HasStarted { get; private set; }
@@ -35,14 +50,51 @@ public class GameObject : IDisposable
     public GameObject(IServiceProvider services, string name = "GameObject")
     {
         this.services = services;
-        Name = name;
+        this.name = name ?? throw new ArgumentNullException(nameof(name));
+    }
+
+    /// <summary>Adds a case-sensitive tag.</summary>
+    public bool AddTag(string tag)
+    {
+        ObjectDisposedException.ThrowIf(disposed, this);
+        ArgumentException.ThrowIfNullOrWhiteSpace(tag);
+        if (!tags.Add(tag)) return false;
+        scene?.OnTagAdded(this, tag);
+        return true;
+    }
+
+    /// <summary>Removes a tag.</summary>
+    public bool RemoveTag(string tag)
+    {
+        ObjectDisposedException.ThrowIf(disposed, this);
+        ArgumentException.ThrowIfNullOrWhiteSpace(tag);
+        if (!tags.Remove(tag)) return false;
+        scene?.OnTagRemoved(this, tag);
+        return true;
+    }
+
+    /// <summary>Checks for a case-sensitive tag.</summary>
+    public bool HasTag(string tag)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(tag);
+        return tags.Contains(tag);
     }
 
     public T AddComponent<T>() where T : Component
         => (T)AddComponent(typeof(T));
 
+    /// <summary>Creates and configures a component through DI before its Awake and enable callbacks.</summary>
+    public T AddComponent<T>(Action<T> configure) where T : Component
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        return (T)AddComponent(typeof(T), component => configure((T)component));
+    }
+
     /// <summary>Adds a component discovered at runtime and creates it through DI.</summary>
-    public Component AddComponent(Type componentType)
+    public Component AddComponent(Type componentType) => AddComponent(componentType, null);
+
+    /// <summary>Creates and configures a runtime component type before its Awake and enable callbacks.</summary>
+    public Component AddComponent(Type componentType, Action<Component>? configure)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         ArgumentNullException.ThrowIfNull(componentType);
@@ -55,7 +107,9 @@ public class GameObject : IDisposable
         components.Add(component);
         try
         {
+            configure?.Invoke(component);
             component.Attach();
+            scene?.OnComponentAdded(this, component);
             return component;
         }
         catch
@@ -78,25 +132,11 @@ public class GameObject : IDisposable
     }
 
     public bool RemoveComponent<T>() where T : Component
-    {
-        var component = GetComponent<T>();
-        if (component is null)
-            return false;
-        components.Remove(component);
-        component.Dispose();
-        return true;
-    }
+        => RemoveComponent(GetComponent<T>());
 
     /// <summary>Removes and disposes the first component assignable to a runtime type.</summary>
     public bool RemoveComponent(Type componentType)
-    {
-        var component = GetComponent(componentType);
-        if (component is null)
-            return false;
-        components.Remove(component);
-        component.Dispose();
-        return true;
-    }
+        => RemoveComponent(GetComponent(componentType));
 
     /// <summary>Marks this object for removal at the end of the current scene phase.</summary>
     public void Destroy() => Scene.Destroy(this);
@@ -155,6 +195,7 @@ public class GameObject : IDisposable
             return;
         disposed = true;
         active = false;
+        scene?.OnObjectDisposed(this);
         foreach (var component in components.ToArray())
             component.RefreshActivation();
         for (var index = components.Count - 1; index >= 0; index--)
@@ -163,6 +204,15 @@ public class GameObject : IDisposable
         Transform.DetachHierarchy();
         scene = null;
         GC.SuppressFinalize(this);
+    }
+
+    private bool RemoveComponent(Component? component)
+    {
+        if (component is null) return false;
+        components.Remove(component);
+        scene?.OnComponentRemoved(component);
+        component.Dispose();
+        return true;
     }
 }
 

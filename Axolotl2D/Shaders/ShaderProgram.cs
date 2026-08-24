@@ -1,5 +1,6 @@
 using Silk.NET.OpenGL;
 using System.Numerics;
+using Axolotl2D.Rendering;
 
 namespace Axolotl2D.Shaders;
 
@@ -115,6 +116,7 @@ public sealed class ShaderProgram : IDisposable
 public sealed class ShaderLibrary(Game game) : IDisposable
 {
     private readonly List<ShaderProgram> programs = [];
+    private readonly List<PostProcessEffect> postProcessEffects = [];
     private bool disposed;
 
     public ShaderProgram Create(string vertexSource, string fragmentSource)
@@ -127,14 +129,39 @@ public sealed class ShaderLibrary(Game game) : IDisposable
         return program;
     }
 
+    /// <summary>Creates and attaches an ordered full-screen fragment pass to a camera.</summary>
+    public PostProcessEffect CreatePostProcess(Camera2D camera, string fragmentSource)
+    {
+        ObjectDisposedException.ThrowIf(disposed, this);
+        ArgumentNullException.ThrowIfNull(camera);
+        var program = Create(PostProcessVertexShader, fragmentSource);
+        var effect = camera.AddPostProcess(program);
+        postProcessEffects.Add(effect);
+        return effect;
+    }
+
     public void Dispose()
     {
         if (disposed)
             return;
         disposed = true;
+        for (var index = postProcessEffects.Count - 1; index >= 0; index--)
+            postProcessEffects[index].Dispose();
+        postProcessEffects.Clear();
         for (var index = programs.Count - 1; index >= 0; index--)
             programs[index].Dispose();
         programs.Clear();
         GC.SuppressFinalize(this);
     }
+
+    private const string PostProcessVertexShader = """
+        #version 330 core
+        out vec2 frag_texCoords;
+        void main() {
+            vec2 positions[3] = vec2[](vec2(-1.0, -1.0), vec2(3.0, -1.0), vec2(-1.0, 3.0));
+            vec2 coordinates[3] = vec2[](vec2(0.0, 0.0), vec2(2.0, 0.0), vec2(0.0, 2.0));
+            gl_Position = vec4(positions[gl_VertexID], 0.0, 1.0);
+            frag_texCoords = coordinates[gl_VertexID];
+        }
+        """;
 }

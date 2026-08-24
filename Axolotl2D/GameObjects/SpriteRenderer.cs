@@ -9,10 +9,11 @@ public sealed class SpriteRenderer(GameObject gameObject, SpriteBatch spriteBatc
     public Color Tint { get; set; } = Color.White;
     public CoordinateSpace Space { get; set; } = CoordinateSpace.World;
     public float Depth { get; set; }
+    public uint LightingLayer { get; set; } = 1;
 
     public override void Render()
     {
         if (Sprite is not null)
-            spriteBatch.Draw(Sprite, Transform.WorldMatrix, Tint, Space, Depth);
+            spriteBatch.Draw(Sprite, Transform.WorldMatrix, Tint, Space, Depth, LightingLayer);
     }
 }

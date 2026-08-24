@@ -23,6 +23,7 @@ public sealed class UIVisual(
 
     public override void Render()
     {
+        using var clip = transform.ResolveClip() is { } rectangle ? spriteBatch.PushClip(rectangle) : null;
         var rect = transform.Rect;
         if (Sprite is not null)
         {

@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Runtime.Loader;
+using Axolotl2D.Prefabs;
 
 namespace Axolotl2D.MSBuild;
 
@@ -21,7 +22,7 @@ internal static class ContentImporters
 {
     public static IReadOnlyList<IContentImporter> Load(IEnumerable<string> assemblyPaths)
     {
-        var importers = new List<IContentImporter> { new PngImporter(), new TtfImporter(), new WavImporter() };
+        var importers = new List<IContentImporter> { new PngImporter(), new TtfImporter(), new WavImporter(), new PrefabImporter() };
         foreach (var path in assemblyPaths)
         {
             var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.GetFullPath(path));
@@ -46,3 +47,19 @@ internal abstract class ExtensionImporter(string extension, string runtimeType, 
 internal sealed class PngImporter() : ExtensionImporter(".png", "Axolotl2D.Rendering.Texture2D, Axolotl2D", "image/png");
 internal sealed class TtfImporter() : ExtensionImporter(".ttf", "Axolotl2D.Assets.FontAsset, Axolotl2D", "font/ttf");
 internal sealed class WavImporter() : ExtensionImporter(".wav", "Axolotl2D.Assets.SoundAsset, Axolotl2D", "audio/wav");
+
+internal sealed class PrefabImporter : IContentImporter
+{
+    public bool CanImport(ContentImporterContext context) =>
+        string.Equals(Path.GetExtension(context.SourcePath), ".axprefab", StringComparison.OrdinalIgnoreCase);
+
+    public async ValueTask<ImportedAsset> ImportAsync(ContentImporterContext context,
+        CancellationToken cancellationToken = default)
+    {
+        var payload = await File.ReadAllBytesAsync(context.SourcePath, cancellationToken).ConfigureAwait(false);
+        using var stream = new MemoryStream(payload, writable: false);
+        await new PrefabAssetLoader().LoadAsync(stream, cancellationToken);
+        return new(context.LogicalName, "Axolotl2D.Prefabs.PrefabAsset, Axolotl2D",
+            PrefabAsset.ContentType, payload);
+    }
+}

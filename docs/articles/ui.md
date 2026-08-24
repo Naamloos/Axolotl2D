@@ -85,4 +85,44 @@ button.PressedChanged += pressed =>
 
 Change `Button` to use another mouse button or set `Interactable` to suspend interaction. `Clicked` fires only when a press starts inside the rectangle and the matching release also occurs inside it. Disabling the component clears its hover and press state.
 
-The initial UI layer intentionally has no automatic clipping, keyboard focus, or overlapping-control event arbitration. Keep interactive rectangles distinct; add a canvas-level input router when a game needs modal focus or overlapping controls.
+## Stretch and arrange layouts
+
+Set different anchor bounds to stretch an element inside its parent:
+
+```csharp
+layout.AnchorMin = Vector2.Zero;
+layout.AnchorMax = Vector2.One;
+layout.OffsetMin = new Vector2(24);
+layout.OffsetMax = new Vector2(-24);
+```
+
+`MinSize` and `MaxSize` constrain the resolved rectangle. `UILayoutGroup` arranges direct UI children in a horizontal or vertical row with padding, spacing, alignment, and optional expansion.
+
+## Clip and scroll content
+
+Add `UIClip` to a viewport GameObject. Descendant `UIVisual` and `UIText` components intersect ancestor clip rectangles before submitting draw commands.
+
+`UIScrollView` owns a larger `Content` transform and clamps its offset:
+
+```csharp
+var scroll = viewportObject.AddComponent<UIScrollView>();
+scroll.Content = contentLayout;
+scroll.ContentSize = new Vector2(480, 1200);
+scroll.Vertical = true;
+scroll.ScrollBy(new Vector2(0, 100));
+```
+
+The component adds `UIClip` when needed and accepts mouse-wheel scrolling while the pointer lies inside its viewport.
+
+## Route input and focus
+
+`UIEventSystem` sends pointer state to the highest-depth overlapping `UISelectable`. `UIButton`, `UIToggle`, and `UISlider` participate in keyboard and controller focus. Arrow keys, Tab, and controller D-pad buttons change focus. Enter, Space, and controller A activate the focused control.
+
+Use `NavigationOrder` for focus order and `Depth` for pointer arbitration. `FocusChanged` supports focus styling. Games can call `UIEventSystem.SetFocus`, `MoveFocus`, or `Submit` for custom navigation.
+
+## Other controls
+
+- `UIToggle` exposes `Value`, `SetValue`, and `ValueChanged`.
+- `UISlider` supports pointer drag, min/max values, steps, and `ValueChanged`.
+- `UIProgressBar` draws a clamped horizontal fill with configurable colors.
+- `UIScrollView` supplies clipped content offsets and wheel input.

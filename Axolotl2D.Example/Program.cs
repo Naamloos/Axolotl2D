@@ -13,8 +13,19 @@ internal static class Program
             {
                 // The game-host registration also installs Axolotl2D's DI services.
                 services.UseSceneManagerGameHost<ExampleGame>(true);
-                services.AddScene<ExampleScene>();
-                services.AddScene<ExampleScene2>();
+                services.AddPrefabComponent<Spinner>("example.spinner");
+                services.AddScene<SpriteScene>();
+                services.AddScene<AnimationScene>();
+                services.AddScene<PhysicsScene>();
+                services.AddScene<LightingScene>();
+                services.AddScene<CameraScene>();
+                services.AddScene<InputScene>();
+                services.AddScene<ShaderScene>();
+                services.AddScene<PostProcessScene>();
+                services.AddScene<ParticleScene>();
+                services.AddScene<PrefabScene>();
+                services.AddScene<UIScene>();
+                services.AddScene<SaveScene>();
             })
             .Build();
 

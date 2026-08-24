@@ -86,4 +86,6 @@ public override void Draw(double frameDelta, double frameRate)
 
 Nested shader scopes restore the previous shader when disposed. Draw commands share a batch when their texture and shader match.
 
-Uniform values belong to the shader program for the current batch. Using one program with different per-sprite uniform values in the same batch is not supported yet. Use tint and vertex data for per-sprite values, or create separate shader programs until Axolotl2D gains material instances.
+Uniform values belong to the shader program for the current batch. Using one program with different per-sprite uniform values in the same batch is not supported. Use tint and vertex data for per-sprite values, or create separate shader programs when values must vary between batches.
+
+For effects over a camera's completed world image, use [`ShaderLibrary.CreatePostProcess`](camera-post-processing.md) instead of `SpriteBatch.UseShader`.

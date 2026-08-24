@@ -9,6 +9,10 @@ using Axolotl2D.Scenes;
 using Axolotl2D.Shaders;
 using Axolotl2D.Timing;
 using Axolotl2D.Packages;
+using Axolotl2D.Lighting;
+using Axolotl2D.Saving;
+using Axolotl2D.UI;
+using Axolotl2D.Prefabs;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -74,21 +78,49 @@ namespace Axolotl2D
             services.TryAddSingleton<IAssetLoader<Texture2D>, TextureAssetLoader>();
             services.TryAddSingleton<IAssetLoader<SoundAsset>, SoundAssetLoader>();
             services.TryAddSingleton<IAssetLoader<FontAsset>, FontAssetLoader>();
-            services.TryAddSingleton<Camera2D>();
+            services.TryAddSingleton<IAssetLoader<PrefabAsset>, PrefabAssetLoader>();
+            services.TryAddSingleton<PrefabComponentRegistry>();
+            services.TryAddSingleton<CameraManager>();
+            services.TryAddSingleton(provider => provider.GetRequiredService<CameraManager>().Default);
             services.TryAddSingleton<Axolotl2D.Rendering.Rendering>();
             services.TryAddSingleton<IRendering>(provider => provider.GetRequiredService<Axolotl2D.Rendering.Rendering>());
-            services.TryAddSingleton<SpriteBatch>();
-            services.TryAddSingleton<PrimitiveBatch>();
+            services.TryAddScoped<Lighting2D>();
+            services.TryAddScoped<SpriteBatch>();
+            services.TryAddScoped<PrimitiveBatch>();
+            services.TryAddScoped<UIEventSystem>();
             services.TryAddSingleton<TextRenderer>();
             services.TryAddSingleton(_ => new DebugOverlayOptions());
-            services.TryAddSingleton<DebugOverlay>();
+            services.TryAddScoped<DebugOverlay>();
             services.TryAddSingleton<InputActionSystem>();
             services.TryAddScoped<InputActionMap>();
             services.TryAddSingleton<TimeService>();
+            services.TryAddScoped<TweenService>();
+            services.TryAddScoped<CoroutineService>();
+            services.TryAddSingleton<SaveGameOptions>();
+            services.TryAddSingleton<SaveGameManager>();
             services.TryAddScoped<ShaderLibrary>();
             services.TryAddScoped<PhysicsWorld>();
             services.TryAddScoped<IGameObjectFactory, GameObjectFactory>();
             services.TryAddSingleton<AudioPlayer>();
+            return services;
+        }
+
+        /// <summary>Registers a custom component ID whose component owns its prefab data schema.</summary>
+        public static IServiceCollection AddPrefabComponent<TComponent>(this IServiceCollection services, string id)
+            where TComponent : Component, IPrefabDataReceiver
+        {
+            ArgumentNullException.ThrowIfNull(services);
+            services.AddSingleton(PrefabComponentRegistration.Create<TComponent>(id));
+            return services;
+        }
+
+        /// <summary>Registers a custom component ID with a strongly typed prefab data loader.</summary>
+        public static IServiceCollection AddPrefabComponent<TComponent, TData>(this IServiceCollection services,
+            string id, Action<TComponent, TData, PrefabLoadContext> load)
+            where TComponent : Component
+        {
+            ArgumentNullException.ThrowIfNull(services);
+            services.AddSingleton(PrefabComponentRegistration.Create(id, load));
             return services;
         }
 

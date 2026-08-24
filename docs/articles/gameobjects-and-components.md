@@ -52,6 +52,31 @@ player.RemoveComponent<PlayerController>();
 
 `GetComponent<T>()` returns the first matching component. Removing a component invokes its disable and destruction callbacks as applicable, then disposes it.
 
+## Tags and scene searches
+
+Add tags when several systems need to discover the same category of object:
+
+```csharp
+var player = Instantiate("Player");
+player.AddTag("player");
+player.AddTag("damageable");
+
+var target = FindWithTag("player");
+var damageables = FindAllWithTag("damageable");
+```
+
+Scenes index names, tags, and component types. Renaming an object or changing its tags and components updates those indexes:
+
+```csharp
+var boss = FindByName("Ash Warden");
+var health = FindComponent<Health>();
+var enemies = FindComponents<EnemyController>();
+```
+
+Names and tags use ordinal, case-sensitive comparison. Duplicate names are valid. Single-result methods return the first live object or component in scene insertion order; `FindAllByName`, `FindAllWithTag`, and `FindComponents<T>` return snapshots.
+
+Store direct references for relationships established during object creation. Use indexed searches for discovery across unrelated objects or systems. The scene removes an object from each index as soon as it schedules destruction.
+
 ## Activation
 
 `GameObject.Active` controls all components on the object. `Component.Enabled` controls one component:
@@ -81,4 +106,4 @@ var boss = Instantiate<EnemyObject>("Boss");
 
 The factory passes the requested name and resolves the other constructor arguments from the scene scope. Prefer components for reusable behavior; custom GameObject subclasses are best kept for meaningful domain identity or construction rules.
 
-See [Component Lifecycle](component-lifecycle.md), [Runtime GameObjects](runtime-gameobjects.md), and [Transforms and Hierarchies](transforms-and-hierarchies.md).
+See [Component Lifecycle](component-lifecycle.md), [Runtime GameObjects](runtime-gameobjects.md), [Data Prefabs](prefabs.md), and [Transforms and Hierarchies](transforms-and-hierarchies.md).

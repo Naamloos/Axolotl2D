@@ -66,3 +66,41 @@ Each fixed phase runs in this order:
 6. The scene dispatches physics contacts and removes objects destroyed by contact handlers.
 
 Use `FixedUpdate` to apply forces and impulses. Read the resulting transform in `Update` or `LateUpdate`.
+
+## Run tweens
+
+Inject the scene-scoped `TweenService` into a scene or component:
+
+```csharp
+TweenHandle movement = tweens.To(
+    from: new Vector2(100, 200),
+    to: new Vector2(700, 200),
+    duration: 1.5,
+    apply: value => Transform.LocalPosition = value,
+    options: new TweenOptions(
+        Ease.InOutQuad,
+        Delay: 0.2,
+        RepeatCount: -1,
+        Yoyo: true));
+```
+
+The service supports `float`, `Vector2`, `Color`, or a custom `Action<float>` tween. `RepeatCount: -1` repeats until cancellation or scene disposal. Set `UnscaledTime` for pause-menu animation. Retain the returned handle when a component must cancel a tween before the scene ends.
+
+## Run coroutines
+
+Write an iterator that yields frame, time, or predicate waits:
+
+```csharp
+IEnumerable<CoroutineYield?> SpawnSequence()
+{
+    yield return WaitForNextFrame.Instance;
+    yield return new WaitForSeconds(0.5);
+    SpawnEnemy();
+    yield return new WaitUntil(() => enemies.Count == 0);
+    OpenExit();
+}
+
+CoroutineHandle sequence = coroutines.Start(SpawnSequence());
+```
+
+`WaitForSeconds` uses scaled time unless you pass `UnscaledTime: true`. Scene disposal cancels its tweens and coroutines. A component that starts work with a shorter lifetime should cancel its handles in `OnDestroy`.
