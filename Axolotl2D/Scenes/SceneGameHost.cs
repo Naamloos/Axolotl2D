@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Reflection;
+using Axolotl2D.Packages;
 
 namespace Axolotl2D.Scenes;
 
@@ -8,6 +9,7 @@ namespace Axolotl2D.Scenes;
 public sealed class SceneGameHost(
     Game game,
     IServiceScopeFactory scopeFactory,
+    AxolotlModuleRegistry moduleRegistry,
     IHostApplicationLifetime applicationLifetime) : IGameHost
 {
     private IServiceScope? currentScope;
@@ -15,6 +17,9 @@ public sealed class SceneGameHost(
     public BaseScene? CurrentScene { get; private set; }
 
     public void ChangeScene<T>() where T : BaseScene => ChangeScene(typeof(T));
+
+    /// <summary>Changes to a package scene registered under a stable ID.</summary>
+    public void ChangeScene(string id) => ChangeScene(moduleRegistry.GetScene(id).SceneType);
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -64,14 +69,19 @@ public sealed class SceneGameHost(
         game.OnLoad -= LoadDefaultScene;
     }
 
-    private void ChangeScene(Type type)
+    /// <summary>Changes to a scene type discovered at runtime.</summary>
+    public void ChangeScene(Type type)
     {
+        ArgumentNullException.ThrowIfNull(type);
+        if (!type.IsAssignableTo(typeof(BaseScene)) || type.IsAbstract)
+            throw new ArgumentException($"{type.FullName} must be a concrete BaseScene type.", nameof(type));
         var nextScope = scopeFactory.CreateScope();
         BaseScene nextScene;
         try
         {
-            nextScene = nextScope.ServiceProvider.GetRequiredService(type) as BaseScene
-                ?? throw new InvalidOperationException($"{type.Name} is not a registered scene.");
+            nextScene = (nextScope.ServiceProvider.GetService(type)
+                ?? ActivatorUtilities.CreateInstance(nextScope.ServiceProvider, type)) as BaseScene
+                ?? throw new InvalidOperationException($"{type.Name} could not be created as a scene.");
         }
         catch
         {

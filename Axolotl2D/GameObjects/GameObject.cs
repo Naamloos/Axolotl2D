@@ -39,12 +39,19 @@ public class GameObject : IDisposable
     }
 
     public T AddComponent<T>() where T : Component
+        => (T)AddComponent(typeof(T));
+
+    /// <summary>Adds a component discovered at runtime and creates it through DI.</summary>
+    public Component AddComponent(Type componentType)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
-        if (GetComponent<T>() is not null)
-            throw new InvalidOperationException($"{Name} already has a {typeof(T).Name} component.");
+        ArgumentNullException.ThrowIfNull(componentType);
+        if (!componentType.IsAssignableTo(typeof(Component)) || componentType.IsAbstract)
+            throw new ArgumentException($"{componentType.FullName} must be a concrete Component type.", nameof(componentType));
+        if (GetComponent(componentType) is not null)
+            throw new InvalidOperationException($"{Name} already has a {componentType.Name} component.");
 
-        var component = ActivatorUtilities.CreateInstance<T>(services, this);
+        var component = (Component)ActivatorUtilities.CreateInstance(services, componentType, this);
         components.Add(component);
         try
         {
@@ -61,9 +68,29 @@ public class GameObject : IDisposable
 
     public T? GetComponent<T>() where T : Component => components.OfType<T>().FirstOrDefault();
 
+    /// <summary>Gets the first component assignable to a runtime type.</summary>
+    public Component? GetComponent(Type componentType)
+    {
+        ArgumentNullException.ThrowIfNull(componentType);
+        if (!componentType.IsAssignableTo(typeof(Component)))
+            throw new ArgumentException($"{componentType.FullName} must be a Component type.", nameof(componentType));
+        return components.FirstOrDefault(componentType.IsInstanceOfType);
+    }
+
     public bool RemoveComponent<T>() where T : Component
     {
         var component = GetComponent<T>();
+        if (component is null)
+            return false;
+        components.Remove(component);
+        component.Dispose();
+        return true;
+    }
+
+    /// <summary>Removes and disposes the first component assignable to a runtime type.</summary>
+    public bool RemoveComponent(Type componentType)
+    {
+        var component = GetComponent(componentType);
         if (component is null)
             return false;
         components.Remove(component);
@@ -143,10 +170,19 @@ public interface IGameObjectFactory
 {
     GameObject Create(string name = "GameObject");
     T Create<T>(string name) where T : GameObject;
+    /// <summary>Creates a concrete GameObject type discovered at runtime.</summary>
+    GameObject Create(Type gameObjectType, string name = "GameObject");
 }
 
 internal sealed class GameObjectFactory(IServiceProvider services) : IGameObjectFactory
 {
     public GameObject Create(string name = "GameObject") => new(services, name);
     public T Create<T>(string name) where T : GameObject => ActivatorUtilities.CreateInstance<T>(services, name);
+    public GameObject Create(Type gameObjectType, string name = "GameObject")
+    {
+        ArgumentNullException.ThrowIfNull(gameObjectType);
+        if (!gameObjectType.IsAssignableTo(typeof(GameObject)) || gameObjectType.IsAbstract)
+            throw new ArgumentException($"{gameObjectType.FullName} must be a concrete GameObject type.", nameof(gameObjectType));
+        return (GameObject)ActivatorUtilities.CreateInstance(services, gameObjectType, name);
+    }
 }

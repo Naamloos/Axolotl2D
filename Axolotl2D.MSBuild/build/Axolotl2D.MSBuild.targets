@@ -1,0 +1,66 @@
+<Project>
+  <PropertyGroup>
+    <AxolotlPackageVersion Condition="'$(AxolotlPackageVersion)' == ''">1.0.0</AxolotlPackageVersion>
+    <_AxolotlTaskSourceDirectory>$(MSBuildThisFileDirectory)..\bin\$(Configuration)\net9.0</_AxolotlTaskSourceDirectory>
+    <_AxolotlTaskShadowDirectory>$(MSBuildProjectDirectory)\$(BaseIntermediateOutputPath)AxolotlTask\$([System.Guid]::NewGuid())</_AxolotlTaskShadowDirectory>
+    <_AxolotlTaskAssembly>$(_AxolotlTaskShadowDirectory)\Axolotl2D.MSBuild.dll</_AxolotlTaskAssembly>
+  </PropertyGroup>
+
+  <UsingTask TaskName="Axolotl2D.MSBuild.ImportAxolotlAssets" AssemblyFile="$(_AxolotlTaskAssembly)" />
+  <UsingTask TaskName="Axolotl2D.MSBuild.GenerateAxolotlModuleSource" AssemblyFile="$(_AxolotlTaskAssembly)" />
+  <UsingTask TaskName="Axolotl2D.MSBuild.PackAxolotlModule" AssemblyFile="$(_AxolotlTaskAssembly)" />
+
+  <Target Name="PrepareAxolotlModule" DependsOnTargets="ResolveProjectReferences" Condition="'$(AxolotlModule)' == 'true'">
+    <PropertyGroup>
+      <AxolotlPackageOutputPath Condition="'$(AxolotlPackageOutputPath)' == ''">$(TargetDir)$(AssemblyName).axpkg</AxolotlPackageOutputPath>
+      <AxolotlGeneratedSource Condition="'$(AxolotlGeneratedSource)' == ''">$(IntermediateOutputPath)AxolotlModule.g.cs</AxolotlGeneratedSource>
+      <AxolotlContentIntermediate Condition="'$(AxolotlContentIntermediate)' == ''">$(IntermediateOutputPath)AxolotlContent</AxolotlContentIntermediate>
+    </PropertyGroup>
+    <ItemGroup>
+      <_AxolotlTaskFiles Include="$(_AxolotlTaskSourceDirectory)\Axolotl2D.MSBuild.dll" />
+      <_AxolotlTaskFiles Include="$(_AxolotlTaskSourceDirectory)\Axolotl2D.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_AxolotlTaskFiles)" DestinationFolder="$(_AxolotlTaskShadowDirectory)" />
+  </Target>
+
+  <Target Name="GenerateAxolotlContent" BeforeTargets="CoreCompile" DependsOnTargets="PrepareAxolotlModule"
+      Condition="'$(AxolotlModule)' == 'true'">
+    <ImportAxolotlAssets Assets="@(AxolotlAsset)" ImporterAssemblies="@(AxolotlImporterAssembly)"
+        ProjectDirectory="$(MSBuildProjectDirectory)" IntermediateDirectory="$(AxolotlContentIntermediate)">
+      <Output TaskParameter="CompiledAssets" ItemName="AxolotlCompiledAsset" />
+    </ImportAxolotlAssets>
+    <GenerateAxolotlModuleSource OutputPath="$(AxolotlGeneratedSource)" AssetLoaders="@(AxolotlAssetLoader)" />
+    <ItemGroup>
+      <Compile Remove="$(AxolotlGeneratedSource)" />
+      <Compile Include="$(AxolotlGeneratedSource)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="PackAxolotlModule" AfterTargets="Build" DependsOnTargets="GenerateAxolotlContent"
+      Condition="'$(AxolotlModule)' == 'true'"
+      Inputs="$(MSBuildProjectFullPath);$(TargetPath);@(AxolotlCompiledAsset);@(AxolotlModuleAssembly);$(AxolotlSigningKey)"
+      Outputs="$(AxolotlPackageOutputPath)">
+    <ItemGroup>
+      <_AxolotlModuleDependencies Include="@(ProjectReference)" Condition="'%(ProjectReference.AxolotlModule)' == 'true'" />
+    </ItemGroup>
+    <PackAxolotlModule OutputPath="$(AxolotlPackageOutputPath)" AssemblyPath="$(TargetPath)"
+        PackageId="$(AxolotlPackageId)" PackageVersion="$(AxolotlPackageVersion)"
+        Entrypoint="$(AxolotlModuleEntrypoint)" SignerId="$(AxolotlSignerId)" SigningKeyPath="$(AxolotlSigningKey)"
+        Assets="@(AxolotlCompiledAsset)" Dependencies="@(_AxolotlModuleDependencies)" ModuleAssemblies="@(AxolotlModuleAssembly)" />
+  </Target>
+
+  <Target Name="GetAxolotlPackageOutput" DependsOnTargets="Build;PrepareAxolotlModule" Returns="$(AxolotlPackageOutputPath)" />
+
+  <Target Name="CopyAxolotlModulePackages" AfterTargets="Build" Condition="'@(ProjectReference)' != ''">
+    <ItemGroup>
+      <_AxolotlModuleProjects Include="@(ProjectReference)" Condition="'%(ProjectReference.AxolotlModule)' == 'true'" />
+    </ItemGroup>
+    <MSBuild Projects="@(_AxolotlModuleProjects)" Targets="GetAxolotlPackageOutput"
+        Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework)" BuildInParallel="$(BuildInParallel)"
+        Condition="'@(_AxolotlModuleProjects)' != ''">
+      <Output TaskParameter="TargetOutputs" ItemName="_AxolotlPackageOutputs" />
+    </MSBuild>
+    <Copy SourceFiles="@(_AxolotlPackageOutputs)" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true"
+        Condition="'@(_AxolotlPackageOutputs)' != ''" />
+  </Target>
+</Project>

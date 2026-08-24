@@ -1,10 +1,12 @@
 using System.Collections.Concurrent;
 using System.Reflection;
+using Axolotl2D.Packages;
 
 namespace Axolotl2D.Assets;
 
 /// <summary>Loads and caches typed assets through DI-provided loaders.</summary>
-public sealed class AssetManager(IServiceProvider services) : IDisposable
+public sealed class AssetManager(IServiceProvider services, AssetLoaderRegistry loaderRegistry,
+    AxolotlPackageManager packages) : IDisposable
 {
     private readonly ConcurrentDictionary<(Type Type, string Key), Lazy<Task<object>>> assets = [];
 
@@ -45,6 +47,20 @@ public sealed class AssetManager(IServiceProvider services) : IDisposable
     {
         await using var stream = assembly.GetManifestResourceStream(resourceName)
             ?? throw new FileNotFoundException($"Embedded resource '{resourceName}' was not found.", resourceName);
+        return await LoadAsync<TAsset>(key, stream, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Loads an asset by package ID and unambiguous package-local name.</summary>
+    public async ValueTask<TAsset> LoadPackageAsync<TAsset>(string key, string packageId, string assetName,
+        CancellationToken cancellationToken = default) where TAsset : class
+    {
+        var package = packages.Get(packageId);
+        var metadata = package.GetAsset(assetName);
+        var expectedType = typeof(TAsset).FullName!;
+        if (!string.Equals(metadata.RuntimeType, expectedType, StringComparison.Ordinal) &&
+            !metadata.RuntimeType.StartsWith(expectedType + ",", StringComparison.Ordinal))
+            throw new InvalidOperationException($"Package asset '{packageId}:{assetName}' is '{metadata.RuntimeType}', not '{expectedType}'.");
+        await using var stream = package.OpenAsset(assetName);
         return await LoadAsync<TAsset>(key, stream, cancellationToken).ConfigureAwait(false);
     }
 
@@ -89,6 +105,7 @@ public sealed class AssetManager(IServiceProvider services) : IDisposable
         .ToArray();
 
     private IAssetLoader<TAsset> GetLoader<TAsset>() where TAsset : class =>
+        loaderRegistry.TryGet<TAsset>(out var loader) ? loader! :
         services.GetService(typeof(IAssetLoader<TAsset>)) as IAssetLoader<TAsset>
         ?? throw new InvalidOperationException($"No IAssetLoader<{typeof(TAsset).Name}> is registered.");
 

@@ -26,6 +26,12 @@
   items:
   - name: Asset Management
     href: asset-management.md
+  - name: Modules and Packages
+    href: modules-and-packages.md
+  - name: Package Use Cases
+    href: package-use-cases.md
+  - name: .axpkg File Format
+    href: axpkg-format.md
   - name: Sprites and Sprite Batching
     href: sprites-and-sprite-batching.md
   - name: Camera and Coordinate Systems

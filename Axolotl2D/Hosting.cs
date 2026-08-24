@@ -8,6 +8,7 @@ using Axolotl2D.Rendering;
 using Axolotl2D.Scenes;
 using Axolotl2D.Shaders;
 using Axolotl2D.Timing;
+using Axolotl2D.Packages;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -67,6 +68,9 @@ namespace Axolotl2D
         public static IServiceCollection AddAxolotl2D(this IServiceCollection services)
         {
             services.TryAddSingleton<AssetManager>();
+            services.TryAddSingleton<AssetLoaderRegistry>();
+            services.TryAddSingleton<AxolotlPackageManager>();
+            services.TryAddSingleton<AxolotlModuleRegistry>();
             services.TryAddSingleton<IAssetLoader<Texture2D>, TextureAssetLoader>();
             services.TryAddSingleton<IAssetLoader<SoundAsset>, SoundAssetLoader>();
             services.TryAddSingleton<IAssetLoader<FontAsset>, FontAssetLoader>();

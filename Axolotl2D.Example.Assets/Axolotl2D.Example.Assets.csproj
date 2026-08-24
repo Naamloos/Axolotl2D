@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AxolotlModule>true</AxolotlModule>
+    <AxolotlPackageId>axolotl2d.example.assets</AxolotlPackageId>
+    <AxolotlPackageVersion>1.0.0</AxolotlPackageVersion>
+    <AxolotlSignerId>axolotl2d-example-test</AxolotlSignerId>
+    <AxolotlSigningKey>$(MSBuildProjectDirectory)\ExampleSigningKey.pem</AxolotlSigningKey>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Axolotl2D\Axolotl2D.csproj" />
+    <ProjectReference Include="..\Axolotl2D.MSBuild\Axolotl2D.MSBuild.csproj"
+        ReferenceOutputAssembly="false" Private="false" />
+  </ItemGroup>
+  <ItemGroup>
+    <AxolotlAsset Include="Assets\Fonts\ComicMono.ttf" Name="ui-font" />
+    <AxolotlAsset Include="Assets\Music\SpaceJazz.wav" Name="music" />
+    <AxolotlAsset Include="Assets\Sprites\logo.png" Name="logo" />
+    <AxolotlAsset Include="Assets\Sprites\RUN.png" Name="run" />
+  </ItemGroup>
+  <Import Project="..\Axolotl2D.MSBuild\build\Axolotl2D.MSBuild.targets" />
+</Project>

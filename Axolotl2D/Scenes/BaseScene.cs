@@ -3,6 +3,7 @@ using Axolotl2D.Physics;
 using Axolotl2D.Rendering;
 using Axolotl2D.Timing;
 using Axolotl2D.Debugging;
+using Axolotl2D.Packages;
 using System.Numerics;
 
 namespace Axolotl2D.Scenes;
@@ -13,6 +14,7 @@ public abstract class BaseScene
     private readonly List<GameObject> gameObjects = [];
     private readonly HashSet<GameObject> pendingDestruction = [];
     private IGameObjectFactory objectFactory = null!;
+    private AxolotlModuleRegistry moduleRegistry = null!;
     private SpriteBatch spriteBatch = null!;
     private PhysicsWorld physics = null!;
     private TimeService time = null!;
@@ -46,6 +48,23 @@ public abstract class BaseScene
         return Add(objectFactory.Create<T>(name));
     }
 
+    /// <summary>Creates a scene-owned GameObject subtype discovered at runtime.</summary>
+    public GameObject Instantiate(Type gameObjectType, string name = "GameObject")
+    {
+        EnsureAcceptsObjects();
+        return Add(objectFactory.Create(gameObjectType, name));
+    }
+
+    /// <summary>Creates a scene-owned GameObject from a package registration.</summary>
+    public GameObject InstantiateRegistered(string id, string? name = null)
+    {
+        EnsureAcceptsObjects();
+        var registration = moduleRegistry.GetGameObject(id);
+        var gameObject = registration.Factory(Services, objectFactory, name ?? id)
+            ?? throw new InvalidOperationException($"Package GameObject factory '{id}' returned null.");
+        return Add(gameObject);
+    }
+
     /// <summary>Disables an object and schedules its disposal after the current scene phase.</summary>
     public bool Destroy(GameObject gameObject)
     {
@@ -76,6 +95,8 @@ public abstract class BaseScene
         acceptsObjects = true;
         objectFactory = (IGameObjectFactory)(services.GetService(typeof(IGameObjectFactory))
             ?? throw new InvalidOperationException("IGameObjectFactory is not registered."));
+        moduleRegistry = (AxolotlModuleRegistry)(services.GetService(typeof(AxolotlModuleRegistry))
+            ?? throw new InvalidOperationException("AxolotlModuleRegistry is not registered."));
         spriteBatch = (SpriteBatch)(services.GetService(typeof(SpriteBatch))
             ?? throw new InvalidOperationException("SpriteBatch is not registered."));
         physics = (PhysicsWorld)(services.GetService(typeof(PhysicsWorld))
