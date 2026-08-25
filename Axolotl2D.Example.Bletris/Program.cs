@@ -18,7 +18,7 @@ internal static class Program
         using var host = Host.CreateDefaultBuilder(args)
             .ConfigureServices(services =>
             {
-                services.UseSceneManagerGameHost<BletrisGame>(true);
+                services.UseSceneManagerGameHost<BletrisGame>();
                 services.AddScene<MainMenuScene>();
                 services.AddScene<BletrisScene>();
             })

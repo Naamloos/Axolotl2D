@@ -75,7 +75,11 @@ Read [Modules and Packages](docs/articles/modules-and-packages.md), [Package Use
 
 Read [Data Prefabs](docs/articles/prefabs.md) for authoring reusable JSON GameObject hierarchies, registering custom component data, and packaging `.axprefab` assets.
 
-See the [documentation](docs/index.md), [getting-started guide](docs/articles/getting-started.md), and [example project](Axolotl2D.Example) for assets, GameObjects, packaged data prefabs, input profiles and capture, time control, render textures, shaders, camera post-processing, animation, particles, UI, audio, physics tooling, and inspection. [Bletris](Axolotl2D.Example.Bletris) is a playable falling-block example with a retained-UI menu, music, row-clear particles, and custom-shader blocks.
+See the [documentation](docs/index.md), [getting-started guide](docs/articles/getting-started.md), and [example project](Axolotl2D.Example) for assets, GameObjects, packaged data prefabs, input profiles and capture, time control, render textures, shaders, camera post-processing, animation, particles, UI, audio, physics tooling, and inspection.
+
+## Bletris benchmark
+
+[Bletris](Axolotl2D.Example.Bletris) is a small playable benchmark rather than a feature catalogue. Its menu exercises responsive retained UI controls, sprite animation and markers, tweens, packaged prefabs, several collider shapes, and a physics joint. Gameplay uses keyboard and gamepad actions, scalable world-space rendering, camera shake, post-processing, particles, coroutines, time control, persistent versioned settings, generated spatial sound effects, and looped music.
 
 ## AI assistance
 
