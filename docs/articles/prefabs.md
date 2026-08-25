@@ -189,6 +189,9 @@ Enums use camel-case names. Colors accept `#RRGGBB` and the built-in names `tran
 | `axolotl.physics-body` | `PhysicsBody` | `bodyType`, damping, gravity, bullet flag, `shapes` |
 | `axolotl.box-collider` | `BoxCollider` | `size`, `offset`, material, sensor flag, category/mask/group filter |
 | `axolotl.circle-collider` | `CircleCollider` | `radius`, `offset`, material, sensor flag, category/mask/group filter |
+| `axolotl.capsule-collider` | `CapsuleCollider` | `point1`, `point2`, `radius`, material, sensor flag, category/mask/group filter |
+| `axolotl.polygon-collider` | `PolygonCollider` | `points`, material, sensor flag, category/mask/group filter |
+| `axolotl.segment-collider` | `SegmentCollider` | `point1`, `point2`, material, sensor flag, category/mask/group filter |
 | `axolotl.distance-joint` | `DistanceJoint` | connected body ID, local anchors, length, spring, limits, motor |
 | `axolotl.revolute-joint` | `RevoluteJoint` | connected body ID, local anchors, spring, angular limits, motor |
 | `axolotl.light` | `Light2D` | kind, color, intensity, radius, height, falloff, spot angle, layers, shadows |
@@ -222,18 +225,21 @@ Only `texture` is required.
 
 ### Physics shapes
 
-`bodyType` is `static`, `kinematic`, or `dynamic`. Shapes are `box` or `circle`:
+`bodyType` is `static`, `kinematic`, or `dynamic`. Shapes are `box`, `circle`, `capsule`, `polygon`, or `segment`:
 
 ```json
 "shapes": [
   { "type": "box", "size": { "x": 80, "y": 40 } },
-  { "type": "circle", "radius": 20, "restitution": 0.5 }
+  { "type": "circle", "radius": 20, "restitution": 0.5 },
+  { "type": "capsule", "point1": { "x": 0, "y": -20 }, "point2": { "x": 0, "y": 20 }, "radius": 12 },
+  { "type": "polygon", "points": [{ "x": -20, "y": 20 }, { "x": 0, "y": -20 }, { "x": 20, "y": 20 }] },
+  { "type": "segment", "point1": { "x": -50, "y": 0 }, "point2": { "x": 50, "y": 0 } }
 ]
 ```
 
 Each shape also accepts `density`, `friction`, and `restitution` with the same defaults and validation as `PhysicsBody`.
 
-`shapes` is optional when the GameObject also declares an `axolotl.box-collider` or `axolotl.circle-collider`. Separate collider components add offsets, sensor behavior, 64-bit `categoryBits` and `maskBits`, and `groupIndex` while keeping the legacy inline shape format compatible.
+`shapes` is optional when the GameObject declares a separate collider component. Collider components add sensor behavior, 64-bit `categoryBits` and `maskBits`, and `groupIndex` while keeping the inline shape format compatible. Polygons accept three to eight finite points and are reduced to a valid convex hull.
 
 Joint `connectedBody` values refer to a prefab object ID. `anchorA` is local to the joint's GameObject and `anchorB` is local to the connected body's GameObject. The loader resolves the body reference after the complete prefab hierarchy exists, so moving or rotating the instantiated prefab before `Start` preserves the joint geometry:
 
@@ -253,7 +259,7 @@ Joint `connectedBody` values refer to a prefab object ID. `anchorA` is local to 
 
 ### Sprite animations
 
-The animator slices one texture into a uniform sheet. Each named animation currently uses every frame in that sheet:
+The animator slices one texture into a uniform sheet. Omitting `frames` uses every frame in that sheet:
 
 ```json
 {
@@ -261,7 +267,16 @@ The animator slices one texture into a uniform sheet. Each named animation curre
   "frameWidth": 255,
   "frameHeight": 255,
   "animations": [
-    { "name": "run", "framesPerSecond": 20, "loop": true }
+    {
+      "name": "run",
+      "framesPerSecond": 20,
+      "playback": "loop",
+      "frames": [
+        { "index": 0 },
+        { "index": 1, "duration": 0.08, "marker": "footstep" },
+        { "index": 2 }
+      ]
+    }
   ],
   "play": "run"
 }

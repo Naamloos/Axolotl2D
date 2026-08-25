@@ -101,7 +101,9 @@ namespace Axolotl2D
             services.TryAddScoped<ShaderLibrary>();
             services.TryAddScoped<PhysicsWorld>();
             services.TryAddScoped<IGameObjectFactory, GameObjectFactory>();
-            services.TryAddSingleton<AudioPlayer>();
+            services.TryAddSingleton<AudioRuntime>();
+            services.TryAddSingleton<AudioPlayer>(provider =>
+                new AudioPlayer(provider.GetRequiredService<AudioRuntime>()));
             return services;
         }
 

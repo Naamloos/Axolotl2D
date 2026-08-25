@@ -12,6 +12,9 @@ public sealed class AnimationScene(
     SpriteBatch spriteBatch,
     TextRenderer textRenderer) : ExampleSceneBase(assets)
 {
+    private int markers;
+    private int completions;
+
     public override void Load()
     {
         LoadExample("Sprite sheets and animation", "#3A1734");
@@ -26,12 +29,30 @@ public sealed class AnimationScene(
             gameObject.Transform.LocalScale = new Vector2(0.65f);
             gameObject.AddComponent<SpriteRenderer>().Sprite = sheet[0];
             var animator = gameObject.AddComponent<SpriteAnimator>();
-            animator.Add("run", new SpriteAnimation(sheet.Sprites, 5f + index * 7f));
+            var frames = sheet.Sprites.Select((sprite, frame) => new SpriteAnimationFrame(
+                sprite,
+                frame % 2 == 0 ? 0.08d : 0.14d,
+                frame == 1 ? "footstep" : null));
+            var playback = index switch
+            {
+                1 => SpriteAnimationPlayback.PingPong,
+                2 => SpriteAnimationPlayback.Once,
+                _ => SpriteAnimationPlayback.Loop
+            };
+            animator.Add("run", new SpriteAnimation(frames, playback));
+            animator.PlaybackSpeed = 0.75f + index * 0.5f;
+            animator.MarkerReached += _ => markers++;
+            animator.Completed += () => completions++;
             animator.Play("run");
         }
     }
 
-    public override void Draw(double frameDelta, double frameRate) =>
-        DrawText(spriteBatch, textRenderer, "SpriteSheet atlas slicing and SpriteAnimator at three playback speeds",
+    public override void Draw(double frameDelta, double frameRate)
+    {
+        DrawText(spriteBatch, textRenderer,
+            "Timed frames: loop, ping-pong, and once | variable durations and footstep markers",
             new Vector2(24f, 70f), 15f);
+        DrawText(spriteBatch, textRenderer, $"Markers: {markers} | completed once animations: {completions}",
+            new Vector2(24f, 96f), 14f, Color.LightGray);
+    }
 }

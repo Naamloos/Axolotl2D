@@ -66,6 +66,17 @@ public sealed class PhysicsScene(
             if (hit.Body is not null) sensorEntries++;
         };
 
+        var ramp = Instantiate("Segment ramp");
+        ramp.Transform.LocalPosition = new Vector2(190f, 210f);
+        ramp.AddComponent<PhysicsBody>().Type = B2BodyType.b2_staticBody;
+        ramp.AddComponent<SegmentCollider>(collider =>
+        {
+            collider.Point1 = new Vector2(-130f, -35f);
+            collider.Point2 = new Vector2(130f, 35f);
+            collider.CategoryBits = EnvironmentLayer;
+            collider.MaskBits = DynamicLayer;
+        });
+
         CreateJointExamples();
 
         var packaged = Instantiate(assets.Get<PrefabAsset>("physics-tooling"), "Packaged physics collider");
@@ -82,6 +93,8 @@ public sealed class PhysicsScene(
             Color.FromHTML("#4F6F52"), CoordinateSpace.World);
         primitives.FillRectangle(new Vector2(-130f, 60f), new Vector2(260f, 100f),
             new Color(0.2f, 0.8f, 0.7f, 0.18f), CoordinateSpace.World);
+        primitives.DrawLine(new Vector2(60f, 175f), new Vector2(320f, 245f), Color.Orange,
+            3f, CoordinateSpace.World);
         primitives.DrawLine(new Vector2(-430f, 0f), new Vector2(430f, 0f), Color.Yellow,
             2f, CoordinateSpace.World);
         if (rayHit is { } ray)
@@ -116,20 +129,46 @@ public sealed class PhysicsScene(
         gameObject.Transform.LocalScale = new Vector2(0.11f);
         gameObject.AddComponent<SpriteRenderer>().Sprite = logo;
         var body = gameObject.AddComponent<PhysicsBody>();
-        if (index % 3 == 0)
-            gameObject.AddComponent<CircleCollider>(collider =>
-            {
-                collider.Radius = 48f;
-                collider.Restitution = 0.55f;
-                ConfigureDynamic(collider);
-            });
-        else
-            gameObject.AddComponent<BoxCollider>(collider =>
-            {
-                collider.Size = new Vector2(92f, 62f);
-                collider.Restitution = 0.3f;
-                ConfigureDynamic(collider);
-            });
+        switch (index % 4)
+        {
+            case 0:
+                gameObject.AddComponent<CircleCollider>(collider =>
+                {
+                    collider.Radius = 48f;
+                    collider.Restitution = 0.55f;
+                    ConfigureDynamic(collider);
+                });
+                break;
+            case 1:
+                gameObject.AddComponent<BoxCollider>(collider =>
+                {
+                    collider.Size = new Vector2(92f, 62f);
+                    collider.Restitution = 0.3f;
+                    ConfigureDynamic(collider);
+                });
+                break;
+            case 2:
+                gameObject.AddComponent<CapsuleCollider>(collider =>
+                {
+                    collider.Point1 = new Vector2(0f, -34f);
+                    collider.Point2 = new Vector2(0f, 34f);
+                    collider.Radius = 24f;
+                    ConfigureDynamic(collider);
+                });
+                break;
+            default:
+                gameObject.AddComponent<PolygonCollider>(collider =>
+                {
+                    collider.Vertices =
+                    [
+                        new Vector2(-48f, 30f),
+                        new Vector2(0f, -48f),
+                        new Vector2(48f, 30f)
+                    ];
+                    ConfigureDynamic(collider);
+                });
+                break;
+        }
         body.CollisionEntered += _ => collisions++;
     }
 

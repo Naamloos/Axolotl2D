@@ -16,6 +16,7 @@ The framework includes scene-level DI scopes, runtime GameObject creation and de
 ## Where to begin
 
 - [Getting Started](articles/getting-started.md)
+- [Window and Display Settings](articles/window-and-display.md)
 - [Architecture and Dependency Injection](articles/architecture-and-dependency-injection.md)
 - [GameObjects and Components](articles/gameobjects-and-components.md)
 - [Asset Management](articles/asset-management.md)
@@ -25,10 +26,11 @@ The framework includes scene-level DI scopes, runtime GameObject creation and de
 - [Render Textures](articles/render-textures.md)
 - [Input Actions](articles/input-actions.md)
 - [Box2D Physics](articles/physics.md)
+- [Sprite Sheets and Animation](articles/sprite-sheets-and-animation.md)
+- [Audio Playback](articles/audio.md)
 - [Particle Emitters](articles/particle-emitters.md)
 - [User Interface](articles/ui.md)
 - [Debug Overlay and Runtime Inspection](articles/debug-overlay.md)
-- [Framework Roadmap](articles/framework-roadmap.md)
 - [API Reference](api/Axolotl2D.yml)
 
 ## Project links

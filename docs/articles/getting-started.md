@@ -131,6 +131,7 @@ Sprite renderers use `CoordinateSpace.World`. Draw UI with `CoordinateSpace.Scre
 - [Asset Management](asset-management.md) covers files, embedded resources, caching, and custom loaders.
 - [Sprites and Sprite Batching](sprites-and-sprite-batching.md) covers draw submission and ordering.
 - [Camera and Coordinate Systems](camera-and-coordinate-systems.md) covers panning, zooming, and conversions.
+- [Window and Display Settings](window-and-display.md) covers startup options, fullscreen modes, VSync, and runtime rate limits.
 - [Sprite Sheets and Animation](sprite-sheets-and-animation.md), [Text Rendering](text-rendering.md), and [Audio Playback](audio.md) cover the remaining content systems.
 - [Input Actions](input-actions.md) and [Time and Fixed Updates](time-and-fixed-update.md) cover gameplay input and timing.
 - [Custom Shaders](custom-shaders.md) and [Box2D Physics](physics.md) cover programmable rendering and simulation.

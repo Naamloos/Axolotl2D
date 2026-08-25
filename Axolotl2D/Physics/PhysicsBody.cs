@@ -62,6 +62,33 @@ public sealed class PhysicsBody(GameObject gameObject, PhysicsWorld world) : Com
         shapes.Add(new CircleDefinition(radius, density, friction, restitution));
     }
 
+    public void AddCapsule(Vector2 point1, Vector2 point2, float radius, float density = 1f,
+        float friction = 0.6f, float restitution = 0f)
+    {
+        EnsureConfigurable();
+        PhysicsShapeGeometry.ValidateEndpoints(point1, point2);
+        PhysicsShapeGeometry.ValidateRadius(radius, nameof(radius));
+        ValidateMaterial(density, friction, restitution);
+        shapes.Add(new CapsuleDefinition(point1, point2, radius, density, friction, restitution));
+    }
+
+    public void AddPolygon(IReadOnlyList<Vector2> vertices, float density = 1f, float friction = 0.6f,
+        float restitution = 0f)
+    {
+        EnsureConfigurable();
+        var copied = PhysicsShapeGeometry.CopyVertices(vertices, nameof(vertices));
+        ValidateMaterial(density, friction, restitution);
+        shapes.Add(new PolygonDefinition(copied, density, friction, restitution));
+    }
+
+    public void AddSegment(Vector2 point1, Vector2 point2, float friction = 0.6f, float restitution = 0f)
+    {
+        EnsureConfigurable();
+        PhysicsShapeGeometry.ValidateEndpoints(point1, point2);
+        ValidateMaterial(0f, friction, restitution);
+        shapes.Add(new SegmentDefinition(point1, point2, friction, restitution));
+    }
+
     public override void Start()
     {
         var attachedColliders = GameObject.Components.OfType<PhysicsCollider>().ToArray();
@@ -244,6 +271,36 @@ public sealed class PhysicsBody(GameObject gameObject, PhysicsWorld world) : Com
         {
             var circle = new B2Circle(new B2Vec2(0f, 0f), Radius / world.PixelsPerMeter);
             return b2CreateCircleShape(bodyId, CreateDefinition(), circle);
+        }
+    }
+
+    private sealed record CapsuleDefinition(Vector2 Point1, Vector2 Point2, float Radius,
+        float Density, float Friction, float Restitution) : ShapeDefinition(Density, Friction, Restitution)
+    {
+        public override B2ShapeId Create(B2BodyId bodyId, PhysicsWorld world)
+        {
+            var capsule = PhysicsShapeGeometry.CreateCapsule(Point1, Point2, Radius, world);
+            return b2CreateCapsuleShape(bodyId, CreateDefinition(), capsule);
+        }
+    }
+
+    private sealed record PolygonDefinition(IReadOnlyList<Vector2> Vertices,
+        float Density, float Friction, float Restitution) : ShapeDefinition(Density, Friction, Restitution)
+    {
+        public override B2ShapeId Create(B2BodyId bodyId, PhysicsWorld world)
+        {
+            var polygon = PhysicsShapeGeometry.CreatePolygon(Vertices, world);
+            return b2CreatePolygonShape(bodyId, CreateDefinition(), polygon);
+        }
+    }
+
+    private sealed record SegmentDefinition(Vector2 Point1, Vector2 Point2,
+        float Friction, float Restitution) : ShapeDefinition(0f, Friction, Restitution)
+    {
+        public override B2ShapeId Create(B2BodyId bodyId, PhysicsWorld world)
+        {
+            var segment = PhysicsShapeGeometry.CreateSegment(Point1, Point2, world);
+            return b2CreateSegmentShape(bodyId, CreateDefinition(), segment);
         }
     }
 }

@@ -19,7 +19,13 @@ public sealed class ExampleGame : Game
 
     public ExampleGame(IServiceProvider services, AssetManager assets, AxolotlPackageManager packages,
         AudioPlayer audio, ILogger<ExampleGame> logger)
-        : base(services, maxDrawRate: 240, maxUpdateRate: 240)
+        : base(services, new GameWindowOptions
+        {
+            Size = new System.Numerics.Vector2(1080f, 720f),
+            MaximumDrawRate = 240d,
+            MaximumUpdateRate = 240d,
+            VSync = false
+        })
     {
         this.assets = assets;
         this.packages = packages;

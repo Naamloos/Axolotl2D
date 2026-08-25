@@ -10,9 +10,31 @@ public sealed class SpriteAnimator(GameObject gameObject) : Component(gameObject
     private SpriteAnimation? current;
     private double elapsed;
     private int frame;
+    private int direction = 1;
+    private float playbackSpeed = 1f;
 
     public string? CurrentAnimation { get; private set; }
     public bool IsPlaying { get; private set; }
+    public int CurrentFrameIndex => frame;
+    public float FrameProgress => current is null
+        ? 0f
+        : (float)Math.Clamp(elapsed / current.TimedFrames[frame].Duration, 0d, 1d);
+
+    public float PlaybackSpeed
+    {
+        get => playbackSpeed;
+        set
+        {
+            if (!float.IsFinite(value) || value <= 0f)
+                throw new ArgumentOutOfRangeException(nameof(PlaybackSpeed));
+            playbackSpeed = value;
+        }
+    }
+
+    public event Action<int>? FrameChanged;
+    public event Action<string>? MarkerReached;
+    public event Action? LoopCompleted;
+    public event Action? Completed;
 
     public override void Start()
     {
@@ -25,6 +47,7 @@ public sealed class SpriteAnimator(GameObject gameObject) : Component(gameObject
     public void Add(string name, SpriteAnimation animation)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(animation);
         animations.Add(name, animation);
     }
 
@@ -39,32 +62,119 @@ public sealed class SpriteAnimator(GameObject gameObject) : Component(gameObject
         current = animation;
         elapsed = 0;
         frame = 0;
+        direction = 1;
         IsPlaying = true;
-        if (renderer is not null)
-            renderer.Sprite = current.Frames[0];
+        ApplyFrame(notify: true);
     }
 
     public void Stop() => IsPlaying = false;
+
+    public void Pause() => IsPlaying = false;
+
+    public void Resume()
+    {
+        if (current is null)
+            return;
+        var completedOnce = current.PlaybackMode == SpriteAnimationPlayback.Once &&
+            frame == current.Frames.Count - 1 && elapsed >= current.TimedFrames[frame].Duration;
+        if (!completedOnce)
+            IsPlaying = true;
+    }
+
+    public void Restart()
+    {
+        if (CurrentAnimation is not null)
+            Play(CurrentAnimation, restart: true);
+    }
+
+    public void SeekFrame(int index)
+    {
+        if (current is null)
+            throw new InvalidOperationException("No animation is selected.");
+        if ((uint)index >= (uint)current.Frames.Count)
+            throw new ArgumentOutOfRangeException(nameof(index));
+        frame = index;
+        elapsed = 0d;
+        direction = 1;
+        ApplyFrame(notify: true);
+    }
 
     public override void Update(double deltaTime)
     {
         if (!IsPlaying || current is null)
             return;
 
-        elapsed += deltaTime;
-        var nextFrame = (int)(elapsed * current.FramesPerSecond);
-        if (current.Loop)
-            nextFrame %= current.Frames.Count;
-        else if (nextFrame >= current.Frames.Count)
+        elapsed += deltaTime * playbackSpeed;
+        while (IsPlaying && elapsed >= current.TimedFrames[frame].Duration)
         {
-            nextFrame = current.Frames.Count - 1;
-            IsPlaying = false;
+            elapsed -= current.TimedFrames[frame].Duration;
+            AdvanceFrame();
         }
+    }
 
-        if (nextFrame != frame)
+    private void AdvanceFrame()
+    {
+        var completedLoop = false;
+        switch (current!.PlaybackMode)
         {
-            frame = nextFrame;
-            renderer.Sprite = current.Frames[frame];
+            case SpriteAnimationPlayback.Once:
+                if (frame == current.Frames.Count - 1)
+                {
+                    elapsed = current.TimedFrames[frame].Duration;
+                    IsPlaying = false;
+                    Completed?.Invoke();
+                    return;
+                }
+                frame++;
+                break;
+            case SpriteAnimationPlayback.Loop:
+                frame++;
+                if (frame == current.Frames.Count)
+                {
+                    frame = 0;
+                    completedLoop = true;
+                }
+                break;
+            case SpriteAnimationPlayback.PingPong:
+                if (current.Frames.Count == 1)
+                {
+                    completedLoop = true;
+                }
+                else
+                {
+                    var next = frame + direction;
+                    if (next == current.Frames.Count)
+                    {
+                        direction = -1;
+                        next = current.Frames.Count - 2;
+                    }
+                    else if (next < 0)
+                    {
+                        direction = 1;
+                        next = 1;
+                        completedLoop = true;
+                    }
+                    frame = next;
+                }
+                break;
         }
+        ApplyFrame(notify: true);
+        if (completedLoop)
+            LoopCompleted?.Invoke();
+    }
+
+    private void ApplyFrame(bool notify)
+    {
+        if (current is null)
+            return;
+        var animation = current;
+        var currentFrame = frame;
+        if (renderer is not null)
+            renderer.Sprite = animation.Frames[currentFrame];
+        if (!notify)
+            return;
+        FrameChanged?.Invoke(currentFrame);
+        if (animation.TimedFrames[currentFrame].Marker is { } marker)
+            MarkerReached?.Invoke(marker);
     }
 }

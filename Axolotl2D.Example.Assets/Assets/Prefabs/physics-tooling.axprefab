@@ -26,9 +26,14 @@
         }
       },
       {
-        "type": "axolotl.box-collider",
+        "type": "axolotl.polygon-collider",
         "data": {
-          "size": { "x": 92, "y": 62 },
+          "points": [
+            { "x": -46, "y": 31 },
+            { "x": -28, "y": -31 },
+            { "x": 28, "y": -31 },
+            { "x": 46, "y": 31 }
+          ],
           "density": 1,
           "friction": 0.6,
           "restitution": 0.35,

@@ -16,6 +16,8 @@ internal static class Program
                 services.AddPrefabComponent<Spinner>("example.spinner");
                 services.AddScene<SpriteScene>();
                 services.AddScene<AnimationScene>();
+                services.AddScene<DisplayScene>();
+                services.AddScene<AudioScene>();
                 services.AddScene<PhysicsScene>();
                 services.AddScene<LightingScene>();
                 services.AddScene<CameraScene>();

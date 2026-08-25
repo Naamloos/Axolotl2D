@@ -18,7 +18,7 @@ Axolotl2D is a small 2D game framework built on Silk.NET and Microsoft.Extension
 - Scene scopes own keyboard, mouse and gamepad input maps with capture and JSON profiles, custom shader libraries, and Box2D worlds with collider, sensor, query, and joint tooling. `TimeService` supplies scaled frame and fixed-step time.
 - Scene-scoped tweens and coroutines drive sequences and transitions. `SaveGameManager` stores typed, versioned JSON slots with atomic replacement.
 
-The built-in loaders support textures, RIFF/WAVE PCM sounds, scalable fonts, and validated data prefabs. Rendering includes texture regions, sprite sheets, animation, particles, normal-mapped lighting, custom GLSL programs, per-camera post-processing, render textures, and multiple cameras. Retained UI provides stretch or grouped layout, clipping, scrolling, routed input, focus navigation, and common controls. Box2D.NET supplies rigid bodies, filters, sensors, casts, queries, joints, collision events, and optional debug drawing. A host flag enables in-game scene, lifecycle, rendering, asset, timing, and physics inspection.
+The built-in loaders support textures, RIFF/WAVE PCM sounds, scalable fonts, and validated data prefabs. Rendering includes texture regions, timed sprite animation, particles, normal-mapped lighting, custom GLSL programs, per-camera post-processing, render textures, and multiple cameras. Audio includes controllable one-shots, stereo pan, and spatial 2D sources. Retained UI provides stretch or grouped layout, clipping, scrolling, routed input, focus navigation, and common controls. Box2D.NET supplies rigid bodies, box, circle, capsule, polygon and segment colliders, filters, sensors, casts, queries, joints, collision events, and optional debug drawing. A host flag enables in-game scene, lifecycle, rendering, asset, timing, and physics inspection.
 
 Components support `Awake`, enable and disable notifications, `Start`, fixed and variable updates, late updates, rendering, and destruction. A scene defers GameObject disposal until the current update or render phase ends, so components can destroy objects during callbacks.
 
@@ -76,3 +76,7 @@ Read [Modules and Packages](docs/articles/modules-and-packages.md), [Package Use
 Read [Data Prefabs](docs/articles/prefabs.md) for authoring reusable JSON GameObject hierarchies, registering custom component data, and packaging `.axprefab` assets.
 
 See the [documentation](docs/index.md), [getting-started guide](docs/articles/getting-started.md), and [example project](Axolotl2D.Example) for assets, GameObjects, packaged data prefabs, input profiles and capture, time control, render textures, shaders, camera post-processing, animation, particles, UI, audio, physics tooling, and inspection. [Bletris](Axolotl2D.Example.Bletris) is a playable falling-block example with a retained-UI menu, music, row-clear particles, and custom-shader blocks.
+
+## AI assistance
+
+I used AI-assisted tools for parts of Axolotl2D's code, documentation, and design work. I remain responsible for the project's direction and the code that ships. I include this note because I choose to be transparent about how I develop the engine.

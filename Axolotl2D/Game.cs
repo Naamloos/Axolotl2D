@@ -20,7 +20,15 @@ namespace Axolotl2D
         /// <summary>
         /// The window title.
         /// </summary>
-        public string Title { get; set; } = "";
+        public string Title
+        {
+            get => title;
+            set
+            {
+                title = value ?? throw new ArgumentNullException(nameof(value));
+                UpdateWindowTitle();
+            }
+        }
 
         /// <summary>
         /// The current Viewport of the game.
@@ -28,7 +36,53 @@ namespace Axolotl2D
         public Vector2 Viewport
         {
             get => new(window.Size.X, window.Size.Y);
-            set => window.Size = new Vector2D<int>((int)value.X, (int)value.Y);
+            set
+            {
+                ValidateSize(value);
+                window.Size = new Vector2D<int>((int)value.X, (int)value.Y);
+            }
+        }
+
+        public bool VSync
+        {
+            get => window.VSync;
+            set => window.VSync = value;
+        }
+
+        public double MaximumDrawRate
+        {
+            get => window.FramesPerSecond;
+            set
+            {
+                ValidateRate(value, nameof(MaximumDrawRate));
+                window.FramesPerSecond = value;
+            }
+        }
+
+        public double MaximumUpdateRate
+        {
+            get => window.UpdatesPerSecond;
+            set
+            {
+                ValidateRate(value, nameof(MaximumUpdateRate));
+                window.UpdatesPerSecond = value;
+            }
+        }
+
+        public bool ShowFramerateInTitle
+        {
+            get => showFramerateInTitle;
+            set
+            {
+                showFramerateInTitle = value;
+                UpdateWindowTitle();
+            }
+        }
+
+        public GameWindowMode WindowMode
+        {
+            get => windowMode;
+            set => SetWindowMode(value);
         }
 
         /// <summary>
@@ -56,6 +110,13 @@ namespace Axolotl2D
         }
 
         private Color clearColor = Color.Cyan;
+        private string title = "";
+        private bool showFramerateInTitle = true;
+        private GameWindowMode windowMode;
+        private readonly WindowBorder windowedBorder;
+        private Vector2D<int> windowedSize;
+        private Vector2D<int> windowedPosition;
+        private bool hasWindowedBounds;
 
         internal GL? openGL;
         internal readonly IWindow window;
@@ -70,6 +131,7 @@ namespace Axolotl2D
         private InputActionSystem? inputActions;
         private TimeService? time;
         private CameraManager? cameras;
+        private Audio.AudioRuntime? audioRuntime;
         private int closed;
         private int disposed;
 
@@ -81,17 +143,44 @@ namespace Axolotl2D
         /// <param name="serviceProvider">Service provider to relay.</param>
         /// <param name="maxDrawRate">Maximum frame rate.</param>
         /// <param name="maxUpdateRate">Maximum update rate.</param>
-        public Game(IServiceProvider serviceProvider, int maxDrawRate = 120, int maxUpdateRate = 120) // TODO make configurable at runtime
+        public Game(IServiceProvider serviceProvider, int maxDrawRate = 120, int maxUpdateRate = 120)
+            : this(serviceProvider, new GameWindowOptions
+            {
+                MaximumDrawRate = maxDrawRate,
+                MaximumUpdateRate = maxUpdateRate
+            })
         {
-            this.serviceProvider = serviceProvider;
+        }
+
+        public Game(IServiceProvider serviceProvider, GameWindowOptions settings)
+        {
+            this.serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            ArgumentNullException.ThrowIfNull(settings);
+            ValidateSize(settings.Size);
+            ValidateRate(settings.MaximumDrawRate, nameof(settings.MaximumDrawRate));
+            ValidateRate(settings.MaximumUpdateRate, nameof(settings.MaximumUpdateRate));
+            if (!Enum.IsDefined(settings.Mode))
+                throw new ArgumentOutOfRangeException(nameof(settings.Mode));
+
+            title = settings.Title ?? throw new ArgumentNullException(nameof(settings.Title));
+            showFramerateInTitle = settings.ShowFramerateInTitle;
+            windowMode = settings.Mode;
+            windowedBorder = settings.Resizable ? WindowBorder.Resizable : WindowBorder.Fixed;
+            windowedSize = new Vector2D<int>((int)settings.Size.X, (int)settings.Size.Y);
 
             var options = WindowOptions.Default;
-            options.Size = new Vector2D<int>(1080, 720);
+            options.Size = windowedSize;
+            options.Title = title;
             options.WindowClass = "axl2d";
-            options.WindowBorder = WindowBorder.Resizable;
-            options.FramesPerSecond = maxDrawRate;
-            options.VSync = false;
-            options.UpdatesPerSecond = maxUpdateRate;
+            options.WindowBorder = windowMode == GameWindowMode.BorderlessFullscreen
+                ? WindowBorder.Hidden
+                : windowedBorder;
+            options.WindowState = windowMode == GameWindowMode.Fullscreen
+                ? WindowState.Fullscreen
+                : WindowState.Normal;
+            options.FramesPerSecond = settings.MaximumDrawRate;
+            options.VSync = settings.VSync;
+            options.UpdatesPerSecond = settings.MaximumUpdateRate;
 
             window = Window.Create(options);
 
@@ -177,6 +266,7 @@ namespace Axolotl2D
             try
             {
                 time!.BeginFrame(frameDelta);
+                audioRuntime!.Update();
                 inputActions!.Update();
                 OnUpdate?.Invoke(time.DeltaTime);
                 cameras!.Update(time.DeltaTime);
@@ -192,6 +282,9 @@ namespace Axolotl2D
         /// </summary>
         private void Load()
         {
+            if (windowMode == GameWindowMode.BorderlessFullscreen)
+                ApplyBorderlessFullscreen();
+
             // Prepare OpenGL context on load.
             openGL = window.CreateOpenGL();
 
@@ -231,6 +324,7 @@ namespace Axolotl2D
             time = serviceProvider.GetRequiredService<TimeService>();
             inputActions = serviceProvider.GetRequiredService<InputActionSystem>();
             cameras = serviceProvider.GetRequiredService<CameraManager>();
+            audioRuntime = serviceProvider.GetRequiredService<Audio.AudioRuntime>();
 
             OnLoad?.Invoke();
         }
@@ -268,7 +362,69 @@ namespace Axolotl2D
                 LastDrawMilliseconds = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
             }
 
-            window.Title = $"{Title} | FPS: {Math.Round(CurrentFramerate)}";
+            UpdateWindowTitle();
+        }
+
+        private void SetWindowMode(GameWindowMode mode)
+        {
+            if (!Enum.IsDefined(mode))
+                throw new ArgumentOutOfRangeException(nameof(mode));
+            if (windowMode == mode)
+                return;
+
+            if (windowMode == GameWindowMode.Windowed)
+            {
+                windowedSize = window.Size;
+                windowedPosition = window.Position;
+                hasWindowedBounds = true;
+            }
+
+            windowMode = mode;
+            switch (mode)
+            {
+                case GameWindowMode.Windowed:
+                    window.WindowState = WindowState.Normal;
+                    window.WindowBorder = windowedBorder;
+                    if (hasWindowedBounds)
+                        window.Position = windowedPosition;
+                    window.Size = windowedSize;
+                    break;
+                case GameWindowMode.BorderlessFullscreen:
+                    ApplyBorderlessFullscreen();
+                    break;
+                case GameWindowMode.Fullscreen:
+                    window.WindowBorder = windowedBorder;
+                    window.WindowState = WindowState.Fullscreen;
+                    break;
+            }
+        }
+
+        private void ApplyBorderlessFullscreen()
+        {
+            var bounds = window.Monitor.Bounds;
+            window.WindowState = WindowState.Normal;
+            window.WindowBorder = WindowBorder.Hidden;
+            window.Position = bounds.Origin;
+            window.Size = bounds.Size;
+        }
+
+        private void UpdateWindowTitle()
+        {
+            window.Title = showFramerateInTitle
+                ? $"{title} | FPS: {Math.Round(CurrentFramerate)}"
+                : title;
+        }
+
+        private static void ValidateSize(Vector2 size)
+        {
+            if (!float.IsFinite(size.X) || !float.IsFinite(size.Y) || size.X <= 0f || size.Y <= 0f)
+                throw new ArgumentOutOfRangeException(nameof(size));
+        }
+
+        private static void ValidateRate(double value, string name)
+        {
+            if (!double.IsFinite(value) || value <= 0d)
+                throw new ArgumentOutOfRangeException(name);
         }
 
         private void Close()

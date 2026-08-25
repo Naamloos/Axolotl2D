@@ -49,7 +49,21 @@ body.AddCircle(radius: 24f, restitution: 0.5f);
 
 Box and circle dimensions use render-world pixels. Density, friction, restitution, forces, and impulses use Box2D units.
 
-`AddBox` and `AddCircle` remain supported for compact body setup. Use collider components when shapes need sensors, offsets, collision layers, runtime material changes, prefab component data, or individual enable/disable behavior:
+Capsules, convex polygons, and two-sided segments use local pixel coordinates:
+
+```csharp
+body.AddCapsule(new Vector2(0, -24), new Vector2(0, 24), radius: 16f);
+body.AddPolygon([
+    new Vector2(-32, 24),
+    new Vector2(0, -28),
+    new Vector2(32, 24)
+]);
+body.AddSegment(new Vector2(-100, 0), new Vector2(100, 0));
+```
+
+Polygons accept three to eight finite points. Box2D computes their convex hull; inputs that cannot produce a valid hull are rejected. Segment shapes have no density and are normally attached to static geometry.
+
+`AddBox`, `AddCircle`, `AddCapsule`, `AddPolygon`, and `AddSegment` support compact body setup. Use collider components when shapes need sensors, offsets, collision layers, runtime material changes, prefab component data, or individual enable/disable behavior:
 
 ```csharp
 var body = crate.AddComponent<PhysicsBody>();
@@ -61,7 +75,7 @@ collider.Friction = 0.6f;
 collider.Restitution = 0.1f;
 ```
 
-`BoxCollider` and `CircleCollider` require a `PhysicsBody` on the same GameObject. They attach regardless of component declaration order, participate in normal component enable/disable and destruction, and expose their `B2ShapeId` through `ShapeId`.
+`BoxCollider`, `CircleCollider`, `CapsuleCollider`, `PolygonCollider`, and `SegmentCollider` require a `PhysicsBody` on the same GameObject. They attach regardless of component declaration order, participate in normal component enable/disable and destruction, and expose their `B2ShapeId` through `ShapeId`.
 
 ## Create static geometry
 
@@ -112,7 +126,7 @@ body.CollisionExited += other =>
     logger.LogInformation("{Self} left {Other}", body.GameObject.Name, other.GameObject.Name);
 ```
 
-`PhysicsWorld.ContactBegan` and `ContactEnded` provide scene-wide `PhysicsContact` events. Box and circle shapes enable Box2D contact events when created.
+`PhysicsWorld.ContactBegan` and `ContactEnded` provide scene-wide `PhysicsContact` events. Framework shapes enable Box2D contact events when created.
 
 ## Filter collision layers
 
@@ -195,4 +209,4 @@ var events = B2Worlds.b2World_GetContactEvents(worldId);
 
 The framework destroys component bodies before it disposes the scoped world. Do not retain body, shape, or world IDs after a scene transition.
 
-The integration wraps body motion, box and circle colliders, filters, sensors, ray and circle casts, box overlaps, distance and revolute joints, transform synchronization, contact events, and host-enabled debug drawing. Other Box2D joint and shape types remain available through raw IDs. See the `PHYSICS` example screen, [Debug Overlay and Runtime Inspection](debug-overlay.md), and the [Box2D simulation guide](https://github.com/erincatto/box2d/blob/main/docs/simulation.md).
+The integration wraps body motion, box, circle, capsule, convex-polygon and segment colliders, filters, sensors, ray and circle casts, box overlaps, distance and revolute joints, transform synchronization, contact events, and host-enabled debug drawing. Chain shapes and other Box2D joint types remain available through raw IDs. See the `PHYSICS` example screen, [Debug Overlay and Runtime Inspection](debug-overlay.md), and the [Box2D simulation guide](https://github.com/erincatto/box2d/blob/main/docs/simulation.md).

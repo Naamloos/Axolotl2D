@@ -20,6 +20,9 @@ public static class PrefabComponentIds
     public const string PhysicsBody = "axolotl.physics-body";
     public const string BoxCollider = "axolotl.box-collider";
     public const string CircleCollider = "axolotl.circle-collider";
+    public const string CapsuleCollider = "axolotl.capsule-collider";
+    public const string PolygonCollider = "axolotl.polygon-collider";
+    public const string SegmentCollider = "axolotl.segment-collider";
     public const string DistanceJoint = "axolotl.distance-joint";
     public const string RevoluteJoint = "axolotl.revolute-joint";
     public const string Light = "axolotl.light";
@@ -46,6 +49,9 @@ internal static class BuiltInPrefabComponents
         PrefabComponentRegistration.Create<PhysicsBody, PhysicsBodyData>(PrefabComponentIds.PhysicsBody, Load),
         PrefabComponentRegistration.Create<BoxCollider, BoxColliderData>(PrefabComponentIds.BoxCollider, Load),
         PrefabComponentRegistration.Create<CircleCollider, CircleColliderData>(PrefabComponentIds.CircleCollider, Load),
+        PrefabComponentRegistration.Create<CapsuleCollider, CapsuleColliderData>(PrefabComponentIds.CapsuleCollider, Load),
+        PrefabComponentRegistration.Create<PolygonCollider, PolygonColliderData>(PrefabComponentIds.PolygonCollider, Load),
+        PrefabComponentRegistration.Create<SegmentCollider, SegmentColliderData>(PrefabComponentIds.SegmentCollider, Load),
         PrefabComponentRegistration.Create<DistanceJoint, DistanceJointData>(PrefabComponentIds.DistanceJoint, Load),
         PrefabComponentRegistration.Create<RevoluteJoint, RevoluteJointData>(PrefabComponentIds.RevoluteJoint, Load),
         PrefabComponentRegistration.Create<Light2D, LightData>(PrefabComponentIds.Light, Load),
@@ -83,7 +89,26 @@ internal static class BuiltInPrefabComponents
         {
             if (string.IsNullOrWhiteSpace(animation.Name))
                 throw new InvalidDataException("Sprite animation names cannot be empty.");
-            component.Add(animation.Name, new SpriteAnimation(sheet.Sprites, animation.FramesPerSecond, animation.Loop));
+            if (!float.IsFinite(animation.FramesPerSecond) || animation.FramesPerSecond <= 0f)
+                throw new InvalidDataException($"Sprite animation '{animation.Name}' requires a positive frame rate.");
+            var playback = animation.Playback ?? (animation.Loop
+                ? SpriteAnimationPlayback.Loop
+                : SpriteAnimationPlayback.Once);
+            var duration = 1d / animation.FramesPerSecond;
+            var frames = animation.Frames is { Count: > 0 }
+                ? animation.Frames.Select(frame =>
+                {
+                    if ((uint)frame.Index >= (uint)sheet.Sprites.Count)
+                        throw new InvalidDataException($"Sprite animation '{animation.Name}' references frame {frame.Index}, which is outside the sheet.");
+                    var frameDuration = frame.Duration ?? duration;
+                    if (!double.IsFinite(frameDuration) || frameDuration <= 0d)
+                        throw new InvalidDataException($"Sprite animation '{animation.Name}' has a non-positive frame duration.");
+                    if (frame.Marker is not null && string.IsNullOrWhiteSpace(frame.Marker))
+                        throw new InvalidDataException($"Sprite animation '{animation.Name}' has an empty marker.");
+                    return new SpriteAnimationFrame(sheet[frame.Index], frameDuration, frame.Marker);
+                }).ToArray()
+                : sheet.Sprites.Select(sprite => new SpriteAnimationFrame(sprite, duration)).ToArray();
+            component.Add(animation.Name, new SpriteAnimation(frames, playback));
         }
         if (data.Play is not null) component.Play(data.Play);
     }
@@ -111,6 +136,23 @@ internal static class BuiltInPrefabComponents
                     if (shape.Radius is null) throw new InvalidDataException("Circle shapes require a radius.");
                     component.AddCircle(shape.Radius.Value, shape.Density, shape.Friction, shape.Restitution);
                     break;
+                case PrefabPhysicsShapeType.Capsule:
+                    if (shape.Point1 is null || shape.Point2 is null || shape.Radius is null)
+                        throw new InvalidDataException("Capsule shapes require point1, point2, and radius.");
+                    component.AddCapsule(ReadVector(shape.Point1, "capsule point1"),
+                        ReadVector(shape.Point2, "capsule point2"), shape.Radius.Value,
+                        shape.Density, shape.Friction, shape.Restitution);
+                    break;
+                case PrefabPhysicsShapeType.Polygon:
+                    component.AddPolygon(ReadVertices(shape.Points, "polygon points"),
+                        shape.Density, shape.Friction, shape.Restitution);
+                    break;
+                case PrefabPhysicsShapeType.Segment:
+                    if (shape.Point1 is null || shape.Point2 is null)
+                        throw new InvalidDataException("Segment shapes require point1 and point2.");
+                    component.AddSegment(ReadVector(shape.Point1, "segment point1"),
+                        ReadVector(shape.Point2, "segment point2"), shape.Friction, shape.Restitution);
+                    break;
                 default: throw new ArgumentOutOfRangeException(nameof(shape.Type));
             }
     }
@@ -126,6 +168,27 @@ internal static class BuiltInPrefabComponents
     {
         component.Radius = data.Radius;
         component.Offset = ReadVector(data.Offset ?? new(0f, 0f), "circle collider offset");
+        LoadCollider(component, data);
+    }
+
+    private static void Load(CapsuleCollider component, CapsuleColliderData data, PrefabLoadContext context)
+    {
+        component.Point1 = ReadVector(data.Point1, "capsule collider point1");
+        component.Point2 = ReadVector(data.Point2, "capsule collider point2");
+        component.Radius = data.Radius;
+        LoadCollider(component, data);
+    }
+
+    private static void Load(PolygonCollider component, PolygonColliderData data, PrefabLoadContext context)
+    {
+        component.Vertices = ReadVertices(data.Points, "polygon collider points");
+        LoadCollider(component, data);
+    }
+
+    private static void Load(SegmentCollider component, SegmentColliderData data, PrefabLoadContext context)
+    {
+        component.Point1 = ReadVector(data.Point1, "segment collider point1");
+        component.Point2 = ReadVector(data.Point2, "segment collider point2");
         LoadCollider(component, data);
     }
 
@@ -346,6 +409,13 @@ internal static class BuiltInPrefabComponents
         return new(data.X, data.Y);
     }
 
+    private static IReadOnlyList<Vector2> ReadVertices(IReadOnlyList<VectorData>? data, string name)
+    {
+        if (data is null)
+            throw new InvalidDataException($"Prefab {name} are required.");
+        return data.Select(point => ReadVector(point, name)).ToArray();
+    }
+
     private static Color ParseColor(string value)
     {
         if (string.IsNullOrWhiteSpace(value)) throw new InvalidDataException("Prefab colors cannot be empty.");
@@ -378,14 +448,17 @@ internal static class BuiltInPrefabComponents
         float? Depth = null, uint? LightingLayer = null);
     public sealed record SpriteAnimatorData(string Texture, int FrameWidth, int FrameHeight,
         IReadOnlyList<SpriteAnimationData> Animations, int Margin = 0, int Spacing = 0, string? Play = null);
-    public sealed record SpriteAnimationData(string Name, float FramesPerSecond, bool Loop = true);
+    public sealed record SpriteAnimationData(string Name, float FramesPerSecond, bool Loop = true,
+        IReadOnlyList<SpriteAnimationFrameData>? Frames = null, SpriteAnimationPlayback? Playback = null);
+    public sealed record SpriteAnimationFrameData(int Index, double? Duration = null, string? Marker = null);
     public enum PrefabPhysicsBodyType { Static, Kinematic, Dynamic }
-    public enum PrefabPhysicsShapeType { Box, Circle }
+    public enum PrefabPhysicsShapeType { Box, Circle, Capsule, Polygon, Segment }
     public sealed record PhysicsBodyData(PrefabPhysicsBodyType BodyType = PrefabPhysicsBodyType.Dynamic,
         float LinearDamping = 0f, float AngularDamping = 0f, float GravityScale = 1f, bool IsBullet = false,
         IReadOnlyList<PhysicsShapeData>? Shapes = null);
     public sealed record PhysicsShapeData(PrefabPhysicsShapeType Type, VectorData? Size = null, float? Radius = null,
-        float Density = 1f, float Friction = 0.6f, float Restitution = 0f);
+        float Density = 1f, float Friction = 0.6f, float Restitution = 0f,
+        VectorData? Point1 = null, VectorData? Point2 = null, IReadOnlyList<VectorData>? Points = null);
     public record ColliderData(float Density = 1f, float Friction = 0.6f, float Restitution = 0f,
         bool IsSensor = false, ulong CategoryBits = 1, ulong MaskBits = ulong.MaxValue, int GroupIndex = 0);
     public sealed record BoxColliderData(VectorData Size, VectorData? Offset = null, float Density = 1f,
@@ -396,6 +469,18 @@ internal static class BuiltInPrefabComponents
         float Friction = 0.6f, float Restitution = 0f, bool IsSensor = false,
         ulong CategoryBits = 1, ulong MaskBits = ulong.MaxValue, int GroupIndex = 0)
         : ColliderData(Density, Friction, Restitution, IsSensor, CategoryBits, MaskBits, GroupIndex);
+    public sealed record CapsuleColliderData(VectorData Point1, VectorData Point2, float Radius,
+        float Density = 1f, float Friction = 0.6f, float Restitution = 0f, bool IsSensor = false,
+        ulong CategoryBits = 1, ulong MaskBits = ulong.MaxValue, int GroupIndex = 0)
+        : ColliderData(Density, Friction, Restitution, IsSensor, CategoryBits, MaskBits, GroupIndex);
+    public sealed record PolygonColliderData(IReadOnlyList<VectorData> Points,
+        float Density = 1f, float Friction = 0.6f, float Restitution = 0f, bool IsSensor = false,
+        ulong CategoryBits = 1, ulong MaskBits = ulong.MaxValue, int GroupIndex = 0)
+        : ColliderData(Density, Friction, Restitution, IsSensor, CategoryBits, MaskBits, GroupIndex);
+    public sealed record SegmentColliderData(VectorData Point1, VectorData Point2,
+        float Friction = 0.6f, float Restitution = 0f, bool IsSensor = false,
+        ulong CategoryBits = 1, ulong MaskBits = ulong.MaxValue, int GroupIndex = 0)
+        : ColliderData(0f, Friction, Restitution, IsSensor, CategoryBits, MaskBits, GroupIndex);
     public record JointData(string ConnectedBody, bool CollideConnected = false);
     public sealed record DistanceJointData(string ConnectedBody, VectorData AnchorA, VectorData AnchorB,
         float Length = 100f, bool CollideConnected = false, bool EnableSpring = false, float Hertz = 4f,

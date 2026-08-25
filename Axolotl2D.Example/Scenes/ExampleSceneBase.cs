@@ -11,6 +11,8 @@ public abstract class ExampleSceneBase(AssetManager assets) : BaseScene
     [
         ("SPRITES", typeof(SpriteScene)),
         ("ANIMATION", typeof(AnimationScene)),
+        ("DISPLAY", typeof(DisplayScene)),
+        ("AUDIO", typeof(AudioScene)),
         ("PHYSICS", typeof(PhysicsScene)),
         ("LIGHTING", typeof(LightingScene)),
         ("CAMERAS", typeof(CameraScene)),
