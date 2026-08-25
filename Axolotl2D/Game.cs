@@ -117,6 +117,9 @@ namespace Axolotl2D
         private Vector2D<int> windowedSize;
         private Vector2D<int> windowedPosition;
         private bool hasWindowedBounds;
+        private string? displayedTitle;
+        private int displayedFrameRate = int.MinValue;
+        private bool displayedFramerateSetting;
 
         internal GL? openGL;
         internal readonly IWindow window;
@@ -196,20 +199,38 @@ namespace Axolotl2D
         /// Gets the mouse input helper.
         /// </summary>
         /// <returns>Mouse input helper.</returns>
-        public IMouse? GetMouse() => input?.Mice[0];
+        public IMouse? GetMouse()
+        {
+            var mice = input?.Mice;
+            return mice is { Count: > 0 } ? mice[0] : null;
+        }
 
         /// <summary>
         /// Gets the keyboard input helper.
         /// </summary>
         /// <returns>Keyboard input helper.</returns>
-        public IKeyboard? GetKeyboard() => input?.Keyboards[0];
+        public IKeyboard? GetKeyboard()
+        {
+            var keyboards = input?.Keyboards;
+            return keyboards is { Count: > 0 } ? keyboards[0] : null;
+        }
 
         /// <summary>Gets the first connected gamepad, if present.</summary>
-        public IGamepad? GetGamepad() => input?.Gamepads.FirstOrDefault();
+        public IGamepad? GetGamepad()
+        {
+            var gamepads = input?.Gamepads;
+            return gamepads is { Count: > 0 } ? gamepads[0] : null;
+        }
 
         /// <summary>Gets a connected gamepad by device index, if present.</summary>
-        public IGamepad? GetGamepad(int index) =>
-            input?.Gamepads.FirstOrDefault(gamepad => gamepad.Index == index);
+        public IGamepad? GetGamepad(int index)
+        {
+            if (input is null) return null;
+            foreach (var gamepad in input.Gamepads)
+                if (gamepad.Index == index)
+                    return gamepad;
+            return null;
+        }
 
         /// <summary>
         /// Loads application resources before the window and scene start.
@@ -410,9 +431,17 @@ namespace Axolotl2D
 
         private void UpdateWindowTitle()
         {
+            var roundedFrameRate = (int)Math.Round(CurrentFramerate);
+            if (displayedTitle == title && displayedFramerateSetting == showFramerateInTitle &&
+                (!showFramerateInTitle || displayedFrameRate == roundedFrameRate))
+                return;
+
             window.Title = showFramerateInTitle
-                ? $"{title} | FPS: {Math.Round(CurrentFramerate)}"
+                ? $"{title} | FPS: {roundedFrameRate}"
                 : title;
+            displayedTitle = title;
+            displayedFrameRate = roundedFrameRate;
+            displayedFramerateSetting = showFramerateInTitle;
         }
 
         private static void ValidateSize(Vector2 size)

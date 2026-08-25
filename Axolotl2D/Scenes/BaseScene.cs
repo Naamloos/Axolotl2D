@@ -15,6 +15,7 @@ namespace Axolotl2D.Scenes;
 public abstract class BaseScene
 {
     private readonly List<GameObject> gameObjects = [];
+    private GameObject[] gameObjectSnapshot = [];
     private readonly HashSet<GameObject> pendingDestruction = [];
     private readonly Dictionary<string, List<GameObject>> objectsByName = new(StringComparer.Ordinal);
     private readonly Dictionary<string, List<GameObject>> objectsByTag = new(StringComparer.Ordinal);
@@ -205,7 +206,8 @@ public abstract class BaseScene
         Load();
         FlushDestroyed();
         IsLoaded = true;
-        foreach (var gameObject in gameObjects.ToArray())
+        var snapshot = gameObjectSnapshot;
+        foreach (var gameObject in snapshot)
             gameObject.Start();
     }
 
@@ -221,7 +223,8 @@ public abstract class BaseScene
         while (fixedAccumulator >= FixedTimeStep && fixedSteps++ < MaximumFixedStepsPerFrame && IsLoaded)
         {
             time.BeginFixedStep(FixedTimeStep);
-            foreach (var gameObject in gameObjects.ToArray())
+            var snapshot = gameObjectSnapshot;
+            foreach (var gameObject in snapshot)
                 gameObject.FixedUpdate(FixedTimeStep);
             FixedUpdate(FixedTimeStep);
             FlushDestroyed();
@@ -236,14 +239,16 @@ public abstract class BaseScene
         tweens.Update(deltaTime, time.UnscaledDeltaTime);
         coroutines.Update(deltaTime, time.UnscaledDeltaTime);
         uiEvents.Update();
-        foreach (var gameObject in gameObjects.ToArray())
+        var updateSnapshot = gameObjectSnapshot;
+        foreach (var gameObject in updateSnapshot)
             gameObject.Update(deltaTime);
         Update(deltaTime);
         FlushDestroyed();
 
         if (!IsLoaded)
             return;
-        foreach (var gameObject in gameObjects.ToArray())
+        var lateUpdateSnapshot = gameObjectSnapshot;
+        foreach (var gameObject in lateUpdateSnapshot)
             gameObject.LateUpdate(deltaTime);
         LateUpdate(deltaTime);
         FlushDestroyed();
@@ -256,7 +261,8 @@ public abstract class BaseScene
         spriteBatch.Begin();
         try
         {
-            foreach (var gameObject in gameObjects.ToArray())
+            var snapshot = gameObjectSnapshot;
+            foreach (var gameObject in snapshot)
                 gameObject.Render();
             Draw(deltaTime, frameRate);
             debugOverlay?.Render(this, physics, deltaTime, frameRate);
@@ -282,6 +288,7 @@ public abstract class BaseScene
         for (var index = gameObjects.Count - 1; index >= 0; index--)
             gameObjects[index].Dispose();
         gameObjects.Clear();
+        gameObjectSnapshot = [];
         pendingDestruction.Clear();
         objectsByName.Clear();
         objectsByTag.Clear();
@@ -294,6 +301,7 @@ public abstract class BaseScene
     {
         gameObject.AssignTo(this);
         gameObjects.Add(gameObject);
+        gameObjectSnapshot = gameObjects.ToArray();
         IndexObject(gameObject);
         if (IsLoaded)
             gameObject.Start();
@@ -304,12 +312,11 @@ public abstract class BaseScene
     {
         while (pendingDestruction.Count > 0)
         {
-            var batch = pendingDestruction.ToArray();
-            pendingDestruction.Clear();
-            foreach (var gameObject in batch)
-            {
-                gameObject.Dispose();
-            }
+            using var enumerator = pendingDestruction.GetEnumerator();
+            enumerator.MoveNext();
+            var gameObject = enumerator.Current;
+            pendingDestruction.Remove(gameObject);
+            gameObject.Dispose();
         }
     }
 
@@ -338,6 +345,7 @@ public abstract class BaseScene
         UnindexObject(gameObject);
         pendingDestruction.Remove(gameObject);
         gameObjects.Remove(gameObject);
+        gameObjectSnapshot = gameObjects.ToArray();
     }
 
     private bool IsIndexed(GameObject gameObject)

@@ -39,7 +39,7 @@ animator.Play("walk");
 
 ## Text
 
-`TextRenderer` shapes text with the loaded font, rasterizes it to a transparent `Texture2D`, and caches matching font-size-text combinations. It submits the result through `SpriteBatch`, so text follows the same tint, depth, and coordinate rules as sprites.
+`TextRenderer` shapes text with the loaded font, caches it in a shared transparent atlas, and submits the region through `SpriteBatch`, so text follows the same tint, depth, and coordinate rules as sprites.
 
 ```csharp
 textRenderer.Draw(

@@ -8,6 +8,7 @@ public class GameObject : IDisposable
 {
     private readonly IServiceProvider services;
     private readonly List<Component> components = [];
+    private Component[] componentSnapshot = [];
     private readonly HashSet<string> tags = new(StringComparer.Ordinal);
     private BaseScene? scene;
     private string name;
@@ -42,7 +43,8 @@ public class GameObject : IDisposable
             if (active == value || disposed)
                 return;
             active = value;
-            foreach (var component in components.ToArray())
+            var snapshot = componentSnapshot;
+            foreach (var component in snapshot)
                 component.RefreshActivation();
         }
     }
@@ -105,6 +107,7 @@ public class GameObject : IDisposable
 
         var component = (Component)ActivatorUtilities.CreateInstance(services, componentType, this);
         components.Add(component);
+        componentSnapshot = components.ToArray();
         try
         {
             configure?.Invoke(component);
@@ -115,6 +118,7 @@ public class GameObject : IDisposable
         catch
         {
             components.Remove(component);
+            componentSnapshot = components.ToArray();
             component.Dispose();
             throw;
         }
@@ -153,7 +157,8 @@ public class GameObject : IDisposable
         if (HasStarted || disposed)
             return;
         HasStarted = true;
-        foreach (var component in components.ToArray())
+        var snapshot = componentSnapshot;
+        foreach (var component in snapshot)
             component.StartIfNeeded();
     }
 
@@ -161,7 +166,8 @@ public class GameObject : IDisposable
     {
         if (!active || disposed)
             return;
-        foreach (var component in components.ToArray())
+        var snapshot = componentSnapshot;
+        foreach (var component in snapshot)
             component.TickFixed(fixedDeltaTime);
     }
 
@@ -169,7 +175,8 @@ public class GameObject : IDisposable
     {
         if (!active || disposed)
             return;
-        foreach (var component in components.ToArray())
+        var snapshot = componentSnapshot;
+        foreach (var component in snapshot)
             component.Tick(deltaTime);
     }
 
@@ -177,7 +184,8 @@ public class GameObject : IDisposable
     {
         if (!active || disposed)
             return;
-        foreach (var component in components.ToArray())
+        var snapshot = componentSnapshot;
+        foreach (var component in snapshot)
             component.TickLate(deltaTime);
     }
 
@@ -185,7 +193,8 @@ public class GameObject : IDisposable
     {
         if (!active || disposed)
             return;
-        foreach (var component in components.ToArray())
+        var snapshot = componentSnapshot;
+        foreach (var component in snapshot)
             component.Draw();
     }
 
@@ -196,11 +205,13 @@ public class GameObject : IDisposable
         disposed = true;
         active = false;
         scene?.OnObjectDisposed(this);
-        foreach (var component in components.ToArray())
+        var snapshot = componentSnapshot;
+        foreach (var component in snapshot)
             component.RefreshActivation();
-        for (var index = components.Count - 1; index >= 0; index--)
-            components[index].Dispose();
+        for (var index = snapshot.Length - 1; index >= 0; index--)
+            snapshot[index].Dispose();
         components.Clear();
+        componentSnapshot = [];
         Transform.DetachHierarchy();
         scene = null;
         GC.SuppressFinalize(this);
@@ -210,6 +221,7 @@ public class GameObject : IDisposable
     {
         if (component is null) return false;
         components.Remove(component);
+        componentSnapshot = components.ToArray();
         scene?.OnComponentRemoved(component);
         component.Dispose();
         return true;

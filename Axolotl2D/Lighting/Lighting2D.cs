@@ -52,6 +52,8 @@ public sealed class Lighting2D
     public const int MaximumShadowEdges = 64;
     private readonly List<Light2D> lights = [];
     private readonly List<ShadowCaster2D> casters = [];
+    private readonly List<LightData> lightSnapshot = new(MaximumLights);
+    private readonly List<ShadowEdgeData> edgeSnapshot = new(MaximumShadowEdges);
 
     public Color AmbientColor { get; set; } = Color.White;
     public float AmbientIntensity { get; set; } = 1f;
@@ -70,32 +72,37 @@ public sealed class Lighting2D
             return new(false, Vector3.One, [], []);
 
         var ambient = new Vector3(AmbientColor.R, AmbientColor.G, AmbientColor.B) * Math.Max(0f, AmbientIntensity);
-        var lightData = lights.Take(MaximumLights).Select(light => new LightData(
-            light.Transform.Position,
-            Vector2.Normalize(light.Transform.Right),
-            new Vector3(light.Color.R, light.Color.G, light.Color.B),
-            Math.Max(0f, light.Intensity),
-            Math.Max(0.001f, light.Radius),
-            Math.Max(0.001f, light.Height),
-            Math.Max(0.001f, light.Falloff),
-            light.Kind,
-            Math.Clamp(light.SpotAngle, 0.001f, MathF.Tau),
-            light.LayerMask,
-            light.CastShadows)).ToArray();
+        lightSnapshot.Clear();
+        for (var index = 0; index < lights.Count && index < MaximumLights; index++)
+        {
+            var light = lights[index];
+            lightSnapshot.Add(new(
+                light.Transform.Position,
+                Vector2.Normalize(light.Transform.Right),
+                new Vector3(light.Color.R, light.Color.G, light.Color.B),
+                Math.Max(0f, light.Intensity),
+                Math.Max(0.001f, light.Radius),
+                Math.Max(0.001f, light.Height),
+                Math.Max(0.001f, light.Falloff),
+                light.Kind,
+                Math.Clamp(light.SpotAngle, 0.001f, MathF.Tau),
+                light.LayerMask,
+                light.CastShadows));
+        }
 
-        var edges = new List<ShadowEdgeData>();
+        edgeSnapshot.Clear();
         foreach (var caster in casters)
         {
             if (caster.Polygon.Count < 3) continue;
-            for (var index = 0; index < caster.Polygon.Count && edges.Count < MaximumShadowEdges; index++)
+            for (var index = 0; index < caster.Polygon.Count && edgeSnapshot.Count < MaximumShadowEdges; index++)
             {
                 var start = caster.Transform.TransformPoint(caster.Polygon[index]);
                 var end = caster.Transform.TransformPoint(caster.Polygon[(index + 1) % caster.Polygon.Count]);
-                edges.Add(new(start, end, caster.LayerMask));
+                edgeSnapshot.Add(new(start, end, caster.LayerMask));
             }
-            if (edges.Count == MaximumShadowEdges) break;
+            if (edgeSnapshot.Count == MaximumShadowEdges) break;
         }
-        return new(true, ambient, lightData, edges.ToArray());
+        return new(true, ambient, lightSnapshot, edgeSnapshot);
     }
 }
 

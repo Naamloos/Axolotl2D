@@ -1,8 +1,8 @@
-using Axolotl2D.Example.Bletris.Scenes;
+using Axolotl2D.Example.Stress.Scenes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace Axolotl2D.Example.Bletris;
+namespace Axolotl2D.Example.Stress;
 
 internal static class Program
 {
@@ -10,18 +10,16 @@ internal static class Program
     {
         if (args.Contains("--check", StringComparer.Ordinal))
         {
-            BletrisBoard.RunSelfCheck();
-            Console.WriteLine("Bletris rules check passed.");
+            StressScene.RunSelfCheck();
+            Console.WriteLine("Stress workload check passed.");
             return;
         }
 
         using var host = Host.CreateDefaultBuilder(args)
             .ConfigureServices(services =>
             {
-                services.UseSceneManagerGameHost<BletrisGame>();
-                services.AddScene<MainMenuScene>();
-                services.AddScene<BletrisScene>();
-                services.AddScene<PauseMenuScene>();
+                services.UseSceneManagerGameHost<StressGame>(enableDebugOverlay: true);
+                services.AddScene<StressScene>();
             })
             .Build();
 

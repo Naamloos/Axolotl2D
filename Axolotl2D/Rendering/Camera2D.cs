@@ -92,6 +92,25 @@ public sealed class Camera2D
     }
 
     public Vector2 ViewportSize => PixelViewport.Size;
+    internal CameraBounds VisibleWorldBounds
+    {
+        get
+        {
+            var viewport = PixelViewport;
+            var topLeft = ScreenToWorld(viewport.Position);
+            var topRight = ScreenToWorld(new(viewport.Position.X + viewport.Size.X, viewport.Position.Y));
+            var bottomLeft = ScreenToWorld(new(viewport.Position.X, viewport.Position.Y + viewport.Size.Y));
+            var bottomRight = ScreenToWorld(viewport.Position + viewport.Size);
+            var minimum = Vector2.Min(Vector2.Min(topLeft, topRight), Vector2.Min(bottomLeft, bottomRight));
+            var maximum = Vector2.Max(Vector2.Max(topLeft, topRight), Vector2.Max(bottomLeft, bottomRight));
+            return new(minimum, maximum - minimum);
+        }
+    }
+    internal Matrix3x2 WorldToScreenMatrix =>
+        Matrix3x2.CreateTranslation(-(position + shakeOffset)) *
+        Matrix3x2.CreateRotation(-Rotation) *
+        Matrix3x2.CreateScale(zoom) *
+        Matrix3x2.CreateTranslation(PixelViewport.Center);
 
     /// <summary>The camera viewport in top-left window pixels.</summary>
     public UIRect PixelViewport => new(
@@ -120,11 +139,7 @@ public sealed class Camera2D
     }
 
     public Vector2 WorldToScreen(Vector2 worldPosition)
-    {
-        var relative = worldPosition - (position + shakeOffset);
-        var rotated = Vector2.Transform(relative, Matrix3x2.CreateRotation(-Rotation));
-        return PixelViewport.Position + rotated * Zoom + ViewportSize / 2f;
-    }
+        => Vector2.Transform(worldPosition, WorldToScreenMatrix);
 
     public Vector2 ScreenToWorld(Vector2 screenPosition)
     {
@@ -177,6 +192,7 @@ public sealed class Camera2D
 public sealed class CameraManager
 {
     private readonly List<Camera2D> cameras = [];
+    private readonly List<Camera2D> activeCameras = [];
     private readonly Game game;
 
     public CameraManager(Game game)
@@ -188,7 +204,22 @@ public sealed class CameraManager
 
     public Camera2D Default { get; }
     public IReadOnlyList<Camera2D> Cameras => cameras;
-    internal IEnumerable<Camera2D> ActiveCameras => cameras.Where(camera => camera.Enabled).OrderBy(camera => camera.Priority);
+    internal IReadOnlyList<Camera2D> ActiveCameras
+    {
+        get
+        {
+            activeCameras.Clear();
+            foreach (var camera in cameras)
+            {
+                if (!camera.Enabled) continue;
+                var index = activeCameras.Count;
+                while (index > 0 && activeCameras[index - 1].Priority > camera.Priority)
+                    index--;
+                activeCameras.Insert(index, camera);
+            }
+            return activeCameras;
+        }
+    }
 
     public Camera2D Create(string name)
     {

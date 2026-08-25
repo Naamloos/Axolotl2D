@@ -6,7 +6,6 @@ using Axolotl2D.Rendering;
 using Axolotl2D.Scenes;
 using Axolotl2D.Shaders;
 using Axolotl2D.Timing;
-using Axolotl2D.UI;
 using Silk.NET.Input;
 using System.Numerics;
 
@@ -14,21 +13,13 @@ namespace Axolotl2D.Example.Bletris.Scenes;
 
 public sealed class BletrisScene : BaseScene
 {
-    private bool returnToMenu;
-
     public override void Load()
     {
         Game.ClearColor = Color.FromHTML("#111827");
         Instantiate("Bletris board").AddComponent<BletrisController>();
     }
 
-    public override void Update(double deltaTime)
-    {
-        if (returnToMenu)
-            SceneGameHost.ChangeScene<MainMenuScene>();
-    }
-
-    internal void RequestReturnToMenu() => returnToMenu = true;
+    internal void RequestPause() => SceneGameHost.PushScene<PauseMenuScene>();
 }
 
 public sealed class BletrisController(
@@ -40,7 +31,6 @@ public sealed class BletrisController(
     InputActionMap input,
     ShaderLibrary shaders,
     Camera2D camera,
-    TimeService time,
     CoroutineService coroutines,
     BletrisGame bletris) : Component(gameObject)
 {
@@ -74,23 +64,23 @@ public sealed class BletrisController(
     private InputAction rotate = null!;
     private InputAction hardDrop = null!;
     private InputAction restart = null!;
-    private InputAction menu = null!;
     private InputAction pause = null!;
+    private InputAction carry = null!;
     private int kind;
     private int rotation;
     private int pieceX;
     private int pieceY;
     private int score;
     private int lines;
+    private int carriedKind = -1;
     private int horizontalDirection;
     private double horizontalRepeat;
     private double dropTimer;
     private bool gameOver;
     private bool ready;
+    private bool canCarry;
     private string? countdownText;
     private CoroutineHandle? countdown;
-    private GameObject pauseOverlay = null!;
-    private UIText pauseText = null!;
 
     public override void Start()
     {
@@ -113,33 +103,31 @@ public sealed class BletrisController(
             InputControl.From(Key.Space), InputControl.From(ButtonName.Y)));
         restart = input.Bind("Restart", InputBinding.Button(
             InputControl.From(Key.R), InputControl.From(ButtonName.X)));
-        menu = input.Bind("Main menu", InputBinding.Button(
-            InputControl.From(Key.Escape), InputControl.From(ButtonName.Back)));
         pause = input.Bind("Pause", InputBinding.Button(
-            InputControl.From(Key.P), InputControl.From(ButtonName.Start)));
-        CreatePauseOverlay();
+            InputControl.From(Key.P), InputControl.From(Key.Escape),
+            InputControl.From(ButtonName.Start), InputControl.From(ButtonName.Back)));
+        carry = input.Bind("Carry", InputBinding.Button(
+            InputControl.From(Key.C), InputControl.From(ButtonName.LeftBumper)));
         Reset();
     }
 
     public override void Update(double deltaTime)
     {
-        if (menu.WasPressedThisFrame)
-        {
-            SetPaused(false);
-            ((BletrisScene)GameObject.Scene).RequestReturnToMenu();
-            return;
-        }
         if (pause.WasPressedThisFrame)
         {
-            SetPaused(!time.IsPaused);
+            ((BletrisScene)GameObject.Scene).RequestPause();
             return;
         }
-        if (time.IsPaused)
-            return;
         if (restart.WasPressedThisFrame)
             Reset();
         if (gameOver || !ready)
             return;
+
+        if (carry.WasPressedThisFrame && canCarry)
+        {
+            CarryPiece();
+            return;
+        }
 
         if (rotate.WasPressedThisFrame)
             if (TryRotate())
@@ -176,7 +164,6 @@ public sealed class BletrisController(
     {
         var scale = bletris.ScreenScale;
         camera.Zoom = scale;
-        pauseText.FontSize = 30f * scale;
         var (topLeft, cellSize) = GetBoardLayout();
         var boardSize = new Vector2(BletrisBoard.Width * cellSize, BletrisBoard.Height * cellSize);
         var sidebar = game.Viewport / 2f + new Vector2(topLeft.X + boardSize.X + 32f, topLeft.Y) * scale;
@@ -192,24 +179,17 @@ public sealed class BletrisController(
                 }
 
             if (!gameOver)
-                foreach (var (column, row) in board.PieceCells(kind, rotation, pieceX, pieceY))
+            {
+                Span<(int X, int Y)> piece = stackalloc (int X, int Y)[4];
+                board.PieceCells(kind, rotation, pieceX, pieceY, piece);
+                foreach (var (column, row) in piece)
                     if (row >= 0)
                         DrawCell(column, row, PieceColors[kind]);
+            }
 
-            var nextKind = bag.Next;
-            var previewCells = board.PieceCells(nextKind, 0, 0, 0).ToArray();
-            var minX = previewCells.Min(cell => cell.X);
-            var maxX = previewCells.Max(cell => cell.X);
-            var minY = previewCells.Min(cell => cell.Y);
-            var previewCellSize = 26f * scale;
-            var previewLeft = sidebar.X + (180f * scale - (maxX - minX + 1) * previewCellSize) / 2f;
-            foreach (var (column, row) in previewCells)
-                spriteBatch.Draw(block,
-                    new Vector2(
-                        previewLeft + (column - minX + 0.5f) * previewCellSize,
-                        sidebar.Y + 310f * scale + (row - minY + 0.5f) * previewCellSize),
-                    new Vector2(24f * scale), tint: PieceColors[nextKind],
-                    space: CoordinateSpace.Screen);
+            DrawPreview(bag.Next, 310f);
+            if (carriedKind >= 0)
+                DrawPreview(carriedKind, 410f);
         }
 
         textRenderer.Draw(spriteBatch, font, "BLETRIS", 30f * scale, sidebar, Color.White);
@@ -218,21 +198,47 @@ public sealed class BletrisController(
             18f * scale, sidebar + new Vector2(0, 48f) * scale, Color.White);
         textRenderer.Draw(spriteBatch, font, "NEXT", 18f * scale,
             sidebar + new Vector2(0, 270f) * scale, MutedColor);
+        textRenderer.Draw(spriteBatch, font, "CARRY", 18f * scale,
+            sidebar + new Vector2(0, 370f) * scale, MutedColor);
         if (gameOver)
             textRenderer.Draw(spriteBatch, font, "GAME OVER\nR TO RESTART", 18f * scale,
-                sidebar + new Vector2(0, 375f) * scale, GameOverColor);
+                sidebar + new Vector2(0, 475f) * scale, GameOverColor);
         if (countdownText is not null)
             textRenderer.Draw(spriteBatch, font, countdownText, 54f * scale,
                 game.Viewport / 2f - new Vector2(24f, 36f) * scale, Color.White,
                 CoordinateSpace.Screen, depth: 200f);
         textRenderer.Draw(spriteBatch, font,
-            "MOVE      ARROWS  A/D\nROTATE    UP  W/X  PAD A\nSOFT DROP DOWN  S\nHARD DROP SPACE  PAD Y\nPAUSE     P  START\nRESTART   R  PAD X\nMENU      ESC  BACK",
-            12f * scale, sidebar + new Vector2(0, 455f) * scale, MutedColor);
+            "MOVE      ARROWS  A/D\nROTATE    UP  W/X  PAD A\nSOFT DROP DOWN  S\nHARD DROP SPACE  PAD Y\nCARRY     C  PAD LB\nPAUSE     P/ESC  START\nRESTART   R  PAD X",
+            12f * scale, sidebar + new Vector2(0, 535f) * scale, MutedColor);
 
         void DrawCell(int column, int row, Color color) =>
             spriteBatch.Draw(block,
                 topLeft + new Vector2((column + 0.5f) * cellSize, (row + 0.5f) * cellSize),
                 drawSize, tint: color, space: CoordinateSpace.World);
+
+        void DrawPreview(int previewKind, float y)
+        {
+            Span<(int X, int Y)> cells = stackalloc (int X, int Y)[4];
+            board.PieceCells(previewKind, 0, 0, 0, cells);
+            var minX = cells[0].X;
+            var maxX = cells[0].X;
+            var minY = cells[0].Y;
+            foreach (var cell in cells[1..])
+            {
+                minX = Math.Min(minX, cell.X);
+                maxX = Math.Max(maxX, cell.X);
+                minY = Math.Min(minY, cell.Y);
+            }
+            var previewCellSize = 26f * scale;
+            var previewLeft = sidebar.X + (180f * scale - (maxX - minX + 1) * previewCellSize) / 2f;
+            foreach (var (column, row) in cells)
+                spriteBatch.Draw(block,
+                    new Vector2(
+                        previewLeft + (column - minX + 0.5f) * previewCellSize,
+                        sidebar.Y + y * scale + (row - minY + 0.5f) * previewCellSize),
+                    new Vector2(24f * scale), tint: PieceColors[previewKind],
+                    space: CoordinateSpace.Screen);
+        }
     }
 
     private void UpdateHorizontal(double deltaTime)
@@ -298,18 +304,37 @@ public sealed class BletrisController(
         score += LineScores[cleared] * (lines / 10 + 1);
         bletris.RecordScore(score);
         lines += cleared;
+        canCarry = true;
         SpawnPiece();
         UpdateTitle();
     }
 
     private void SpawnPiece()
     {
-        kind = bag.Take();
+        BeginPiece(bag.Take());
+    }
+
+    private void BeginPiece(int nextKind)
+    {
+        kind = nextKind;
         rotation = 0;
         pieceX = BletrisBoard.Width / 2;
         pieceY = 0;
         dropTimer = 0;
         gameOver = !board.Fits(kind, rotation, pieceX, pieceY);
+    }
+
+    private void CarryPiece()
+    {
+        var previous = carriedKind;
+        carriedKind = kind;
+        canCarry = false;
+        if (previous < 0)
+            SpawnPiece();
+        else
+            BeginPiece(previous);
+        bletris.PlaySpatialSound(BletrisSound.Rotate, PieceWorldPosition(), 0.8f);
+        UpdateTitle();
     }
 
     private void Reset()
@@ -321,6 +346,8 @@ public sealed class BletrisController(
         horizontalRepeat = 0;
         gameOver = false;
         ready = false;
+        carriedKind = -1;
+        canCarry = true;
         bag.Reset();
         SpawnPiece();
         countdown?.Cancel();
@@ -382,39 +409,9 @@ public sealed class BletrisController(
         ready = true;
     }
 
-    private void CreatePauseOverlay()
-    {
-        pauseOverlay = GameObject.Scene.Instantiate("Pause overlay");
-        var layout = pauseOverlay.AddComponent<UITransform>();
-        layout.AnchorMin = Vector2.Zero;
-        layout.AnchorMax = Vector2.One;
-        layout.OffsetMin = Vector2.Zero;
-        layout.OffsetMax = Vector2.Zero;
-        var visual = pauseOverlay.AddComponent<UIVisual>();
-        visual.Primitive = UIPrimitive.Rectangle;
-        visual.Color = new Color(0.02f, 0.04f, 0.09f, 0.82f);
-        visual.Depth = 500f;
-        pauseText = pauseOverlay.AddComponent<UIText>();
-        pauseText.Font = font;
-        pauseText.Text = "PAUSED\nP / START TO RESUME";
-        pauseText.FontSize = 30f * bletris.ScreenScale;
-        pauseText.HorizontalAlignment = UIHorizontalAlignment.Center;
-        pauseText.VerticalAlignment = UIVerticalAlignment.Center;
-        pauseText.Depth = 501f;
-        pauseOverlay.Active = false;
-    }
-
-    private void SetPaused(bool value)
-    {
-        time.IsPaused = value;
-        pauseOverlay.Active = value;
-        if (value) bletris.PauseAudio(); else bletris.ResumeAudio();
-    }
-
     public override void OnDestroy()
     {
         countdown?.Cancel();
-        time.IsPaused = false;
         bletris.ResumeAudio();
     }
 

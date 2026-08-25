@@ -7,6 +7,7 @@ namespace Axolotl2D.UI;
 public sealed class UIEventSystem(Game game)
 {
     private readonly List<UISelectable> controls = [];
+    private readonly List<UISelectable> focusOrder = [];
     private UISelectable? hovered;
     private UISelectable? pressed;
     private bool pointerWasDown;
@@ -37,11 +38,21 @@ public sealed class UIEventSystem(Game game)
 
     public void MoveFocus(int direction)
     {
-        var ordered = controls.Where(control => control.Interactable && control.IsActiveAndEnabled)
-            .OrderBy(control => control.NavigationOrder).ToArray();
-        if (ordered.Length == 0) { SetFocus(null); return; }
-        var index = Focused is null ? (direction >= 0 ? -1 : 0) : Array.IndexOf(ordered, Focused);
-        SetFocus(ordered[(index + Math.Sign(direction) + ordered.Length) % ordered.Length]);
+        direction = Math.Sign(direction);
+        if (direction == 0) return;
+        focusOrder.Clear();
+        foreach (var control in controls)
+        {
+            if (!control.Interactable || !control.IsActiveAndEnabled) continue;
+            var index = focusOrder.Count;
+            while (index > 0 && focusOrder[index - 1].NavigationOrder > control.NavigationOrder)
+                index--;
+            focusOrder.Insert(index, control);
+        }
+        if (focusOrder.Count == 0) { SetFocus(null); return; }
+        var current = Focused is null ? -1 : focusOrder.IndexOf(Focused);
+        if (current < 0) current = direction > 0 ? -1 : 0;
+        SetFocus(focusOrder[(current + direction + focusOrder.Count) % focusOrder.Count]);
     }
 
     public void Submit() => Focused?.Activate();
@@ -50,13 +61,18 @@ public sealed class UIEventSystem(Game game)
     {
         var mouse = game.GetMouse();
         var pointer = mouse?.Position ?? Vector2.Zero;
-        var nextHovered = mouse is null ? null : controls
-            .Where(control => control.Interactable && control.IsActiveAndEnabled &&
-                control.Layout.Rect.Contains(pointer) &&
-                (control.Layout.ResolveClip()?.Contains(pointer) ?? true))
-            .OrderByDescending(control => control.Depth)
-            .ThenByDescending(control => controls.IndexOf(control))
-            .FirstOrDefault();
+        UISelectable? nextHovered = null;
+        if (mouse is not null)
+            for (var index = 0; index < controls.Count; index++)
+            {
+                var control = controls[index];
+                if (!control.Interactable || !control.IsActiveAndEnabled ||
+                    !control.Layout.Rect.Contains(pointer) ||
+                    !(control.Layout.ResolveClip()?.Contains(pointer) ?? true))
+                    continue;
+                if (nextHovered is null || control.Depth >= nextHovered.Depth)
+                    nextHovered = control;
+            }
         if (!ReferenceEquals(nextHovered, hovered))
         {
             hovered?.SetHovered(false);
@@ -96,6 +112,12 @@ public sealed class UIEventSystem(Game game)
         submitWasDown = submitDown;
     }
 
-    private static bool Pressed(IGamepad? gamepad, ButtonName name) =>
-        gamepad?.Buttons.FirstOrDefault(button => button.Name == name).Pressed == true;
+    private static bool Pressed(IGamepad? gamepad, ButtonName name)
+    {
+        if (gamepad is null) return false;
+        foreach (var button in gamepad.Buttons)
+            if (button.Name == name)
+                return button.Pressed;
+        return false;
+    }
 }

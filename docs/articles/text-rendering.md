@@ -1,6 +1,6 @@
 # Text Rendering
 
-`TextRenderer` shapes and rasterizes scalable font text into transparent `Texture2D` assets. Text then uses `SpriteBatch`, so it shares sprite tint, depth, and coordinate behavior.
+`TextRenderer.Draw` uses a per-font SDF glyph atlas for printable ASCII, keeping glyph edges sharp across scales and batching glyph instances. Complex Unicode text falls back to exact whole-string Skia shaping and transparent atlas regions. Text uses `SpriteBatch`, so it shares sprite tint, depth, and coordinate behavior.
 
 ## Load a font
 
@@ -46,7 +46,7 @@ Scenes already have an open sprite batch during `Draw`. Do not call `Begin` or `
 
 ## Render once, draw as a sprite
 
-Use `Render` when you want to keep and transform the generated texture yourself:
+Use `Render` when you want to keep and transform the generated texture yourself. It always uses exact whole-string rasterization rather than SDF glyphs:
 
 ```csharp
 Texture2D labelTexture = textRenderer.Render(font, "Ready", 36);
@@ -61,6 +61,6 @@ spriteBatch.Draw(
 
 ## Text cache
 
-`TextRenderer` caches by the `FontAsset` instance, font size, and exact text. Repeating the same combination reuses its texture. A different score string, size, or font creates another cached texture.
+`TextRenderer.Draw` and `UIText` cache by the `FontAsset` instance, font size, and exact text. Repeating the same combination reuses its atlas region. Atlas pages are recycled between frames using least-recently-used order; a page referenced by the current frame is never recycled early.
 
-Prefer stable labels for frequently drawn UI. For rapidly changing text, update only when its value changes rather than calling `Render` speculatively. The current text cache has no per-entry eviction API, so avoid creating an unbounded stream of unique strings. Font size must be positive; `text` and `font` cannot be null.
+`Render` remains an exact-size standalone-texture API and retains its compatibility cache. Prefer `Draw` or `UIText` for frequently changing labels. Font size must be positive; `text` and `font` cannot be null.

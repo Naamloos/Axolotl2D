@@ -8,6 +8,7 @@ namespace Axolotl2D.Rendering;
 /// <summary>Queues sprites and submits them in texture batches at the end of a scene frame.</summary>
 public sealed class SpriteBatch(Rendering rendering, CameraManager cameras, Lighting2D lighting)
 {
+    private static readonly Color DefaultTint = Color.White;
     private readonly List<SpriteDrawCommand> commands = [];
     private Camera2D? camera;
     private ShaderProgram? shader;
@@ -51,16 +52,17 @@ public sealed class SpriteBatch(Rendering rendering, CameraManager cameras, Ligh
         float depth = 0f, uint lightingLayer = 1)
     {
         EnsureBegun();
-        commands.Add(new SpriteDrawCommand(sprite, transform, tint ?? Color.White, space, depth, commands.Count,
+        commands.Add(new SpriteDrawCommand(sprite, transform, tint ?? DefaultTint, space, depth, commands.Count,
             shader, lightingLayer, clip));
     }
 
     public void Draw(Sprite sprite, Vector2 position, Vector2? size = null, float rotation = 0f, Color? tint = null,
         CoordinateSpace space = CoordinateSpace.World, float depth = 0f, uint lightingLayer = 1)
     {
-        var drawSize = size ?? sprite.Size;
-        var scale = drawSize / sprite.Size;
-        var transform = Matrix3x2.CreateScale(scale) * Matrix3x2.CreateRotation(rotation) * Matrix3x2.CreateTranslation(position);
+        var transform = size is null && rotation == 0f
+            ? Matrix3x2.CreateTranslation(position)
+            : Matrix3x2.CreateScale((size ?? sprite.Size) / sprite.Size) *
+                Matrix3x2.CreateRotation(rotation) * Matrix3x2.CreateTranslation(position);
         Draw(sprite, transform, tint, space, depth, lightingLayer);
     }
 
@@ -72,13 +74,23 @@ public sealed class SpriteBatch(Rendering rendering, CameraManager cameras, Ligh
     {
         EnsureBegun();
         IsBegun = false;
-        var snapshot = lighting.Snapshot();
         if (explicitCamera)
-            rendering.Draw(commands, camera!, snapshot, includeWorld: true, includeScreen: true);
+            rendering.Draw(commands, camera!, lighting.Snapshot(), includeWorld: true, includeScreen: true);
         else
         {
-            foreach (var activeCamera in cameras.ActiveCameras)
-                rendering.Draw(commands, activeCamera, snapshot, includeWorld: true, includeScreen: false);
+            var hasWorldCommands = false;
+            for (var index = 0; index < commands.Count; index++)
+                if (commands[index].Space == CoordinateSpace.World)
+                {
+                    hasWorldCommands = true;
+                    break;
+            }
+            if (hasWorldCommands)
+            {
+                var snapshot = lighting.Snapshot();
+                foreach (var activeCamera in cameras.ActiveCameras)
+                    rendering.Draw(commands, activeCamera, snapshot, includeWorld: true, includeScreen: false);
+            }
             rendering.DrawScreen(commands);
         }
         camera = null;

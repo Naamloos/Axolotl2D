@@ -92,8 +92,37 @@ spriteBatch.Draw(sprite, transform, Color.White, CoordinateSpace.World, 0.25f);
 
 Rotation values are in radians.
 
+## Build an atlas
+
+Pack unrelated source textures before their first draw when they should share GPU submissions:
+
+```csharp
+TextureAtlas atlas = new TextureAtlasBuilder()
+    .Add("player", assets.Get<Texture2D>("player"))
+    .Add("heart", assets.Get<Texture2D>("heart"))
+    .Build();
+
+Sprite player = atlas.GetSprite("player");
+Sprite heart = atlas.GetSprite("heart");
+```
+
+The builder adds edge padding for linear filtering. Pass a same-size normal map to `Add` to build a matching normal atlas. Source textures must still have CPU pixel data; render-target textures cannot be packed.
+
+## Instancing, arrays, and spatial indexing
+
+Built-in sprites use GPU instancing. Custom shaders retain the legacy per-vertex layout for compatibility.
+
+Use `TextureArray2D` for equal-sized images that must remain separate layers:
+
+```csharp
+var array = new TextureArray2D(textures);
+Sprite sprite = array.GetSprite(layer: 0);
+```
+
+Adjacent sprites from one array batch across layer changes. Large static worlds can opt into a `SpatialSpriteIndex`; add sprites once, then call `DrawVisible(spriteBatch, camera)` during drawing.
+
 ## Ordering and batching
 
-At `End`, commands are ordered by ascending `depth`, then by submission order. Adjacent commands that use the same `Texture2D` and shader are submitted together. Grouping sprites from the same atlas and shader at the same depth reduces state changes while retaining stable order.
+At `End`, commands are ordered by ascending `depth`, then by submission order. Adjacent commands that use the same texture, texture array, and shader are submitted together. Off-camera world sprites are rejected before sorting and instance generation. Grouping sprites from the same atlas, array, and shader at the same depth reduces state changes while retaining stable order.
 
 See [Sprite Sheets and Animation](sprite-sheets-and-animation.md) for atlas slicing, [Camera and Coordinate Systems](camera-and-coordinate-systems.md) for world and screen drawing, and [Custom Shaders](custom-shaders.md) for shader scopes.

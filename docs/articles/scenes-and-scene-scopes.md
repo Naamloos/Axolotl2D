@@ -1,6 +1,6 @@
 # Scenes and Scene Scopes
 
-A scene is a runtime container for GameObjects and a dependency injection scope. Only one scene is active under `SceneGameHost`.
+A scene is a runtime container for GameObjects and a dependency injection scope. `SceneGameHost` owns a stack of active scenes so overlays can have isolated objects and services while drawing over another scene.
 
 ## Register and select scenes
 
@@ -31,6 +31,24 @@ public sealed class MainMenuScene : BaseScene
 ```
 
 The destination scene receives a fresh scope. Scoped objects from the previous scene are not reused. Singleton services, such as `AssetManager`, remain available across the transition.
+
+## Layer scenes
+
+Push an overlay for pause menus, minimaps, dialogs, and other independently scoped layers:
+
+```csharp
+SceneGameHost.PushScene<PauseMenuScene>();
+SceneGameHost.PopScene();
+```
+
+The default overlay draws lower scenes but blocks their updates. Use `SceneLayerOptions.Additive` when lower scenes should keep updating, or `SceneLayerOptions.Opaque` when lower scenes should be neither updated nor drawn:
+
+```csharp
+SceneGameHost.PushScene<HudScene>(SceneLayerOptions.Additive);
+SceneGameHost.PushScene<LoadingScene>(SceneLayerOptions.Opaque);
+```
+
+Each pushed scene owns a separate DI scope. Layers update and draw from bottom to top. `ChangeScene` remains a full transition: it clears every layer before activating the destination scene. `CurrentScene` is the top layer, and `SceneCount` reports the stack size. The base scene cannot be popped; use `ChangeScene` to replace it.
 
 ## Scene callbacks
 

@@ -38,6 +38,7 @@ public sealed class TweenHandle
 public sealed class TweenService : IDisposable
 {
     private readonly List<TweenState> tweens = [];
+    private TweenState[] snapshot = [];
 
     public TweenHandle To(float from, float to, double duration, Action<float> apply,
         TweenOptions? options = null, Action? completed = null) =>
@@ -63,17 +64,21 @@ public sealed class TweenService : IDisposable
         if (options.Delay < 0d || options.RepeatCount < -1)
             throw new ArgumentOutOfRangeException(nameof(options));
         TweenState? state = null;
-        var handle = new TweenHandle(() => { if (state is not null) tweens.Remove(state); });
+        var handle = new TweenHandle(() => Remove(state));
         state = new(duration, apply, completed, options, handle);
         tweens.Add(state);
+        snapshot = tweens.ToArray();
         apply(Evaluate(options.Ease, 0f));
         return handle;
     }
 
     internal void Update(double scaledDeltaTime, double unscaledDeltaTime)
     {
-        foreach (var tween in tweens.ToArray())
+        var active = snapshot;
+        foreach (var tween in active)
         {
+            if (tween.Handle.IsCancelled)
+                continue;
             var delta = tween.Options.UnscaledTime ? unscaledDeltaTime : scaledDeltaTime;
             if (tween.DelayRemaining > 0d)
             {
@@ -94,7 +99,7 @@ public sealed class TweenService : IDisposable
                 if (tween.Options.Yoyo) tween.Reversed = !tween.Reversed;
                 continue;
             }
-            tweens.Remove(tween);
+            Remove(tween);
             tween.Handle.IsComplete = true;
             tween.Completed?.Invoke();
         }
@@ -102,8 +107,16 @@ public sealed class TweenService : IDisposable
 
     public void Dispose()
     {
-        foreach (var tween in tweens.ToArray()) tween.Handle.Cancel();
+        var active = snapshot;
+        foreach (var tween in active) tween.Handle.Cancel();
         tweens.Clear();
+        snapshot = [];
+    }
+
+    private void Remove(TweenState? state)
+    {
+        if (state is null || !tweens.Remove(state)) return;
+        snapshot = tweens.ToArray();
     }
 
     private static float Evaluate(Ease ease, float value) => ease switch
@@ -158,6 +171,7 @@ public sealed class CoroutineHandle
 public sealed class CoroutineService : IDisposable
 {
     private readonly List<CoroutineState> coroutines = [];
+    private CoroutineState[] snapshot = [];
 
     public CoroutineHandle Start(IEnumerable<CoroutineYield?> routine)
     {
@@ -166,14 +180,18 @@ public sealed class CoroutineService : IDisposable
         var handle = new CoroutineHandle(() => Remove(state));
         state = new(routine.GetEnumerator(), handle);
         coroutines.Add(state);
+        snapshot = coroutines.ToArray();
         Advance(state);
         return handle;
     }
 
     internal void Update(double scaledDeltaTime, double unscaledDeltaTime)
     {
-        foreach (var state in coroutines.ToArray())
+        var active = snapshot;
+        foreach (var state in active)
         {
+            if (state.Handle.IsCancelled)
+                continue;
             var ready = state.Current switch
             {
                 null => true,
@@ -188,8 +206,10 @@ public sealed class CoroutineService : IDisposable
 
     public void Dispose()
     {
-        foreach (var state in coroutines.ToArray()) state.Handle.Cancel();
+        var active = snapshot;
+        foreach (var state in active) state.Handle.Cancel();
         coroutines.Clear();
+        snapshot = [];
     }
 
     private void Advance(CoroutineState state)
@@ -209,6 +229,7 @@ public sealed class CoroutineService : IDisposable
     private void Remove(CoroutineState? state)
     {
         if (state is null || !coroutines.Remove(state)) return;
+        snapshot = coroutines.ToArray();
         state.Enumerator.Dispose();
     }
 

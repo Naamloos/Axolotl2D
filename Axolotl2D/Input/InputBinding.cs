@@ -126,19 +126,60 @@ public sealed record InputBinding(InputBindingKind Kind, IReadOnlyList<InputCont
             throw new ArgumentOutOfRangeException(nameof(DeadZone), "Digital bindings do not use a dead zone.");
     }
 
-    internal Vector2 Read(InputActionSystem input) => Kind switch
+    internal Func<Vector2> CreateReader(InputActionSystem input)
     {
-        InputBindingKind.Button => Controls.Any(input.IsPressed) ? Vector2.UnitX : Vector2.Zero,
-        InputBindingKind.Chord => Controls.All(input.IsPressed) ? Vector2.UnitX : Vector2.Zero,
-        InputBindingKind.Axis => new Vector2(
-            (input.IsPressed(Controls[1]) ? 1f : 0f) - (input.IsPressed(Controls[0]) ? 1f : 0f), 0f),
-        InputBindingKind.Vector2 => new Vector2(
-            (input.IsPressed(Controls[1]) ? 1f : 0f) - (input.IsPressed(Controls[0]) ? 1f : 0f),
-            (input.IsPressed(Controls[3]) ? 1f : 0f) - (input.IsPressed(Controls[2]) ? 1f : 0f)),
-        InputBindingKind.AnalogAxis => new Vector2(input.ReadAxis(Controls[0], DeadZone), 0f),
-        InputBindingKind.Stick => input.ReadStick(Controls[0], DeadZone),
-        _ => Vector2.Zero
+        ArgumentNullException.ThrowIfNull(input);
+        if (Kind == InputBindingKind.AnalogAxis)
+        {
+            var control = Controls[0];
+            var axis = Enum.Parse<GamepadAxis>(control.Name);
+            return () => new Vector2(input.ReadAxis(control.GamepadIndex, axis, DeadZone), 0f);
+        }
+        if (Kind == InputBindingKind.Stick)
+        {
+            var control = Controls[0];
+            var stick = Enum.Parse<GamepadStick>(control.Name);
+            return () => input.ReadStick(control.GamepadIndex, stick, DeadZone);
+        }
+
+        var readers = new Func<bool>[Controls.Count];
+        for (var index = 0; index < readers.Length; index++)
+            readers[index] = CreateButtonReader(input, Controls[index]);
+        return Kind switch
+        {
+            InputBindingKind.Button => () =>
+            {
+                for (var index = 0; index < readers.Length; index++)
+                    if (readers[index]()) return Vector2.UnitX;
+                return Vector2.Zero;
+            },
+            InputBindingKind.Chord => () =>
+            {
+                for (var index = 0; index < readers.Length; index++)
+                    if (!readers[index]()) return Vector2.Zero;
+                return Vector2.UnitX;
+            },
+            InputBindingKind.Axis => () => new Vector2(
+                (readers[1]() ? 1f : 0f) - (readers[0]() ? 1f : 0f), 0f),
+            InputBindingKind.Vector2 => () => new Vector2(
+                (readers[1]() ? 1f : 0f) - (readers[0]() ? 1f : 0f),
+                (readers[3]() ? 1f : 0f) - (readers[2]() ? 1f : 0f)),
+            _ => () => Vector2.Zero
+        };
+    }
+
+    private static Func<bool> CreateButtonReader(InputActionSystem input, InputControl control) => control.Kind switch
+    {
+        InputControlKind.Key => Bind(Enum.Parse<Key>(control.Name), input),
+        InputControlKind.MouseButton => Bind(Enum.Parse<MouseButton>(control.Name), input),
+        InputControlKind.GamepadButton => Bind(control.GamepadIndex, Enum.Parse<ButtonName>(control.Name), input),
+        _ => throw new InvalidOperationException($"{control.Kind} is not a button control.")
     };
+
+    private static Func<bool> Bind(Key key, InputActionSystem input) => () => input.IsPressed(key);
+    private static Func<bool> Bind(MouseButton button, InputActionSystem input) => () => input.IsPressed(button);
+    private static Func<bool> Bind(int gamepadIndex, ButtonName button, InputActionSystem input) =>
+        () => input.IsPressed(gamepadIndex, button);
 }
 
 /// <summary>Two actions that use the same physical control in one scheme.</summary>

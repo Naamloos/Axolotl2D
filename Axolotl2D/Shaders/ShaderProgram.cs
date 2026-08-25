@@ -8,6 +8,7 @@ namespace Axolotl2D.Shaders;
 public sealed class ShaderProgram : IDisposable
 {
     private readonly GL openGL;
+    private readonly Dictionary<string, int> uniformLocations = new(StringComparer.Ordinal);
     private bool disposed;
 
     internal uint Handle { get; }
@@ -93,10 +94,19 @@ public sealed class ShaderProgram : IDisposable
         throw new InvalidOperationException($"{type} failed to compile: {log}");
     }
 
-    private int GetLocation(string name)
+    internal int FindLocation(string name)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        if (uniformLocations.TryGetValue(name, out var cached))
+            return cached;
         var location = openGL.GetUniformLocation(Handle, name);
+        uniformLocations.Add(name, location);
+        return location;
+    }
+
+    private int GetLocation(string name)
+    {
+        var location = FindLocation(name);
         return location >= 0
             ? location
             : throw new KeyNotFoundException($"Shader uniform '{name}' is not active in this program.");
@@ -107,6 +117,7 @@ public sealed class ShaderProgram : IDisposable
         if (disposed)
             return;
         disposed = true;
+        uniformLocations.Clear();
         openGL.DeleteProgram(Handle);
         GC.SuppressFinalize(this);
     }

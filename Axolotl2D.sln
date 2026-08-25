@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Axolotl2D.MSBuild", "Axolot
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Axolotl2D.Example.Assets", "Axolotl2D.Example.Assets\Axolotl2D.Example.Assets.csproj", "{C4307BA8-2E7A-465E-8565-B525C74117B6}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Axolotl2D.Example.Stress", "Axolotl2D.Example.Stress\Axolotl2D.Example.Stress.csproj", "{8C49D54F-3D2E-45D6-AF2D-B4F31D9A6B2A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{C4307BA8-2E7A-465E-8565-B525C74117B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C4307BA8-2E7A-465E-8565-B525C74117B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C4307BA8-2E7A-465E-8565-B525C74117B6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C49D54F-3D2E-45D6-AF2D-B4F31D9A6B2A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C49D54F-3D2E-45D6-AF2D-B4F31D9A6B2A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C49D54F-3D2E-45D6-AF2D-B4F31D9A6B2A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C49D54F-3D2E-45D6-AF2D-B4F31D9A6B2A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

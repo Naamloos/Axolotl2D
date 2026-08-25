@@ -33,8 +33,8 @@ The left scene column includes:
 
 The right runtime column includes:
 
-- frame interval, callback update/draw time, FPS, frame counters, and time scale;
-- sprite commands, GPU draw submissions, triangles, and uploaded textures from the previous completed frame;
+- frame interval, callback update/draw time, per-stage renderer CPU time, asynchronous GPU time, FPS, and frame counters;
+- sprite commands, camera-culled commands, GPU draw submissions, triangles, vertex upload bytes, and uploaded textures from the previous completed frame;
 - every asset cache key, type, and load state;
 - Box2D body, shape, contact, and joint counts plus each component body.
 

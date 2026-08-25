@@ -1,10 +1,22 @@
+using CommunityToolkit.HighPerformance.Buffers;
+
 namespace Axolotl2D.Rendering;
 
 /// <summary>An RGBA texture shared by every sprite that references it.</summary>
 public sealed class Texture2D
 {
-    internal byte[]? Pixels { get; }
+    private readonly byte[]? pixels;
+    private MemoryOwner<byte>? ownedPixels;
+    private TextureRegion? dirtyRegion;
     internal uint Handle { get; set; }
+    internal ReadOnlySpan<byte> PixelSpan
+    {
+        get
+        {
+            if (ownedPixels is { } owner) return owner.Span;
+            return pixels;
+        }
+    }
 
     public int Width { get; internal set; }
     public int Height { get; internal set; }
@@ -18,7 +30,19 @@ public sealed class Texture2D
 
         Width = width;
         Height = height;
-        Pixels = rgbaPixels;
+        pixels = rgbaPixels;
+    }
+
+    internal Texture2D(int width, int height, MemoryOwner<byte> rgbaPixels)
+    {
+        if (width <= 0 || height <= 0)
+            throw new ArgumentOutOfRangeException(nameof(width), "Texture dimensions must be positive.");
+        if (rgbaPixels.Length != width * height * 4)
+            throw new ArgumentException("Texture data must contain exactly four bytes per pixel.", nameof(rgbaPixels));
+
+        Width = width;
+        Height = height;
+        ownedPixels = rgbaPixels;
     }
 
     internal Texture2D(int width, int height, uint handle)
@@ -26,6 +50,40 @@ public sealed class Texture2D
         Width = width;
         Height = height;
         Handle = handle;
+    }
+
+    internal void ReleaseOwnedPixels()
+    {
+        ownedPixels?.Dispose();
+        ownedPixels = null;
+    }
+
+    internal void MarkDirty(TextureRegion region)
+    {
+        region.Validate(this);
+        if (Handle == 0) return;
+        if (dirtyRegion is not { } dirty)
+        {
+            dirtyRegion = region;
+            return;
+        }
+        var left = Math.Min(dirty.X, region.X);
+        var top = Math.Min(dirty.Y, region.Y);
+        var right = Math.Max(dirty.X + dirty.Width, region.X + region.Width);
+        var bottom = Math.Max(dirty.Y + dirty.Height, region.Y + region.Height);
+        dirtyRegion = new(left, top, right - left, bottom - top);
+    }
+
+    internal bool TryTakeDirtyRegion(out TextureRegion region)
+    {
+        if (dirtyRegion is not { } dirty)
+        {
+            region = default;
+            return false;
+        }
+        region = dirty;
+        dirtyRegion = null;
+        return true;
     }
 }
 

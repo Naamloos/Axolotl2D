@@ -22,22 +22,28 @@ internal sealed class BletrisBoard
 
     public void Reset() => Array.Clear(cells);
 
-    public IEnumerable<(int X, int Y)> PieceCells(int kind, int rotation, int x, int y)
+    public void PieceCells(int kind, int rotation, int x, int y, Span<(int X, int Y)> destination)
     {
+        if (destination.Length < 4)
+            throw new ArgumentException("A tetromino needs four destination cells.", nameof(destination));
         var turns = kind == 1 ? 0 : (rotation % 4 + 4) % 4;
-        foreach (var (shapeX, shapeY) in Shapes[kind])
+        var shape = Shapes[kind];
+        for (var index = 0; index < shape.Length; index++)
         {
+            var (shapeX, shapeY) = shape[index];
             var cellX = shapeX;
             var cellY = shapeY;
             for (var turn = 0; turn < turns; turn++)
                 (cellX, cellY) = (-cellY, cellX);
-            yield return (x + cellX, y + cellY);
+            destination[index] = (x + cellX, y + cellY);
         }
     }
 
     public bool Fits(int kind, int rotation, int x, int y)
     {
-        foreach (var (cellX, cellY) in PieceCells(kind, rotation, x, y))
+        Span<(int X, int Y)> piece = stackalloc (int X, int Y)[4];
+        PieceCells(kind, rotation, x, y, piece);
+        foreach (var (cellX, cellY) in piece)
         {
             if (cellX < 0 || cellX >= Width || cellY >= Height || cellY >= 0 && cells[cellX, cellY] != 0)
                 return false;
@@ -48,7 +54,9 @@ internal sealed class BletrisBoard
     public bool Place(int kind, int rotation, int x, int y)
     {
         var entirelyVisible = true;
-        foreach (var (cellX, cellY) in PieceCells(kind, rotation, x, y))
+        Span<(int X, int Y)> piece = stackalloc (int X, int Y)[4];
+        PieceCells(kind, rotation, x, y, piece);
+        foreach (var (cellX, cellY) in piece)
         {
             if (cellY < 0)
                 entirelyVisible = false;

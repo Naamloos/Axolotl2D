@@ -11,6 +11,7 @@ public sealed unsafe class AudioPlayer : IDisposable
     private readonly AL openAL = AL.GetApi();
     private readonly Dictionary<SoundAsset, uint> buffers = new(ReferenceEqualityComparer.Instance);
     private readonly HashSet<SoundPlayback> playbacks = [];
+    private SoundPlayback[] playbackSnapshot = [];
     private readonly HashSet<SoundPlayback> pausedByPlayer = [];
     private readonly AudioRuntime? runtime;
     private readonly Device* device;
@@ -121,7 +122,8 @@ public sealed unsafe class AudioPlayer : IDisposable
 
     public void PauseAll()
     {
-        foreach (var playback in playbacks.ToArray())
+        var active = playbackSnapshot;
+        foreach (var playback in active)
             if (playback.State == SoundPlaybackState.Playing)
             {
                 playback.Pause();
@@ -139,7 +141,8 @@ public sealed unsafe class AudioPlayer : IDisposable
 
     public void StopAll()
     {
-        foreach (var playback in playbacks.ToArray())
+        var active = playbackSnapshot;
+        foreach (var playback in active)
             playback.Dispose();
         pausedByPlayer.Clear();
     }
@@ -149,7 +152,8 @@ public sealed unsafe class AudioPlayer : IDisposable
         if (disposed || playbacks.Count == 0)
             return;
         EnsureCurrent();
-        foreach (var playback in playbacks.ToArray())
+        var active = playbackSnapshot;
+        foreach (var playback in active)
             playback.Refresh();
     }
 
@@ -168,6 +172,7 @@ public sealed unsafe class AudioPlayer : IDisposable
         var playback = new SoundPlayback(openAL, source, EnsureCurrent, RemovePlayback, spatial,
             position, loop, volume, pitch, referenceDistance, maximumDistance, rolloffFactor);
         playbacks.Add(playback);
+        playbackSnapshot = playbacks.ToArray();
         playback.Play();
         return playback;
     }
@@ -209,7 +214,7 @@ public sealed unsafe class AudioPlayer : IDisposable
 
     private void RemovePlayback(SoundPlayback playback)
     {
-        playbacks.Remove(playback);
+        if (playbacks.Remove(playback)) playbackSnapshot = playbacks.ToArray();
         pausedByPlayer.Remove(playback);
     }
 
@@ -218,11 +223,13 @@ public sealed unsafe class AudioPlayer : IDisposable
         if (disposed)
             return;
         EnsureCurrent();
-        foreach (var playback in playbacks.ToArray())
+        var active = playbackSnapshot;
+        foreach (var playback in active)
             playback.Dispose();
         foreach (var buffer in buffers.Values)
             openAL.DeleteBuffer(buffer);
         buffers.Clear();
+        playbackSnapshot = [];
         runtime?.Detach(this);
         contextApi.MakeContextCurrent(null);
         contextApi.DestroyContext(context);

@@ -25,40 +25,30 @@ public enum GamepadStick
 public sealed class InputActionSystem(Game game)
 {
     private readonly List<InputActionMap> maps = [];
+    private InputActionMap[] mapSnapshot = [];
     private readonly List<CaptureRegistration> captures = [];
     private HashSet<InputControl> previousPressed = [];
 
-    internal void Register(InputActionMap map) => maps.Add(map);
-    internal void Unregister(InputActionMap map) => maps.Remove(map);
+    internal void Register(InputActionMap map)
+    {
+        maps.Add(map);
+        mapSnapshot = maps.ToArray();
+    }
+    internal void Unregister(InputActionMap map)
+    {
+        maps.Remove(map);
+        mapSnapshot = maps.ToArray();
+    }
     internal bool IsPressed(Key key) => game.GetKeyboard()?.IsKeyPressed(key) == true;
     internal bool IsPressed(MouseButton button) => game.GetMouse()?.IsButtonPressed(button) == true;
-    internal bool IsPressed(int gamepadIndex, ButtonName button) =>
-        game.GetGamepad(gamepadIndex)?.Buttons.FirstOrDefault(value => value.Name == button).Pressed == true;
-
-    internal bool IsPressed(InputControl control)
+    internal bool IsPressed(int gamepadIndex, ButtonName button)
     {
-        control.Validate(buttonOnly: true);
-        return control.Kind switch
-        {
-            InputControlKind.Key => IsPressed(Enum.Parse<Key>(control.Name)),
-            InputControlKind.MouseButton => IsPressed(Enum.Parse<MouseButton>(control.Name)),
-            InputControlKind.GamepadButton => IsPressed(control.GamepadIndex, Enum.Parse<ButtonName>(control.Name)),
-            _ => false
-        };
-    }
-
-    internal float ReadAxis(InputControl control, float deadZone)
-    {
-        if (control.Kind != InputControlKind.GamepadAxis)
-            throw new ArgumentException("The control must be a gamepad axis.", nameof(control));
-        return ReadAxis(control.GamepadIndex, Enum.Parse<GamepadAxis>(control.Name), deadZone);
-    }
-
-    internal Vector2 ReadStick(InputControl control, float deadZone)
-    {
-        if (control.Kind != InputControlKind.GamepadStick)
-            throw new ArgumentException("The control must be a gamepad stick.", nameof(control));
-        return ReadStick(control.GamepadIndex, Enum.Parse<GamepadStick>(control.Name), deadZone);
+        var gamepad = game.GetGamepad(gamepadIndex);
+        if (gamepad is null) return false;
+        foreach (var value in gamepad.Buttons)
+            if (value.Name == button)
+                return value.Pressed;
+        return false;
     }
 
     internal float ReadAxis(int gamepadIndex, GamepadAxis axis, float deadZone)
@@ -116,7 +106,8 @@ public sealed class InputActionSystem(Game game)
             previousPressed = pressed;
         }
 
-        foreach (var map in maps.ToArray())
+        var activeMaps = mapSnapshot;
+        foreach (var map in activeMaps)
             map.Update();
     }
 
@@ -185,7 +176,7 @@ public sealed class InputAction
     }
 
     internal InputAction(string name, InputBinding binding, InputActionSystem input)
-        : this(name, () => binding.Read(input)) => Binding = binding;
+        : this(name, binding.CreateReader(input)) => Binding = binding;
 
     public string Name { get; }
     public InputBinding? Binding { get; private set; }
@@ -209,7 +200,7 @@ public sealed class InputAction
     internal void Rebind(InputBinding binding, InputActionSystem input)
     {
         Binding = binding;
-        read = () => binding.Read(input);
+        read = binding.CreateReader(input);
     }
 }
 

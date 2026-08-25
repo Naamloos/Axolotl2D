@@ -34,25 +34,25 @@ public sealed class UIText(
             return;
 
         using var clip = transform.ResolveClip() is { } rectangle ? spriteBatch.PushClip(rectangle) : null;
-        var texture = textRenderer.Render(Font!, Text, FontSize);
+        var textSize = textRenderer.Measure(Font!, Text, FontSize);
         var rect = transform.Rect;
         var position = rect.Position;
         position.X += HorizontalAlignment switch
         {
             UIHorizontalAlignment.Left => 0f,
-            UIHorizontalAlignment.Center => (rect.Size.X - texture.Width) / 2f,
-            UIHorizontalAlignment.Right => rect.Size.X - texture.Width,
+            UIHorizontalAlignment.Center => (rect.Size.X - textSize.X) / 2f,
+            UIHorizontalAlignment.Right => rect.Size.X - textSize.X,
             _ => throw new ArgumentOutOfRangeException(nameof(HorizontalAlignment))
         };
         position.Y += VerticalAlignment switch
         {
             UIVerticalAlignment.Top => 0f,
-            UIVerticalAlignment.Center => (rect.Size.Y - texture.Height) / 2f,
-            UIVerticalAlignment.Bottom => rect.Size.Y - texture.Height,
+            UIVerticalAlignment.Center => (rect.Size.Y - textSize.Y) / 2f,
+            UIVerticalAlignment.Bottom => rect.Size.Y - textSize.Y,
             _ => throw new ArgumentOutOfRangeException(nameof(VerticalAlignment))
         };
-        spriteBatch.Draw(new Sprite(texture) { Origin = Vector2.Zero }, position,
-            tint: Color, space: CoordinateSpace.Screen, depth: Depth);
+        textRenderer.Draw(spriteBatch, Font!, Text, FontSize, position,
+            Color, CoordinateSpace.Screen, Depth);
     }
 }
 

@@ -21,12 +21,19 @@ public sealed class DebugOverlay(
 {
     private const float PanelDepth = 100_000f;
     private const float TextScale = 0.75f;
+    private static readonly Color HeaderColor = Color.Cyan;
+    private static readonly Color BodyColor = Color.White;
     private readonly Box2DDebugRenderer physicsRenderer = new(primitives, camera);
+    private readonly List<string> sceneLines = [];
+    private readonly List<string> runtimeLines = [];
     private readonly Type[] sceneTypes = Assembly.GetEntryAssembly()?.GetTypes()
         .Where(type => !type.IsAbstract && type.IsAssignableTo(typeof(BaseScene)))
         .OrderBy(type => type.Name)
         .ToArray() ?? [];
     private DebugGlyphAtlas? glyphs;
+    private IReadOnlyList<AssetInfo> loadedAssets = [];
+    private ulong assetRefreshFrame;
+    private bool hasAssetSnapshot;
     private bool simpleAttached;
 
     public bool Enabled => options.Enabled;
@@ -85,30 +92,34 @@ public sealed class DebugOverlay(
         var viewport = game.Viewport;
         var leftWidth = MathF.Max(0f, (viewport.X - gap) / 2f);
         var rightWidth = leftWidth;
-        DrawColumn(BuildSceneLines(scene), Vector2.Zero, new Vector2(leftWidth, viewport.Y), rightAligned: false);
-        DrawColumn(BuildRuntimeLines(physics, frameDelta, frameRate), new Vector2(leftWidth + gap, 0f),
+        BuildSceneLines(scene);
+        BuildRuntimeLines(physics, frameDelta, frameRate);
+        DrawColumn(sceneLines, Vector2.Zero, new Vector2(leftWidth, viewport.Y), rightAligned: false);
+        DrawColumn(runtimeLines, new Vector2(leftWidth + gap, 0f),
             new Vector2(rightWidth, viewport.Y), rightAligned: true);
     }
 
-    private List<string> BuildSceneLines(BaseScene? scene)
+    private void BuildSceneLines(BaseScene? scene)
     {
-        var lines = new List<string> { "AXOLOTL2D DEBUG", string.Empty };
-        lines.Add($"SCENES ({sceneTypes.Length})");
+        sceneLines.Clear();
+        sceneLines.Add("AXOLOTL2D DEBUG");
+        sceneLines.Add(string.Empty);
+        sceneLines.Add($"SCENES ({sceneTypes.Length})");
         if (scene is null)
-            lines.Add("  (simple host: no scene scope)");
+            sceneLines.Add("  (simple host: no scene scope)");
         foreach (var type in sceneTypes)
-            lines.Add($"{(scene?.GetType() == type ? '*' : ' ')} {type.Name}");
+            sceneLines.Add($"{(scene?.GetType() == type ? '*' : ' ')} {type.Name}");
 
         if (scene is null)
-            return lines;
+            return;
 
-        lines.Add($"Scope #{scene.ScopeServices.GetHashCode():X8}  Loaded={scene.IsLoaded}");
-        lines.Add(string.Empty);
-        lines.Add($"GAMEOBJECTS ({scene.GameObjects.Count})");
+        sceneLines.Add($"Scope #{scene.ScopeServices.GetHashCode():X8}  Loaded={scene.IsLoaded}");
+        sceneLines.Add(string.Empty);
+        sceneLines.Add($"GAMEOBJECTS ({scene.GameObjects.Count})");
         foreach (var gameObject in scene.GameObjects)
         {
             var transform = gameObject.Transform;
-            lines.Add(Trim($"{(gameObject.Active ? '+' : '-')} {gameObject.Name}  " +
+            sceneLines.Add(Trim($"{(gameObject.Active ? '+' : '-')} {gameObject.Name}  " +
                 $"P({transform.Position.X:0.#},{transform.Position.Y:0.#}) " +
                 $"R{transform.Rotation * 180f / MathF.PI:0.#} " +
                 $"S({transform.LossyScale.X:0.##},{transform.LossyScale.Y:0.##})", 74));
@@ -116,47 +127,51 @@ public sealed class DebugOverlay(
             {
                 var state = component.IsActiveAndEnabled ? "active"
                     : component.Enabled ? "inactive" : "disabled";
-                lines.Add(Trim($"    {component.GetType().Name} [{state}, " +
+                sceneLines.Add(Trim($"    {component.GetType().Name} [{state}, " +
                     $"{(component.HasStarted ? "started" : "not started")}]", 74));
             }
         }
-        return lines;
     }
 
-    private List<string> BuildRuntimeLines(PhysicsWorld? physics, double frameDelta, double frameRate)
+    private void BuildRuntimeLines(PhysicsWorld? physics, double frameDelta, double frameRate)
     {
         var statistics = rendering.Statistics;
-        var loadedAssets = assets.GetLoadedAssets();
-        var lines = new List<string>
+        if (!hasAssetSnapshot || time.FrameCount - assetRefreshFrame >= 30)
         {
-            "FRAME",
-            $"FPS {frameRate:0.0}  interval {frameDelta * 1000d:0.00} ms",
-            $"Update {game.LastUpdateMilliseconds:0.00} ms  Draw {game.LastDrawMilliseconds:0.00} ms",
-            $"Frame {time.FrameCount}  Fixed {time.FixedFrameCount}  Scale {time.TimeScale:0.##}",
-            string.Empty,
-            "DRAW SUBMISSIONS",
-            $"Commands {statistics.DrawCommands}  GPU draws {statistics.DrawSubmissions}",
-            $"Triangles {statistics.Triangles}  GPU textures {statistics.UploadedTextures}",
-            string.Empty,
-            $"LOADED ASSETS ({loadedAssets.Count})"
-        };
+            loadedAssets = assets.GetLoadedAssets();
+            assetRefreshFrame = time.FrameCount;
+            hasAssetSnapshot = true;
+        }
+        runtimeLines.Clear();
+        runtimeLines.Add("FRAME");
+        runtimeLines.Add($"FPS {frameRate:0.0}  interval {frameDelta * 1000d:0.00} ms");
+        runtimeLines.Add($"Update {game.LastUpdateMilliseconds:0.00} ms  Draw {game.LastDrawMilliseconds:0.00} ms");
+        runtimeLines.Add($"GPU {statistics.GpuMilliseconds:0.00} ms  Frame {time.FrameCount}");
+        runtimeLines.Add($"CPU cull {statistics.CpuCullingMilliseconds:0.00}  sort {statistics.CpuSortingMilliseconds:0.00} ms");
+        runtimeLines.Add($"CPU vertices {statistics.CpuVertexBuildMilliseconds:0.00}  submit {statistics.CpuSubmissionMilliseconds:0.00} ms");
+        runtimeLines.Add(string.Empty);
+        runtimeLines.Add("DRAW SUBMISSIONS");
+        runtimeLines.Add($"Commands {statistics.DrawCommands}  Culled {statistics.CulledCommands}");
+        runtimeLines.Add($"GPU draws {statistics.DrawSubmissions}  Triangles {statistics.Triangles}");
+        runtimeLines.Add($"Vertex upload {statistics.UploadedVertexBytes / 1024d:0.#} KiB  Textures {statistics.UploadedTextures}");
+        runtimeLines.Add(string.Empty);
+        runtimeLines.Add($"LOADED ASSETS ({loadedAssets.Count})");
         foreach (var asset in loadedAssets)
-            lines.Add(Trim($"  [{asset.State}] {asset.Type.Name}: {asset.Key}", 62));
+            runtimeLines.Add(Trim($"  [{asset.State}] {asset.Type.Name}: {asset.Key}", 62));
 
-        lines.Add(string.Empty);
+        runtimeLines.Add(string.Empty);
         if (physics is null)
         {
-            lines.Add("PHYSICS (no scene world)");
-            return lines;
+            runtimeLines.Add("PHYSICS (no scene world)");
+            return;
         }
 
         var counters = physics.Counters;
-        lines.Add($"PHYSICS BODIES ({physics.Bodies.Count})");
-        lines.Add($"Shapes {counters.shapeCount}  Contacts {counters.contactCount}  Joints {counters.jointCount}");
+        runtimeLines.Add($"PHYSICS BODIES ({physics.Bodies.Count})");
+        runtimeLines.Add($"Shapes {counters.shapeCount}  Contacts {counters.contactCount}  Joints {counters.jointCount}");
         foreach (var body in physics.Bodies)
-            lines.Add(Trim($"  {body.GameObject.Name}: {body.Type}, shapes={body.ShapeCount}, " +
+            runtimeLines.Add(Trim($"  {body.GameObject.Name}: {body.Type}, shapes={body.ShapeCount}, " +
                 $"{(body.IsActiveAndEnabled ? "active" : "inactive")}", 62));
-        return lines;
     }
 
     private void DrawColumn(IReadOnlyList<string> lines, Vector2 position, Vector2 size, bool rightAligned)
@@ -179,7 +194,7 @@ public sealed class DebugOverlay(
                 ? position.X + size.X - 6f - text.Length * characterWidth
                 : position.X + 6f;
             glyphs!.Draw(spriteBatch, text, new Vector2(x, position.Y + 6f + index * lineHeight),
-                index == 0 ? Color.Cyan : Color.White, PanelDepth + 2f, TextScale);
+                index == 0 ? HeaderColor : BodyColor, PanelDepth + 2f, TextScale);
         }
     }
 

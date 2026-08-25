@@ -11,6 +11,7 @@ public sealed class PhysicsWorld : IDisposable
 {
     private readonly Dictionary<B2ShapeId, ShapeOwner> shapeOwners = [];
     private readonly HashSet<PhysicsBody> bodies = [];
+    private PhysicsBody[] bodySnapshot = [];
     private float pixelsPerMeter = 100f;
     private bool disposed;
 
@@ -110,7 +111,10 @@ public sealed class PhysicsWorld : IDisposable
     internal B2Vec2 ToPhysicsVector(Vector2 value) => new(value.X / PixelsPerMeter, value.Y / PixelsPerMeter);
     internal Vector2 ToWorldVector(B2Vec2 value) => new(value.X * PixelsPerMeter, value.Y * PixelsPerMeter);
 
-    internal void Register(PhysicsBody body) => bodies.Add(body);
+    internal void Register(PhysicsBody body)
+    {
+        if (bodies.Add(body)) bodySnapshot = bodies.ToArray();
+    }
 
     internal void RegisterShape(B2ShapeId shapeId, PhysicsBody body, PhysicsCollider? collider) =>
         shapeOwners.Add(shapeId, new(body, collider));
@@ -119,7 +123,7 @@ public sealed class PhysicsWorld : IDisposable
 
     internal void Unregister(PhysicsBody body, IEnumerable<B2ShapeId> shapeIds)
     {
-        bodies.Remove(body);
+        if (bodies.Remove(body)) bodySnapshot = bodies.ToArray();
         foreach (var shapeId in shapeIds)
             shapeOwners.Remove(shapeId);
     }
@@ -131,7 +135,8 @@ public sealed class PhysicsWorld : IDisposable
             throw new InvalidOperationException("SubStepCount must be greater than zero.");
 
         b2World_Step(WorldId, fixedDeltaTime, SubStepCount);
-        foreach (var body in bodies.ToArray())
+        var activeBodies = bodySnapshot;
+        foreach (var body in activeBodies)
             body.SyncTransform();
         DispatchContacts(b2World_GetContactEvents(WorldId));
         DispatchSensors(b2World_GetSensorEvents(WorldId));
@@ -245,6 +250,7 @@ public sealed class PhysicsWorld : IDisposable
             return;
         disposed = true;
         bodies.Clear();
+        bodySnapshot = [];
         shapeOwners.Clear();
         b2DestroyWorld(WorldId);
         GC.SuppressFinalize(this);

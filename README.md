@@ -8,7 +8,7 @@ Axolotl2D is a small 2D game framework built on Silk.NET and Microsoft.Extension
 ## Framework model
 
 - A Generic Host owns the game and engine services.
-- `SceneGameHost` creates one DI scope for each active scene and disposes it during a transition.
+- `SceneGameHost` creates one DI scope per scene, supports stacked overlay scenes, and disposes scopes during pops and transitions.
 - Each scene owns runtime-instantiated GameObjects. A GameObject owns a hierarchical `Transform` and DI-created components.
 - Versioned `.axprefab` JSON assets create reusable GameObject hierarchies through the same scene DI and lifecycle paths.
 - `AssetManager` selects `IAssetLoader<T>` implementations by asset type and caches each result by key.
@@ -79,7 +79,11 @@ See the [documentation](docs/index.md), [getting-started guide](docs/articles/ge
 
 ## Bletris benchmark
 
-[Bletris](Axolotl2D.Example.Bletris) is a small playable benchmark rather than a feature catalogue. Its menu exercises responsive retained UI controls, sprite animation and markers, tweens, packaged prefabs, several collider shapes, and a physics joint. Gameplay uses keyboard and gamepad actions, scalable world-space rendering, camera shake, post-processing, particles, coroutines, time control, persistent versioned settings, generated spatial sound effects, and looped music.
+[Bletris](Axolotl2D.Example.Bletris) is a small playable benchmark rather than a feature catalogue. Its menu exercises responsive retained UI controls, sprite animation and markers, tweens, packaged prefabs, several collider shapes, and a physics joint. Gameplay uses keyboard and gamepad actions, a carry slot, a layered pause menu, scalable world-space rendering, camera shake, post-processing, particles, coroutines, time control, persistent versioned settings, generated spatial sound effects, and looped music.
+
+## Stress test
+
+[Axolotl2D.Example.Stress](Axolotl2D.Example.Stress) provides adjustable sprite, culling, instancing, atlas/texture-array/raw batching, SDF text, spatial-index, camera, and retained-UI workloads with FPS and renderer timings enabled.
 
 ## AI assistance
 
